@@ -40,9 +40,8 @@ export function GisPage({ currentUser }: { currentUser: PowerGISUser }) {
               <b>{currentUser.displayName}</b>
               <span>{currentUser.role}</span>
               <small>
-                {currentUser.region} • {currentUser.subdivision ?? currentUser.division ?? 'All authorised areas'}
+                {currentUser.region} • {currentUser.subdivision ?? currentUser.division ?? 'All areas'}
               </small>
-              <small className="privacy-note">Only authorised GIS data is loaded</small>
             </div>
           </div>
           <div className="panel">
