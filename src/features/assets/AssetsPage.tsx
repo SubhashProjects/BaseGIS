@@ -6,11 +6,6 @@ export function AssetsPage({ currentUser }: { currentUser: PowerGISUser }) {
   const { assets, loading } = usePowerGISData(currentUser);
   return (
     <div className="content">
-      <div className="page-title">
-        <div>
-          <h1>My Assets</h1>
-        </div>
-      </div>
       <div className="panel">
         <div className="panel-head">
           <span>Asset Inventory</span>

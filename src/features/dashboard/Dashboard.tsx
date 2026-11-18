@@ -26,12 +26,6 @@ export function Dashboard({ currentUser }: { currentUser: PowerGISUser }) {
 
   return (
     <div className="content">
-      <div className="page-title">
-        <div>
-          <h1>PowerGIS Dashboard</h1>
-        </div>
-        <div className="pill">{currentUser.role === 'GIS_ADMIN' ? 'All Regions' : currentUser.region}</div>
-      </div>
       <div className="cards">
         {metrics.map((m) => (
           <div className="card" key={m[0]}>
@@ -41,22 +35,7 @@ export function Dashboard({ currentUser }: { currentUser: PowerGISUser }) {
           </div>
         ))}
       </div>
-      <div className="layout-grid">
-        <section className="panel">
-          <div className="panel-head">Operational status</div>
-          <div style={{ padding: 16, display: 'grid', gap: 12 }}>
-            <div className="notice">
-              <b>Approval workflow</b>
-              <br />
-              Contractor → JE review → AE review → Approved → Active.
-            </div>
-            <div className="notice">
-              <b>GIS standards</b>
-              <br />
-              Each network layer uses a dedicated map colour and symbol treatment.
-            </div>
-          </div>
-        </section>
+      <div style={{ marginTop: 14 }}>
         <section className="panel">
           <div className="panel-head">Visible layer inventory</div>
           <div className="inventory">

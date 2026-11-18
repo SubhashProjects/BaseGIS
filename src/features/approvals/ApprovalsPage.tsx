@@ -20,11 +20,6 @@ export function ApprovalsPage({ currentUser }: { currentUser: PowerGISUser }) {
 
   return (
     <div className="content">
-      <div className="page-title">
-        <div>
-          <h1>Approvals</h1>
-        </div>
-      </div>
       <div className="layout-grid">
         <div className="panel">
           <div className="panel-head">
