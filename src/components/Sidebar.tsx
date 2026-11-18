@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck } from 'lucide-react';
+import { Power, LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck } from 'lucide-react';
 import { APP, ROUTES } from '../config/constants';
 
 interface Props {
@@ -26,7 +26,9 @@ export function Sidebar({ path, onNavigate, user }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-mark">P</div>
+        <div className="brand-mark" aria-label="Power Symbol">
+          <Power size={18} strokeWidth={2.5} />
+        </div>
         <div>
           <div className="brand-title">{APP.name}</div>
           <div className="brand-sub">{APP.subtitle}</div>

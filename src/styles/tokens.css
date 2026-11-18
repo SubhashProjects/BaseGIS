@@ -19,8 +19,8 @@
   --c-violet: #7c3aed;
   --c-shadow: 0 4px 12px rgba(31, 41, 75, .05);
   --c-shadow-lg: 0 10px 25px rgba(31, 41, 75, .08);
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --transition: 160ms ease;
 }
