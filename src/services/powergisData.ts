@@ -112,6 +112,9 @@ export async function authenticateUser(username: string, password: string): Prom
 
   try {
     let { data, error } = await client.rpc('authenticate_user', { p_username: cleanUsername, p_password: password });
+    if (error) {
+      console.warn('Supabase authenticate_user error:', error.message || error);
+    }
     if ((error || !data || data.length === 0) && isSe1Hod) {
       // Fallback query if DB still has SE - 1 HOD as username
       const fallback = await client.rpc('authenticate_user', { p_username: 'SE - 1 HOD', p_password: password });

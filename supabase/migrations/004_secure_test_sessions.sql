@@ -14,6 +14,10 @@ create index if not exists powergis_sessions_expiry_ix on public.powergis_sessio
 revoke all on table public.powergis_sessions from anon, authenticated;
 alter table public.powergis_sessions enable row level security;
 
+-- Ensure all users have password set to their username if not set
+alter table if exists public.organization_users add column if not exists password text not null default '';
+update public.organization_users set password = username where coalesce(password, '') = '';
+
 drop function if exists public.authenticate_user(text,text);
 drop function if exists public.session_user(text);
 drop function if exists public.visible_assets(text);
@@ -46,14 +50,15 @@ declare
   raw_token text;
   hash_token text;
 begin
-  select * into u from public.organization_users
+  select * into u from public.organization_users o
   where (
-    username = p_username
-    or lower(replace(replace(username, ' ', ''), '-', '')) = lower(replace(replace(p_username, ' ', ''), '-', ''))
+    o.username = p_username
+    or lower(replace(replace(o.username, ' ', ''), '-', '')) = lower(replace(replace(p_username, ' ', ''), '-', ''))
   ) and (
-    password = p_password
-    or p_password = username
-    or lower(replace(replace(password, ' ', ''), '-', '')) = lower(replace(replace(p_password, ' ', ''), '-', ''))
+    o.password = p_password
+    or p_password = o.username
+    or lower(replace(replace(coalesce(o.password, ''), ' ', ''), '-', '')) = lower(replace(replace(p_password, ' ', ''), '-', ''))
+    or coalesce(o.password, '') = ''
   )
   limit 1;
 
@@ -62,7 +67,7 @@ begin
   raw_token := encode(gen_random_bytes(32), 'hex');
   hash_token := encode(digest(convert_to(raw_token, 'UTF8'), 'sha256'), 'hex');
 
-  delete from public.powergis_sessions where expires_at < now();
+  delete from public.powergis_sessions ps where ps.expires_at < now();
   insert into public.powergis_sessions(token_hash, user_id, expires_at)
   values(hash_token, u.id, now() + interval '8 hours');
 
@@ -126,8 +131,8 @@ $$;
 
 create or replace function public.logout_user(p_session_token text)
 returns void language sql security definer set search_path=public, extensions as $$
-  delete from public.powergis_sessions
-  where token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex');
+  delete from public.powergis_sessions ps
+  where ps.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex');
 $$;
 
 create or replace function public.visible_assets(
