@@ -121,7 +121,13 @@ export async function authenticateUser(username: string, password: string): Prom
       }
     }
     if (!error && data && data.length > 0) {
-      return mapUser(data[0]);
+      const row = data[0];
+      if (row.session_token) {
+        localStorage.setItem('powergis_session_token', row.session_token);
+      } else {
+        localStorage.setItem('powergis_session_token', row.id);
+      }
+      return mapUser(row);
     }
   } catch (err) {
     console.warn('RPC authentication note:', err);
@@ -129,6 +135,7 @@ export async function authenticateUser(username: string, password: string): Prom
 
   // Graceful fallback for SE - 1 cum HOD
   if (isSe1Hod) {
+    localStorage.setItem('powergis_session_token', SE1_HOD_USER.id);
     return SE1_HOD_USER;
   }
 
