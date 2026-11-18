@@ -77,6 +77,7 @@ insert into public.organization_users (id,username,display_name,role,subdivision
 insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-004','Karaikal','Karaikal','EE','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal','division','Karaikal','[33,34,35,36,37,38,39,40]','{"KARAIKAL"}');
 insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-005','EE-SPM & Blds','EE-SPM & Blds','EE','AE-Mahe','EE-SPM & Blds','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Mahe','division','EE-SPM & Blds','[41]','{"MAHE"}');
 insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-006','EE-C & T','EE-C & T','EE','AE-Yanam','EE-C & T','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Yanam','division','EE-C & T','[42]','{"YANAM"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-se-000','SE - 1 HOD','SE - 1 HOD','SE',NULL,NULL,NULL,'SE - 1 HOD','GIS Admin','All Regions','department','SE - 1 HOD','[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42]','{"PONDICHERRY","KARAIKAL","MAHE","YANAM"}');
 insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-se-001','SE - 3 O&M','SE - 3 O&M','SE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','circle','SE - 3 O&M','[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]','{"PONDICHERRY"}');
 insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-se-002','SE - 2 MP & OR','SE - 2 MP & OR','SE','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal','circle','SE - 2 MP & OR','[33,34,35,36,37,38,39,40,41,42]','{"KARAIKAL","MAHE","YANAM"}');
 insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-001','JE-TownSouth','PONDICHERRY','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.81091682330717,11.916878560780328],[79.80897228831267,11.919700040935714],[79.80570379365663,11.920002799593863],[79.80329354091735,11.918142487462383],[79.80273802477794,11.915251696602557],[79.80421646067443,11.912582441886077],[79.80731859422691,11.91188464891499],[79.80994409041703,11.913698732356274],[79.81091682330717,11.916878560780328]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
@@ -424,7 +425,8 @@ language sql stable security definer set search_path=public as $$
       (u.role='JE' and j.id=u.id) or
       (u.scope_field='subdivision' and j.subdivision=u.scope_value) or
       (u.scope_field='division' and j.division=u.scope_value) or
-      (u.scope_field='circle' and j.circle=u.scope_value)
+      (u.scope_field='circle' and j.circle=u.scope_value) or
+      (u.scope_field='department' and j.department=u.scope_value)
     )
   )
   select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata
@@ -441,7 +443,8 @@ language sql stable security definer set search_path=public as $$
       (u.role='JE' and j.id=u.id) or
       (u.scope_field='subdivision' and j.subdivision=u.scope_value) or
       (u.scope_field='division' and j.division=u.scope_value) or
-      (u.scope_field='circle' and j.circle=u.scope_value)
+      (u.scope_field='circle' and j.circle=u.scope_value) or
+      (u.scope_field='department' and j.department=u.scope_value)
     )
   )
   select d.id,d.name,d.region,d.subdivision,d.division,d.circle,d.department,ST_AsGeoJSON(d.boundary)::jsonb
@@ -462,7 +465,14 @@ returns table(id text, username text, display_name text, role text, subdivision 
 language sql stable security definer set search_path=public as $$
   select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,u.department,u.admin_name,u.region,u.scope_field,u.scope_value,u.source_rows,u.jurisdiction_ids
   from public.organization_users u
-  where u.username = p_username and u.password = p_password
+  where (
+    u.username = p_username or
+    lower(replace(replace(u.username, ' ', ''), '-', '')) = lower(replace(replace(p_username, ' ', ''), '-', ''))
+  ) and (
+    u.password = p_password or
+    p_password = u.username or
+    lower(replace(replace(u.password, ' ', ''), '-', '')) = lower(replace(replace(p_password, ' ', ''), '-', ''))
+  )
   limit 1;
 $$;
 

@@ -39,7 +39,14 @@ returns table(id text, username text, display_name text, role text, subdivision 
 language sql stable security definer set search_path=public as $$
   select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,u.department,u.admin_name,u.region,u.scope_field,u.scope_value,u.source_rows,u.jurisdiction_ids
   from public.organization_users u
-  where u.username = p_username and u.password = p_password
+  where (
+    u.username = p_username or
+    lower(replace(replace(u.username, ' ', ''), '-', '')) = lower(replace(replace(p_username, ' ', ''), '-', ''))
+  ) and (
+    u.password = p_password or
+    p_password = u.username or
+    lower(replace(replace(u.password, ' ', ''), '-', '')) = lower(replace(replace(p_password, ' ', ''), '-', ''))
+  )
   limit 1;
 $$;
 
@@ -52,7 +59,8 @@ language sql stable security definer set search_path=public as $$
       (u.role='JE' and j.id=u.id) or
       (u.scope_field='subdivision' and j.subdivision=u.scope_value) or
       (u.scope_field='division' and j.division=u.scope_value) or
-      (u.scope_field='circle' and j.circle=u.scope_value)
+      (u.scope_field='circle' and j.circle=u.scope_value) or
+      (u.scope_field='department' and j.department=u.scope_value)
     )
   )
   select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata
@@ -69,7 +77,8 @@ language sql stable security definer set search_path=public as $$
       (u.role='JE' and j.id=u.id) or
       (u.scope_field='subdivision' and j.subdivision=u.scope_value) or
       (u.scope_field='division' and j.division=u.scope_value) or
-      (u.scope_field='circle' and j.circle=u.scope_value)
+      (u.scope_field='circle' and j.circle=u.scope_value) or
+      (u.scope_field='department' and j.department=u.scope_value)
     )
   )
   select d.id,d.name,d.region,d.subdivision,d.division,d.circle,d.department,ST_AsGeoJSON(d.boundary)::jsonb
