@@ -139,11 +139,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
     }
   };
 
-  const displayValue = isEditing
-    ? query
-    : current
-    ? `${current.displayName} (${current.subdivision ?? current.division ?? current.circle ?? current.department ?? current.region})`
-    : '';
+  const displayValue = isEditing ? query : (current ? current.displayName : '');
 
   return (
     <div className="login-shell">
@@ -183,86 +179,55 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
         ) : (
           <>
             <div className="login-field" ref={dropdownRef}>
-              <label htmlFor="officer-input">Officer Profile ({roleLabels[role]})</label>
-              <div className="combobox-wrap">
-                <div className={`combobox-bar ${dropdownOpen ? 'focused' : ''}`}>
-                  <Search size={14} className="combobox-icon" />
-                  <input
-                    id="officer-input"
-                    type="text"
-                    className="combobox-input"
-                    value={displayValue}
-                    onChange={(e) => handleQueryChange(e.target.value)}
-                    onFocus={() => {
-                      setIsEditing(true);
-                      setQuery('');
-                      setDropdownOpen(true);
-                    }}
-                    placeholder={current ? current.displayName : `Search ${roleLabels[role]}…`}
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    className="combobox-arrow-btn"
-                    onClick={() => {
-                      setDropdownOpen((prev) => !prev);
-                      setIsEditing(false);
-                    }}
-                    aria-label="Toggle options"
-                    tabIndex={-1}
-                  >
-                    <ChevronDown size={14} className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
-                  </button>
-                </div>
+              <label htmlFor="officer-search-input">Officer Profile ({roleLabels[role]})</label>
+              <div className="single-search-dropdown">
+                <Search size={14} className="single-search-icon" />
+                <input
+                  id="officer-search-input"
+                  type="text"
+                  className="single-search-input"
+                  value={displayValue}
+                  onChange={(e) => handleQueryChange(e.target.value)}
+                  onFocus={() => {
+                    setIsEditing(true);
+                    setQuery('');
+                    setDropdownOpen(true);
+                  }}
+                  placeholder={current ? current.displayName : `Select or search ${roleLabels[role]} officer…`}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="single-dropdown-arrow"
+                  onClick={() => {
+                    setDropdownOpen((prev) => !prev);
+                    setIsEditing(false);
+                  }}
+                  aria-label="Toggle options"
+                  tabIndex={-1}
+                >
+                  <ChevronDown size={14} className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
+                </button>
 
                 {dropdownOpen && (
                   <div className="custom-dropdown-list">
                     {filtered.length === 0 ? (
                       <div className="dropdown-empty">No officers found matching "{query}"</div>
                     ) : (
-                      filtered.map((u) => {
-                        const area = u.subdivision || u.division || u.circle || u.department || u.region;
-                        return (
-                          <button
-                            key={u.id}
-                            type="button"
-                            className={`dropdown-option ${current?.id === u.id ? 'selected' : ''}`}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => chooseUser(u)}
-                          >
-                            <span className="dropdown-option-name">{u.displayName}</span>
-                            {area && <span className="dropdown-option-area">{area}</span>}
-                          </button>
-                        );
-                      })
+                      filtered.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          className={`dropdown-option ${current?.id === u.id ? 'selected' : ''}`}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => chooseUser(u)}
+                        >
+                          <span className="dropdown-option-name">{u.displayName}</span>
+                        </button>
+                      ))
                     )}
                   </div>
                 )}
-              </div>
-            </div>
-
-            <div className="officer-summary">
-              <div className="officer-summary-top">
-                <span className="officer-name">{current?.displayName ?? '—'}</span>
-                <span className="role-chip">{current ? roleLabels[current.role] : '—'}</span>
-              </div>
-              <div className="officer-summary-grid">
-                <div>
-                  <span>Sub-Div:</span>
-                  <b>{current?.subdivision || '—'}</b>
-                </div>
-                <div>
-                  <span>Division:</span>
-                  <b>{current?.division || '—'}</b>
-                </div>
-                <div>
-                  <span>Dept:</span>
-                  <b>{current?.department || 'SE - 1 HOD'}</b>
-                </div>
-                <div>
-                  <span>Region:</span>
-                  <b>{current?.region || 'All Regions'}</b>
-                </div>
               </div>
             </div>
 

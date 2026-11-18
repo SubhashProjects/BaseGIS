@@ -42,17 +42,17 @@ export type PowerGISBoundary = {
 
 const SE1_HOD_USER: PowerGISUser = {
   id: 'org-se-000',
-  username: 'SE - 1 HOD',
-  displayName: 'SE - 1 HOD',
+  username: 'SE - 1 cum HOD',
+  displayName: 'SE - 1 cum HOD',
   role: 'SE',
   subdivision: null,
   division: null,
   circle: null,
-  department: 'SE - 1 HOD',
+  department: 'SE - 1 cum HOD',
   admin: 'GIS Admin',
   region: 'All Regions',
   scopeField: 'department',
-  scopeValue: 'SE - 1 HOD',
+  scopeValue: 'SE - 1 cum HOD',
   jurisdictions: ['PONDICHERRY', 'KARAIKAL', 'MAHE', 'YANAM'],
 };
 
@@ -62,10 +62,16 @@ function requireSupabase() {
 }
 
 function mapUser(row: any): PowerGISUser {
+  let displayName = row.display_name;
+  let username = row.username;
+  if (displayName === 'SE - 1 HOD' || username === 'SE - 1 HOD') {
+    displayName = 'SE - 1 cum HOD';
+    username = 'SE - 1 cum HOD';
+  }
   return {
     id: row.id,
-    username: row.username,
-    displayName: row.display_name,
+    username,
+    displayName,
     role: row.role,
     subdivision: row.subdivision ?? null,
     division: row.division ?? null,
@@ -85,8 +91,8 @@ export async function listLoginUsers(): Promise<PowerGISUser[]> {
   if (error) throw error;
   const list: PowerGISUser[] = (data ?? []).map(mapUser);
 
-  // Guarantee that SE - 1 HOD is available under SE role
-  if (!list.some((u: PowerGISUser) => u.username === 'SE - 1 HOD' || u.displayName === 'SE - 1 HOD' || u.id === 'org-se-000')) {
+  // Guarantee that SE - 1 cum HOD is available under SE role
+  if (!list.some((u: PowerGISUser) => u.username === 'SE - 1 cum HOD' || u.displayName === 'SE - 1 cum HOD' || u.username === 'SE - 1 HOD' || u.id === 'org-se-000')) {
     const seIndex = list.findIndex((u: PowerGISUser) => u.role === 'SE');
     if (seIndex !== -1) {
       list.splice(seIndex, 0, SE1_HOD_USER);
@@ -100,10 +106,19 @@ export async function listLoginUsers(): Promise<PowerGISUser[]> {
 export async function authenticateUser(username: string, password: string): Promise<PowerGISUser | null> {
   const client = requireSupabase();
   const cleanUsername = username.trim();
-  const isSe1Hod = cleanUsername.toLowerCase().replace(/[\s-]/g, '') === 'se1hod';
+  const normalized = cleanUsername.toLowerCase().replace(/[\s-]/g, '');
+  const isSe1Hod = normalized === 'se1hod' || normalized === 'se1cumhod';
 
   try {
-    const { data, error } = await client.rpc('authenticate_user', { p_username: cleanUsername, p_password: password });
+    let { data, error } = await client.rpc('authenticate_user', { p_username: cleanUsername, p_password: password });
+    if ((error || !data || data.length === 0) && isSe1Hod) {
+      // Fallback query if DB still has SE - 1 HOD as username
+      const fallback = await client.rpc('authenticate_user', { p_username: 'SE - 1 HOD', p_password: password });
+      if (!fallback.error && fallback.data && fallback.data.length > 0) {
+        data = fallback.data;
+        error = null;
+      }
+    }
     if (!error && data && data.length > 0) {
       return mapUser(data[0]);
     }
@@ -111,7 +126,7 @@ export async function authenticateUser(username: string, password: string): Prom
     console.warn('RPC authentication note:', err);
   }
 
-  // Graceful fallback for SE - 1 HOD if not yet seeded in the remote database
+  // Graceful fallback for SE - 1 cum HOD
   if (isSe1Hod) {
     return SE1_HOD_USER;
   }
@@ -132,7 +147,7 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
     error = e;
   }
 
-  // If SE - 1 HOD was queried before the DB seed was updated, load full assets via GIS Admin scope
+  // If SE - 1 cum HOD was queried before the DB seed was updated, load full assets via GIS Admin scope
   if ((!data || data.length === 0) && userId === 'org-se-000') {
     const res = await client.rpc('visible_assets', { p_user_id: 'org-admin-001' });
     data = res.data;
@@ -167,7 +182,7 @@ export async function getVisibleBoundaries(userId: string): Promise<PowerGISBoun
     error = e;
   }
 
-  // Fallback for SE - 1 HOD if DB not yet re-seeded
+  // Fallback for SE - 1 cum HOD if DB not yet re-seeded
   if ((!data || data.length === 0) && userId === 'org-se-000') {
     const res = await client.rpc('visible_jurisdictions', { p_user_id: 'org-admin-001' });
     data = res.data;
