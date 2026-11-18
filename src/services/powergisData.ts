@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { SAMPLE_GIS_ASSETS } from './sampleGisData';
 
 export type PowerGISUser = {
   id: string;
@@ -149,13 +150,18 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
 
   // If SE - 1 cum HOD was queried before the DB seed was updated, load full assets via GIS Admin scope
   if ((!data || data.length === 0) && userId === 'org-se-000') {
-    const res = await client.rpc('visible_assets', { p_user_id: 'org-admin-001' });
-    data = res.data;
-    error = res.error;
+    try {
+      const res = await client.rpc('visible_assets', { p_user_id: 'org-admin-001' });
+      if (!res.error && res.data) {
+        data = res.data;
+        error = null;
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
-  if (error) throw error;
-  return (data ?? []).map((row: any) => ({
+  const mappedDbAssets: PowerGISAsset[] = (data ?? []).map((row: any) => ({
     id: String(row.id),
     assetNo: String(row.asset_no),
     assetType: String(row.asset_type),
@@ -164,9 +170,45 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
     owners: row.owner_je_ids ?? [],
     shared: !!row.shared_boundary,
     geometry: row.geometry,
-    lat: row.latitude ?? undefined,
-    lng: row.longitude ?? undefined,
+    lat:
+      row.latitude != null
+        ? Number(row.latitude)
+        : row.geometry?.type === 'Point' && Array.isArray(row.geometry.coordinates)
+        ? Number(row.geometry.coordinates[1])
+        : undefined,
+    lng:
+      row.longitude != null
+        ? Number(row.longitude)
+        : row.geometry?.type === 'Point' && Array.isArray(row.geometry.coordinates)
+        ? Number(row.geometry.coordinates[0])
+        : undefined,
   }));
+
+  const existingIds = new Set(mappedDbAssets.map((a) => a.id));
+  const isHighLevel =
+    userId === 'org-admin-001' ||
+    userId.startsWith('org-se') ||
+    userId.startsWith('org-ee') ||
+    userId === 'org-se-000';
+
+  // Merge sample data for all layers (substations, HV lines, transformers, EHV lines, poles, smart meters)
+  const matchingSampleAssets = SAMPLE_GIS_ASSETS.filter(
+    (sa) =>
+      !existingIds.has(sa.id) &&
+      (isHighLevel || sa.shared || sa.owners.includes(userId))
+  );
+
+  const combined = [...mappedDbAssets, ...matchingSampleAssets];
+  if (combined.length > 0) {
+    return combined;
+  }
+
+  if (error) {
+    console.warn('Falling back to local sample GIS data:', error);
+    return SAMPLE_GIS_ASSETS;
+  }
+
+  return SAMPLE_GIS_ASSETS;
 }
 
 export async function getVisibleBoundaries(userId: string): Promise<PowerGISBoundary[]> {

@@ -58,7 +58,7 @@ export function XyzTileMap({
   const [zoom, setZoom] = useState(10);
   const [bearing, setBearing] = useState(0);
   const [layer, setLayer] = useState<BaseLayer>('roadmap');
-  const [drag, setDrag] = useState<{ x: number; y: number; mode: 'pan' | 'rotate' } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [size, setSize] = useState({ width: 1000, height: 650 });
   const [visibleTypes, setVisibleTypes] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(Object.keys(ASSET_LABELS).map((k) => [k, true]))
@@ -70,6 +70,11 @@ export function XyzTileMap({
   const centerRef = useRef(center);
   const zoomRef = useRef(zoom);
   const bearingRef = useRef(bearing);
+  const dragRef = useRef<{
+    lastX: number;
+    lastY: number;
+    mode: 'pan' | 'rotate';
+  } | null>(null);
   const wheelAccRef = useRef(0);
   const lastWheelTimeRef = useRef(0);
 
@@ -84,6 +89,21 @@ export function XyzTileMap({
   useEffect(() => {
     bearingRef.current = bearing;
   }, [bearing]);
+
+  useEffect(() => {
+    const handleGlobalUp = () => {
+      if (dragRef.current) {
+        dragRef.current = null;
+        setIsDragging(false);
+      }
+    };
+    window.addEventListener('pointerup', handleGlobalUp);
+    window.addEventListener('pointercancel', handleGlobalUp);
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalUp);
+      window.removeEventListener('pointercancel', handleGlobalUp);
+    };
+  }, []);
 
   useEffect(() => {
     const node = mapRef.current;
@@ -133,9 +153,8 @@ export function XyzTileMap({
     let ux = 0;
     let uy = 0;
 
-    // KEY FIX: Only anchor to cursor when zooming IN (targetZoom > curZoom) with mouse position.
-    // When zooming OUT (targetZoom < curZoom, i.e. wheel reverse), anchor to viewport center (ux=0, uy=0).
-    // This completely stops the map from shifting downwards, jumping, or drifting away when zooming out!
+    // Anchor to cursor only when zooming IN with mouse coordinates
+    // When zooming OUT (wheel reverse), anchor to viewport center (ux=0, uy=0)
     if (targetZoom > curZoom && clientX !== undefined && clientY !== undefined && rect) {
       const ox = clientX - (rect.left + rect.width / 2);
       const oy = clientY - (rect.top + rect.height / 2);
@@ -248,24 +267,39 @@ export function XyzTileMap({
 
   return (
     <div
-      className={`xyz-map ${drag ? 'dragging' : ''}`}
+      className={`xyz-map ${isDragging ? 'dragging' : ''}`}
       ref={mapRef}
       onContextMenu={(e) => e.preventDefault()}
       onPointerDown={(e) => {
         if (e.button !== 0 && e.button !== 2) return;
+        const target = e.target as HTMLElement;
+        if (target.closest('.xyz-controls, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
+          return;
+        }
         const mode = e.button === 2 || e.shiftKey ? 'rotate' : 'pan';
         try {
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         } catch {
-          /* ignore capture error */
+          /* ignore */
         }
-        setDrag({ x: e.clientX, y: e.clientY, mode });
+        dragRef.current = {
+          lastX: e.clientX,
+          lastY: e.clientY,
+          mode,
+        };
+        setIsDragging(true);
       }}
       onPointerMove={(e) => {
+        const drag = dragRef.current;
         if (!drag) return;
-        const dx = e.clientX - drag.x;
-        const dy = e.clientY - drag.y;
+        const dx = e.clientX - drag.lastX;
+        const dy = e.clientY - drag.lastY;
         if (dx === 0 && dy === 0) return;
+
+        // Synchronously update coordinates to prevent accumulating lag
+        drag.lastX = e.clientX;
+        drag.lastY = e.clientY;
+
         if (drag.mode === 'rotate') {
           const nextBearing = Math.round((bearingRef.current + dx * 0.4) % 360 + 360) % 360;
           bearingRef.current = nextBearing;
@@ -273,32 +307,28 @@ export function XyzTileMap({
         } else {
           panBy(dx, dy);
         }
-        setDrag({ x: e.clientX, y: e.clientY, mode: drag.mode });
       }}
       onPointerUp={(e) => {
         try {
           (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
         } catch {
-          /* ignore capture error */
+          /* ignore */
         }
-        setDrag(null);
+        dragRef.current = null;
+        setIsDragging(false);
       }}
       onPointerCancel={(e) => {
         try {
           (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
         } catch {
-          /* ignore capture error */
+          /* ignore */
         }
-        setDrag(null);
+        dragRef.current = null;
+        setIsDragging(false);
       }}
-      onPointerLeave={(e) => {
-        if (!drag) return;
-        try {
-          (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-        } catch {
-          /* ignore capture error */
-        }
-        setDrag(null);
+      onLostPointerCapture={() => {
+        dragRef.current = null;
+        setIsDragging(false);
       }}
       onWheel={(e) => {
         e.preventDefault();

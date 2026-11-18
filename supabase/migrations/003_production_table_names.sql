@@ -65,7 +65,7 @@ language sql stable security definer set search_path=public as $$
   )
   select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata
   from public.gis_assets a, u
-  where u.role='GIS_ADMIN' or a.owner_je_ids && array(select id from allowed_je);
+  where u.role='GIS_ADMIN' or a.shared_boundary = true or a.owner_je_ids && array(select id from allowed_je);
 $$;
 
 create or replace function public.visible_jurisdictions(p_user_id text)
