@@ -1,3 +1,19 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-export default defineConfig({ plugins:[react()], base:'./', build:{ rollupOptions:{ input:{ main:'index.html', simulator:'simulator.html' } } } });
+
+const geojsonPlugin: Plugin = {
+  name: 'geojson-plugin',
+  transform(code: string, id: string) {
+    if (id.endsWith('.geojson')) {
+      return {
+        code: `export default ${code};`,
+        map: null,
+      };
+    }
+  },
+};
+
+export default defineConfig({
+  plugins: [react(), geojsonPlugin],
+  base: './',
+});
