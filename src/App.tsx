@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { LoginScreen } from './components/LoginScreen';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { GisPage } from './features/gis/GisPage';
@@ -50,6 +51,7 @@ function getStoredUser(): PowerGISUser | null {
 
 export default function App() {
   const [user, setUser] = useState<PowerGISUser | null>(getStoredUser);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [path, setPath] = useState<string>(() => {
     const hash = location.hash.replace('#', '');
@@ -59,6 +61,7 @@ export default function App() {
   const navigate = (p: string) => {
     setPath(p);
     location.hash = p;
+    setMobileMenuOpen(false);
   };
 
   const handleLogin = (newUser: PowerGISUser) => {
@@ -112,12 +115,30 @@ export default function App() {
   return (
     <div className="app">
       <div className="shell">
-        <Sidebar path={path} onNavigate={navigate} user={user} />
+        <Sidebar
+          path={path}
+          onNavigate={navigate}
+          user={user}
+          mobileOpen={mobileMenuOpen}
+          onCloseMobile={() => setMobileMenuOpen(false)}
+        />
+        {mobileMenuOpen && (
+          <div
+            className="mobile-overlay"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+        )}
         <main className="main">
-          <Topbar user={user} onLogout={handleLogout} />
+          <Topbar
+            user={user}
+            onLogout={handleLogout}
+            onToggleMobileMenu={() => setMobileMenuOpen((prev) => !prev)}
+          />
           {view}
         </main>
       </div>
+      <MobileBottomNav path={path} onNavigate={navigate} user={user} />
     </div>
   );
 }
