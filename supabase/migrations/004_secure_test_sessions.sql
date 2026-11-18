@@ -1,6 +1,6 @@
 -- Session-bound test authentication without Supabase Auth.
 -- Credentials remain username = password for the temporary test phase.
-create extension if not exists pgcrypto with schema extensions;
+create extension if not exists pgcrypto;
 
 create table if not exists public.powergis_sessions (
   token_hash text primary key,
@@ -59,8 +59,8 @@ begin
 
   if not found then return; end if;
 
-  raw_token := encode(extensions.gen_random_bytes(32), 'hex');
-  hash_token := encode(extensions.digest(convert_to(raw_token, 'UTF8'), 'sha256'), 'hex');
+  raw_token := encode(gen_random_bytes(32), 'hex');
+  hash_token := encode(digest(convert_to(raw_token, 'UTF8'), 'sha256'), 'hex');
 
   delete from public.powergis_sessions where expires_at < now();
   insert into public.powergis_sessions(token_hash, user_id, expires_at)
@@ -120,14 +120,14 @@ language sql stable security definer set search_path=public, extensions as $$
     u.jurisdiction_ids
   from public.organization_users u
   join public.powergis_sessions s on s.user_id = u.id
-  where s.token_hash = encode(extensions.digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+  where s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
     and s.expires_at > now();
 $$;
 
 create or replace function public.logout_user(p_session_token text)
 returns void language sql security definer set search_path=public, extensions as $$
   delete from public.powergis_sessions
-  where token_hash = encode(extensions.digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex');
+  where token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex');
 $$;
 
 create or replace function public.visible_assets(
@@ -157,7 +157,7 @@ language sql stable security definer set search_path=public, extensions as $$
        or exists (
             select 1 from public.powergis_sessions s
             where s.user_id = o.id
-              and s.token_hash = encode(extensions.digest(convert_to((select tok from input_token), 'UTF8'), 'sha256'), 'hex')
+              and s.token_hash = encode(digest(convert_to((select tok from input_token), 'UTF8'), 'sha256'), 'hex')
               and s.expires_at > now()
           )
     limit 1
@@ -182,7 +182,7 @@ language sql stable security definer set search_path=public, extensions as $$
     a.status,
     a.latitude,
     a.longitude,
-    extensions.ST_AsGeoJSON(a.geometry)::jsonb,
+    ST_AsGeoJSON(a.geometry)::jsonb,
     a.jurisdiction_ids,
     a.owner_je_ids,
     a.shared_boundary,
@@ -216,7 +216,7 @@ language sql stable security definer set search_path=public, extensions as $$
        or exists (
             select 1 from public.powergis_sessions s
             where s.user_id = o.id
-              and s.token_hash = encode(extensions.digest(convert_to((select tok from input_token), 'UTF8'), 'sha256'), 'hex')
+              and s.token_hash = encode(digest(convert_to((select tok from input_token), 'UTF8'), 'sha256'), 'hex')
               and s.expires_at > now()
           )
     limit 1
@@ -242,7 +242,7 @@ language sql stable security definer set search_path=public, extensions as $$
     d.division,
     d.circle,
     d.department,
-    extensions.ST_AsGeoJSON(d.boundary)::jsonb
+    ST_AsGeoJSON(d.boundary)::jsonb
   from public.gis_jurisdictions d, u
   where u.role = 'GIS_ADMIN'
      or d.id in (select id from allowed_je);

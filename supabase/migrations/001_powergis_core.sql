@@ -1,4 +1,4 @@
-create extension if not exists postgis with schema extensions;
+create extension if not exists postgis;
 
 do $$ begin
   if not exists (select 1 from pg_type where typname = 'app_role') then
@@ -122,7 +122,7 @@ begin
   delete from public.asset_jurisdictions where asset_id=new.id;
   insert into public.asset_jurisdictions(asset_id,jurisdiction_id)
   select new.id,j.id from public.jurisdictions j
-  where j.boundary is not null and new.geometry is not null and extensions.ST_Intersects(j.boundary,new.geometry);
+  where j.boundary is not null and new.geometry is not null and ST_Intersects(j.boundary,new.geometry);
   return new;
 end;
 $$;
@@ -161,7 +161,7 @@ drop policy if exists assets_visible_by_jurisdiction on public.assets;
 create policy assets_visible_by_jurisdiction on public.assets for select using(public.user_can_see_asset(id));
 
 drop policy if exists assets_insert_authorized on public.assets;
-create policy assets_insert_authorized on public.assets for insert with check(public.is_gis_admin() or exists(select 1 from public.user_jurisdictions uj where uj.user_id=auth.uid() and exists(select 1 from public.jurisdictions j where j.id=uj.jurisdiction_id and j.boundary is not null and geometry is not null and extensions.ST_Intersects(j.boundary,assets.geometry))));
+create policy assets_insert_authorized on public.assets for insert with check(public.is_gis_admin() or exists(select 1 from public.user_jurisdictions uj where uj.user_id=auth.uid() and exists(select 1 from public.jurisdictions j where j.id=uj.jurisdiction_id and j.boundary is not null and geometry is not null and ST_Intersects(j.boundary,assets.geometry))));
 
 drop policy if exists assets_update_authorized on public.assets;
 create policy assets_update_authorized on public.assets for update using(public.user_can_see_asset(id)) with check(public.user_can_see_asset(id));

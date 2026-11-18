@@ -1,7 +1,7 @@
 -- PowerGIS data management: controlled GIS imports, exports and daily backup manifests.
 -- Browser clients never receive direct table write access. All writes remain behind session-bound admin RPCs.
-create extension if not exists pgcrypto with schema extensions;
-create extension if not exists postgis with schema extensions;
+create extension if not exists pgcrypto;
+create extension if not exists postgis;
 
 create table if not exists public.powergis_sessions (
   token_hash text primary key,
@@ -48,7 +48,7 @@ begin
      or exists (
           select 1 from public.powergis_sessions s
           where s.user_id = o.id
-            and s.token_hash = encode(extensions.digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+            and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
             and s.expires_at > now()
         );
   if not found or u.role <> 'GIS_ADMIN' then raise exception 'Only GIS Admin can import GIS data'; end if;
@@ -65,19 +65,19 @@ begin
         continue;
       end if;
       if item->'geometry' is null then raise exception 'Missing geometry'; end if;
-      v_geometry := extensions.ST_SetSRID(extensions.ST_GeomFromGeoJSON(item->'geometry'),4326);
-      if extensions.ST_IsEmpty(v_geometry) or not extensions.ST_IsValid(v_geometry) then raise exception 'Invalid geometry'; end if;
+      v_geometry := ST_SetSRID(ST_GeomFromGeoJSON(item->'geometry'),4326);
+      if ST_IsEmpty(v_geometry) or not ST_IsValid(v_geometry) then raise exception 'Invalid geometry'; end if;
       v_lat := nullif(item->>'latitude','')::double precision;
       v_lng := nullif(item->>'longitude','')::double precision;
-      if v_lat is null and extensions.GeometryType(v_geometry)='POINT' then v_lat := extensions.ST_Y(v_geometry); end if;
-      if v_lng is null and extensions.GeometryType(v_geometry)='POINT' then v_lng := extensions.ST_X(v_geometry); end if;
+      if v_lat is null and GeometryType(v_geometry)='POINT' then v_lat := ST_Y(v_geometry); end if;
+      if v_lng is null and GeometryType(v_geometry)='POINT' then v_lng := ST_X(v_geometry); end if;
       v_metadata := coalesce(item->'metadata','{}'::jsonb) || jsonb_build_object('importedAt',now(),'importedBy',u.id,'importSource','PowerGIS Data Import');
       v_id := 'imp-' || replace(gen_random_uuid()::text,'-','');
       insert into public.gis_assets(id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata)
       values (v_id,v_asset_no,v_asset_type,v_status,v_geometry,v_lat,v_lng,'{}','{}',false,'SPATIAL_AUTHORIZATION',v_metadata);
       update public.gis_assets a set
-        jurisdiction_ids = coalesce((select array_agg(j.id) from public.gis_jurisdictions j where j.boundary is not null and extensions.ST_Intersects(j.boundary,a.geometry)),'{}'),
-        owner_je_ids = coalesce((select array_agg(distinct u2.id) from public.organization_users u2 where u2.role='JE' and (u2.jurisdiction_ids && coalesce((select array_agg(j2.id) from public.gis_jurisdictions j2 where j2.boundary is not null and extensions.ST_Intersects(j2.boundary,a.geometry)),'{}'))),'{}')
+        jurisdiction_ids = coalesce((select array_agg(j.id) from public.gis_jurisdictions j where j.boundary is not null and ST_Intersects(j.boundary,a.geometry)),'{}'),
+        owner_je_ids = coalesce((select array_agg(distinct u2.id) from public.organization_users u2 where u2.role='JE' and (u2.jurisdiction_ids && coalesce((select array_agg(j2.id) from public.gis_jurisdictions j2 where j2.boundary is not null and ST_Intersects(j2.boundary,a.geometry)),'{}'))),'{}')
       where a.id=v_id;
       inserted_count := inserted_count + 1;
     exception when others then
@@ -97,13 +97,13 @@ with u as (
      or exists (
           select 1 from public.powergis_sessions s
           where s.user_id = o.id
-            and s.token_hash = encode(extensions.digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+            and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
             and s.expires_at > now()
         )
 ), allowed_je as (
  select j.id from public.organization_users j cross join u where j.role='JE' and (u.role='GIS_ADMIN' or (u.role='JE' and j.id=u.id) or (u.scope_field='subdivision' and j.subdivision=u.scope_value) or (u.scope_field='division' and j.division=u.scope_value) or (u.scope_field='circle' and j.circle=u.scope_value) or (u.scope_field='department' and j.department=u.scope_value))
 )
-select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,extensions.ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata from public.gis_assets a,u where u.role='GIS_ADMIN' or a.owner_je_ids && array(select id from allowed_je);
+select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata from public.gis_assets a,u where u.role='GIS_ADMIN' or a.owner_je_ids && array(select id from allowed_je);
 $$;
 
 create or replace function public.create_backup_manifest(p_session_token text)
@@ -116,7 +116,7 @@ begin
     or exists (
          select 1 from public.powergis_sessions s
          where s.user_id = o.id
-           and s.token_hash = encode(extensions.digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+           and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
            and s.expires_at > now()
        );
  if not found or u.role <> 'GIS_ADMIN' then raise exception 'Only GIS Admin can create backups'; end if;
@@ -135,7 +135,7 @@ where exists(
     or exists (
       select 1 from public.powergis_sessions s
       where s.user_id = u.id
-        and s.token_hash = encode(extensions.digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+        and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
         and s.expires_at > now()
     )
   ) and u.role='GIS_ADMIN'
