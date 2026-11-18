@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { MobileBottomNav } from './components/MobileBottomNav';
@@ -63,6 +63,17 @@ export default function App() {
     location.hash = p;
     setMobileMenuOpen(false);
   };
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = location.hash.replace('#', '');
+      if (hash) {
+        setPath(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
 
   const handleLogin = (newUser: PowerGISUser) => {
     setUser(newUser);
