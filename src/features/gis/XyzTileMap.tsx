@@ -373,6 +373,10 @@ export function XyzTileMap({
         setIsDragging(false);
       }}
       onWheel={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         const now = performance.now();
@@ -389,6 +393,10 @@ export function XyzTileMap({
         }
       }}
       onDoubleClick={(e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
+          return;
+        }
         e.preventDefault();
         zoomAt(zoomRef.current + 1, e.clientX, e.clientY);
       }}
@@ -492,7 +500,11 @@ export function XyzTileMap({
       <div
         className="xyz-map-left-panel"
         onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
+        onDoubleClick={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
       >
         <div
           className="xyz-layer"
@@ -521,10 +533,19 @@ export function XyzTileMap({
           onPointerUp={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+          onWheel={(e) => e.stopPropagation()}
         >
           <b>GIS layers</b>
           {Object.entries(ASSET_LABELS).map(([k, v]) => (
-            <label key={k} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <label
+              key={k}
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+            >
               <input
                 type="checkbox"
                 checked={visibleTypes[k] !== false}
