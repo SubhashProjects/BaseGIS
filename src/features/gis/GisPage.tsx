@@ -1,0 +1,2 @@
+import { GisMap } from './GisMap';
+export function GisPage(){return <div className="content"><div className="page-title"><div><h1>GIS Master Map</h1><div className="muted">Jurisdiction-aware electricity network map</div></div><div className="toolbar"><button className="btn">Measure</button><button className="btn">Locate</button><button className="btn primary">Add Asset</button></div></div><div className="panel"><GisMap/></div></div>}

@@ -1,0 +1,149 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "PONDICHERRY",
+        "name": "Pondicherry",
+        "simulatorOnly": true,
+        "boundaryType": "ILLUSTRATIVE"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              79.5345,
+              11.7139
+            ],
+            [
+              80.0945,
+              11.7139
+            ],
+            [
+              80.0945,
+              12.1139
+            ],
+            [
+              79.5345,
+              12.1139
+            ],
+            [
+              79.5345,
+              11.7139
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "KARAIKAL",
+        "name": "Karaikal",
+        "simulatorOnly": true,
+        "boundaryType": "ILLUSTRATIVE"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              79.65799999999999,
+              10.8054
+            ],
+            [
+              80.018,
+              10.8054
+            ],
+            [
+              80.018,
+              11.045399999999999
+            ],
+            [
+              79.65799999999999,
+              11.045399999999999
+            ],
+            [
+              79.65799999999999,
+              10.8054
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "MAHE",
+        "name": "Mahe",
+        "simulatorOnly": true,
+        "boundaryType": "ILLUSTRATIVE"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              75.43,
+              11.62
+            ],
+            [
+              75.63,
+              11.62
+            ],
+            [
+              75.63,
+              11.78
+            ],
+            [
+              75.43,
+              11.78
+            ],
+            [
+              75.43,
+              11.62
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "YANAM",
+        "name": "Yanam",
+        "simulatorOnly": true,
+        "boundaryType": "ILLUSTRATIVE"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              82.11670000000001,
+              16.6533
+            ],
+            [
+              82.3167,
+              16.6533
+            ],
+            [
+              82.3167,
+              16.813299999999998
+            ],
+            [
+              82.11670000000001,
+              16.813299999999998
+            ],
+            [
+              82.11670000000001,
+              16.6533
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

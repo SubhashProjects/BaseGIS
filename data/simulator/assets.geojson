@@ -1,0 +1,827 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-1",
+        "assetNo": "[SIM]-SUBSTATION-0001",
+        "assetType": "SUBSTATION",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.7815,
+          11.8779
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-2",
+        "assetNo": "[SIM]-EHV_LINE-0002",
+        "assetType": "EHV_LINE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.8035,
+          11.8959
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-3",
+        "assetNo": "[SIM]-HV_LINE-0003",
+        "assetType": "HV_LINE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.82549999999999,
+          11.9139
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-4",
+        "assetNo": "[SIM]-DT-0004",
+        "assetType": "DT",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.8475,
+          11.9319
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-5",
+        "assetNo": "[SIM]-LT_LINE-0005",
+        "assetType": "LT_LINE",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.7815,
+          11.9499
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-6",
+        "assetNo": "[SIM]-POLE-0006",
+        "assetType": "POLE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.8035,
+          11.8779
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-7",
+        "assetNo": "[SIM]-SMART_METER-0007",
+        "assetType": "SMART_METER",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.82549999999999,
+          11.8959
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-8",
+        "assetNo": "[SIM]-SUBSTATION-0008",
+        "assetType": "SUBSTATION",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.8475,
+          11.9139
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-9",
+        "assetNo": "[SIM]-EHV_LINE-0009",
+        "assetType": "EHV_LINE",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.7815,
+          11.9319
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-1-10",
+        "assetNo": "[SIM]-HV_LINE-0010",
+        "assetType": "HV_LINE",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "PONDICHERRY"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.8035,
+          11.9499
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-1",
+        "assetNo": "[SIM]-EHV_LINE-0101",
+        "assetType": "EHV_LINE",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.80499999999999,
+          10.8894
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-2",
+        "assetNo": "[SIM]-HV_LINE-0102",
+        "assetType": "HV_LINE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.827,
+          10.907399999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-3",
+        "assetNo": "[SIM]-DT-0103",
+        "assetType": "DT",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.84899999999999,
+          10.9254
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-4",
+        "assetNo": "[SIM]-LT_LINE-0104",
+        "assetType": "LT_LINE",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.871,
+          10.9434
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-5",
+        "assetNo": "[SIM]-POLE-0105",
+        "assetType": "POLE",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.80499999999999,
+          10.9614
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-6",
+        "assetNo": "[SIM]-SMART_METER-0106",
+        "assetType": "SMART_METER",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.827,
+          10.8894
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-7",
+        "assetNo": "[SIM]-SUBSTATION-0107",
+        "assetType": "SUBSTATION",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.84899999999999,
+          10.907399999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-8",
+        "assetNo": "[SIM]-EHV_LINE-0108",
+        "assetType": "EHV_LINE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.871,
+          10.9254
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-9",
+        "assetNo": "[SIM]-HV_LINE-0109",
+        "assetType": "HV_LINE",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.80499999999999,
+          10.9434
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-2-10",
+        "assetNo": "[SIM]-DT-0110",
+        "assetType": "DT",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.827,
+          10.9614
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-1",
+        "assetNo": "[SIM]-HV_LINE-0201",
+        "assetType": "HV_LINE",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.497,
+          11.664
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-2",
+        "assetNo": "[SIM]-DT-0202",
+        "assetType": "DT",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.519,
+          11.681999999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-3",
+        "assetNo": "[SIM]-LT_LINE-0203",
+        "assetType": "LT_LINE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.541,
+          11.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-4",
+        "assetNo": "[SIM]-POLE-0204",
+        "assetType": "POLE",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.563,
+          11.718
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-5",
+        "assetNo": "[SIM]-SMART_METER-0205",
+        "assetType": "SMART_METER",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.497,
+          11.735999999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-6",
+        "assetNo": "[SIM]-SUBSTATION-0206",
+        "assetType": "SUBSTATION",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.519,
+          11.664
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-7",
+        "assetNo": "[SIM]-EHV_LINE-0207",
+        "assetType": "EHV_LINE",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.541,
+          11.681999999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-8",
+        "assetNo": "[SIM]-HV_LINE-0208",
+        "assetType": "HV_LINE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.563,
+          11.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-9",
+        "assetNo": "[SIM]-DT-0209",
+        "assetType": "DT",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.497,
+          11.718
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-3-10",
+        "assetNo": "[SIM]-LT_LINE-0210",
+        "assetType": "LT_LINE",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "MAHE"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          75.519,
+          11.735999999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-1",
+        "assetNo": "[SIM]-DT-0301",
+        "assetType": "DT",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.1837,
+          16.6973
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-2",
+        "assetNo": "[SIM]-LT_LINE-0302",
+        "assetType": "LT_LINE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.20570000000001,
+          16.7153
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-3",
+        "assetNo": "[SIM]-POLE-0303",
+        "assetType": "POLE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.2277,
+          16.7333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-4",
+        "assetNo": "[SIM]-SMART_METER-0304",
+        "assetType": "SMART_METER",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.2497,
+          16.7513
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-5",
+        "assetNo": "[SIM]-SUBSTATION-0305",
+        "assetType": "SUBSTATION",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.1837,
+          16.7693
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-6",
+        "assetNo": "[SIM]-EHV_LINE-0306",
+        "assetType": "EHV_LINE",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.20570000000001,
+          16.6973
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-7",
+        "assetNo": "[SIM]-HV_LINE-0307",
+        "assetType": "HV_LINE",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.2277,
+          16.7153
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-8",
+        "assetNo": "[SIM]-DT-0308",
+        "assetType": "DT",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.2497,
+          16.7333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-9",
+        "assetNo": "[SIM]-LT_LINE-0309",
+        "assetType": "LT_LINE",
+        "status": "SUBMITTED",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.1837,
+          16.7513
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-asset-4-10",
+        "assetNo": "[SIM]-POLE-0310",
+        "assetType": "POLE",
+        "status": "APPROVED",
+        "jurisdictionIds": [
+          "YANAM"
+        ],
+        "simulatorOnly": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.20570000000001,
+          16.7693
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sim-shared-001",
+        "assetNo": "[SIM]-DT-SHARED-001",
+        "assetType": "DT",
+        "status": "ACTIVE",
+        "jurisdictionIds": [
+          "PONDICHERRY",
+          "KARAIKAL"
+        ],
+        "simulatorOnly": true,
+        "sharedBoundary": true
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          79.83,
+          11.43
+        ]
+      }
+    }
+  ]
+}

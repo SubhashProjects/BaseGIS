@@ -1,0 +1,4 @@
+import { LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck } from 'lucide-react';
+import { APP, ROUTES } from '../config/constants';
+interface Props{path:string; onNavigate:(p:string)=>void}
+export function Sidebar({path,onNavigate}:Props){const items=[['Dashboard',ROUTES.dashboard,LayoutDashboard],['GIS Master Map',ROUTES.gis,Map],['Assets',ROUTES.assets,Database],['Approvals',ROUTES.approvals,ClipboardCheck],['Administration',ROUTES.admin,ShieldCheck]] as const;return <aside className="sidebar"><div className="brand"><div className="brand-mark">P</div><div><div className="brand-title">{APP.name}</div><div className="brand-sub">{APP.subtitle}</div></div></div><nav className="nav">{items.map(([label,route,Icon])=><button className={path===route?'active':''} key={route} onClick={()=>onNavigate(route)}><Icon size={17}/><span>{label}</span></button>)}</nav><div className="sidebar-footer">Jurisdiction-aware GIS<br/>Supabase + PostGIS</div></aside>}

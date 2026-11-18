@@ -1,0 +1,1232 @@
+[
+  {
+    "id": "sim-admin-001",
+    "username": "sim.gis.admin",
+    "displayName": "[SIM] GIS Admin",
+    "role": "GIS_ADMIN",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": "SE - 1 HOD",
+    "jurisdictions": [
+      "PONDICHERRY",
+      "KARAIKAL",
+      "MAHE",
+      "YANAM"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-001",
+    "username": "sim.je.townsouth",
+    "displayName": "[SIM] JE-TownSouth",
+    "role": "JE",
+    "subdivision": "AEE- Town I",
+    "division": "EE - Urban",
+    "circle": "SE - 3 O&M",
+    "department": "SE - 1 HOD",
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-002",
+    "username": "sim.je.townsouthcentral",
+    "displayName": "[SIM] JE-TownSouthCentral",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-003",
+    "username": "sim.je.towncentral",
+    "displayName": "[SIM] JE-TownCentral",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-004",
+    "username": "sim.je.townnorth",
+    "displayName": "[SIM] JE-TownNorth",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-005",
+    "username": "sim.je.venkatanagar",
+    "displayName": "[SIM] JE-VenkataNagar",
+    "role": "JE",
+    "subdivision": "AE- Town II",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-006",
+    "username": "sim.je.muthialpet",
+    "displayName": "[SIM] JE-Muthialpet",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-007",
+    "username": "sim.je.saram",
+    "displayName": "[SIM] JE-Saram",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-008",
+    "username": "sim.je.townwest",
+    "displayName": "[SIM] JE-Townwest",
+    "role": "JE",
+    "subdivision": "AE-Marapalam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-009",
+    "username": "sim.je.mudialierpet",
+    "displayName": "[SIM] JE-Mudialierpet",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-010",
+    "username": "sim.je.murungapakkam",
+    "displayName": "[SIM] JE-Murungapakkam",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-011",
+    "username": "sim.je.gorimedu",
+    "displayName": "[SIM] JE-Gorimedu",
+    "role": "JE",
+    "subdivision": "AE-Lawspet",
+    "division": "EE - Rural North",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-012",
+    "username": "sim.je.ashoknagar",
+    "displayName": "[SIM] JE-Ashoknagar",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-013",
+    "username": "sim.je.lawspet",
+    "displayName": "[SIM] JE-Lawspet",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-014",
+    "username": "sim.je.kalapet",
+    "displayName": "[SIM] JE-Kalapet",
+    "role": "JE",
+    "subdivision": "AE-Kalapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-015",
+    "username": "sim.je.muthirapalayam",
+    "displayName": "[SIM] JE-Muthirapalayam",
+    "role": "JE",
+    "subdivision": "AE-kirumbapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-016",
+    "username": "sim.je.boomianpet",
+    "displayName": "[SIM] JE-Boomianpet",
+    "role": "JE",
+    "subdivision": "AE-Boomianpet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-017",
+    "username": "sim.je.villianur",
+    "displayName": "[SIM] JE-Villianur",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-018",
+    "username": "sim.je.sedharapet",
+    "displayName": "[SIM] JE-Sedharapet",
+    "role": "JE",
+    "subdivision": "AE-Sederapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-019",
+    "username": "sim.je.ramanathapuram",
+    "displayName": "[SIM] JE-Ramanathapuram",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-020",
+    "username": "sim.je.thirukkanur",
+    "displayName": "[SIM] JE-Thirukkanur",
+    "role": "JE",
+    "subdivision": "AE-Thethampakkam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-021",
+    "username": "sim.je.katterikuppam",
+    "displayName": "[SIM] JE-Katterikuppam",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-022",
+    "username": "sim.je.thavalakuppam",
+    "displayName": "[SIM] JE-Thavalakuppam",
+    "role": "JE",
+    "subdivision": "AE-Bahour",
+    "division": "EE - Rural South",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-023",
+    "username": "sim.je.kirumambakkam",
+    "displayName": "[SIM] JE-kirumambakkam",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-024",
+    "username": "sim.je.bahour",
+    "displayName": "[SIM] JE-Bahour",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-025",
+    "username": "sim.je.ariyankuppam",
+    "displayName": "[SIM] JE-Ariyankuppam",
+    "role": "JE",
+    "subdivision": "AE-Rural south",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-026",
+    "username": "sim.je.karikalambakkam",
+    "displayName": "[SIM] JE-Karikalambakkam",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-027",
+    "username": "sim.je.vadamangalam",
+    "displayName": "[SIM] JE-Vadamangalam",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-028",
+    "username": "sim.je.thiruvandarkoil",
+    "displayName": "[SIM] JE-ThiruvandarkoIl",
+    "role": "JE",
+    "subdivision": "AE-Thirubhuvanai",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-029",
+    "username": "sim.je.vadhanur",
+    "displayName": "[SIM] JE-Vadhanur",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-030",
+    "username": "sim.je.kariamanchikam",
+    "displayName": "[SIM] JE-Kariamanchikam",
+    "role": "JE",
+    "subdivision": "AE-Eripakkam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-031",
+    "username": "sim.je.karaiyambutthur",
+    "displayName": "[SIM] JE-Karaiyambutthur",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-032",
+    "username": "sim.je.trpattinam",
+    "displayName": "[SIM] JE-TRPattinam",
+    "role": "JE",
+    "subdivision": "AE-Town I KKL",
+    "division": "Karaikal",
+    "circle": "SE - 2 MP & OR",
+    "department": null,
+    "jurisdictions": [
+      "KARAIKAL"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-033",
+    "username": "sim.je.townkkl",
+    "displayName": "[SIM] JE-TownKKL",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "KARAIKAL"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-034",
+    "username": "sim.je.neravy",
+    "displayName": "[SIM] JE-Neravy",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "KARAIKAL"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-035",
+    "username": "sim.je.kottucherry",
+    "displayName": "[SIM] JE-Kottucherry",
+    "role": "JE",
+    "subdivision": "AE-Town II KKL",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "KARAIKAL"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-036",
+    "username": "sim.je.townnorthkkl",
+    "displayName": "[SIM] JE-TownNorthKKL",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "KARAIKAL"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-037",
+    "username": "sim.je.thirunallar",
+    "displayName": "[SIM] JE-Thirunallar",
+    "role": "JE",
+    "subdivision": "AE-Rural",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "KARAIKAL"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-038",
+    "username": "sim.je.nedungadu",
+    "displayName": "[SIM] JE-Nedungadu",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "KARAIKAL"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-039",
+    "username": "sim.je.ambakarathur",
+    "displayName": "[SIM] JE-Ambakarathur",
+    "role": "JE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "KARAIKAL"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-040",
+    "username": "sim.je.mahe",
+    "displayName": "[SIM] JE-Mahe",
+    "role": "JE",
+    "subdivision": "AE-Mahe",
+    "division": "EE-SPM & Blds",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "MAHE"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-user-041",
+    "username": "sim.je.yanam",
+    "displayName": "[SIM] JE-Yanam",
+    "role": "JE",
+    "subdivision": "AE-Yanam",
+    "division": "EE-C & T",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "YANAM"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-001",
+    "username": "sim.ae.1",
+    "displayName": "[SIM] AEE- Town I",
+    "role": "AE",
+    "subdivision": "AEE- Town I",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-002",
+    "username": "sim.ae.2",
+    "displayName": "[SIM] AE- Town II",
+    "role": "AE",
+    "subdivision": "AE- Town II",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-003",
+    "username": "sim.ae.3",
+    "displayName": "[SIM] AE-Marapalam",
+    "role": "AE",
+    "subdivision": "AE-Marapalam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-004",
+    "username": "sim.ae.4",
+    "displayName": "[SIM] AE-Lawspet",
+    "role": "AE",
+    "subdivision": "AE-Lawspet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-005",
+    "username": "sim.ae.5",
+    "displayName": "[SIM] AE-Kalapet",
+    "role": "AE",
+    "subdivision": "AE-Kalapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-006",
+    "username": "sim.ae.6",
+    "displayName": "[SIM] AE-kirumbapet",
+    "role": "AE",
+    "subdivision": "AE-kirumbapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-007",
+    "username": "sim.ae.7",
+    "displayName": "[SIM] AE-Boomianpet",
+    "role": "AE",
+    "subdivision": "AE-Boomianpet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-008",
+    "username": "sim.ae.8",
+    "displayName": "[SIM] AE-Sederapet",
+    "role": "AE",
+    "subdivision": "AE-Sederapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-009",
+    "username": "sim.ae.9",
+    "displayName": "[SIM] AE-Thethampakkam",
+    "role": "AE",
+    "subdivision": "AE-Thethampakkam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-010",
+    "username": "sim.ae.10",
+    "displayName": "[SIM] AE-Bahour",
+    "role": "AE",
+    "subdivision": "AE-Bahour",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-011",
+    "username": "sim.ae.11",
+    "displayName": "[SIM] AE-Rural south",
+    "role": "AE",
+    "subdivision": "AE-Rural south",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-012",
+    "username": "sim.ae.12",
+    "displayName": "[SIM] AE-Thirubhuvanai",
+    "role": "AE",
+    "subdivision": "AE-Thirubhuvanai",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-013",
+    "username": "sim.ae.13",
+    "displayName": "[SIM] AE-Eripakkam",
+    "role": "AE",
+    "subdivision": "AE-Eripakkam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-014",
+    "username": "sim.ae.14",
+    "displayName": "[SIM] AE-Town I KKL",
+    "role": "AE",
+    "subdivision": "AE-Town I KKL",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-015",
+    "username": "sim.ae.15",
+    "displayName": "[SIM] AE-Town II KKL",
+    "role": "AE",
+    "subdivision": "AE-Town II KKL",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-016",
+    "username": "sim.ae.16",
+    "displayName": "[SIM] AE-Rural",
+    "role": "AE",
+    "subdivision": "AE-Rural",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-017",
+    "username": "sim.ae.17",
+    "displayName": "[SIM] AE-Mahe",
+    "role": "AE",
+    "subdivision": "AE-Mahe",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "MAHE"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ae-018",
+    "username": "sim.ae.18",
+    "displayName": "[SIM] AE-Yanam",
+    "role": "AE",
+    "subdivision": "AE-Yanam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "YANAM"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ee-001",
+    "username": "sim.ee.1",
+    "displayName": "[SIM] EE - Urban",
+    "role": "EE",
+    "subdivision": null,
+    "division": "EE - Urban",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ee-002",
+    "username": "sim.ee.2",
+    "displayName": "[SIM] EE - Rural North",
+    "role": "EE",
+    "subdivision": null,
+    "division": "EE - Rural North",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ee-003",
+    "username": "sim.ee.3",
+    "displayName": "[SIM] EE - Rural South",
+    "role": "EE",
+    "subdivision": null,
+    "division": "EE - Rural South",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ee-004",
+    "username": "sim.ee.4",
+    "displayName": "[SIM] Karaikal",
+    "role": "EE",
+    "subdivision": null,
+    "division": "Karaikal",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ee-005",
+    "username": "sim.ee.5",
+    "displayName": "[SIM] EE-SPM & Blds",
+    "role": "EE",
+    "subdivision": null,
+    "division": "EE-SPM & Blds",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-ee-006",
+    "username": "sim.ee.6",
+    "displayName": "[SIM] EE-C & T",
+    "role": "EE",
+    "subdivision": null,
+    "division": "EE-C & T",
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-se-001",
+    "username": "sim.se.1",
+    "displayName": "[SIM] SE - 3 O&M",
+    "role": "SE",
+    "subdivision": null,
+    "division": null,
+    "circle": "SE - 3 O&M",
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY",
+      "KARAIKAL",
+      "MAHE",
+      "YANAM"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-se-002",
+    "username": "sim.se.2",
+    "displayName": "[SIM] SE - 2 MP & OR",
+    "role": "SE",
+    "subdivision": null,
+    "division": null,
+    "circle": "SE - 2 MP & OR",
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY",
+      "KARAIKAL",
+      "MAHE",
+      "YANAM"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-hod-001",
+    "username": "sim.hod.1",
+    "displayName": "[SIM] SE - 1 HOD",
+    "role": "SE",
+    "subdivision": null,
+    "division": null,
+    "circle": null,
+    "department": "SE - 1 HOD",
+    "jurisdictions": [
+      "PONDICHERRY",
+      "KARAIKAL",
+      "MAHE",
+      "YANAM"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-001",
+    "username": "sim.contractor.1",
+    "displayName": "[SIM] Contractor - AEE- Town I",
+    "role": "CONTRACTOR",
+    "subdivision": "AEE- Town I",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-002",
+    "username": "sim.contractor.2",
+    "displayName": "[SIM] Contractor - AE- Town II",
+    "role": "CONTRACTOR",
+    "subdivision": "AE- Town II",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-003",
+    "username": "sim.contractor.3",
+    "displayName": "[SIM] Contractor - AE-Marapalam",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Marapalam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-004",
+    "username": "sim.contractor.4",
+    "displayName": "[SIM] Contractor - AE-Lawspet",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Lawspet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-005",
+    "username": "sim.contractor.5",
+    "displayName": "[SIM] Contractor - AE-Kalapet",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Kalapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-006",
+    "username": "sim.contractor.6",
+    "displayName": "[SIM] Contractor - AE-kirumbapet",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-kirumbapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-007",
+    "username": "sim.contractor.7",
+    "displayName": "[SIM] Contractor - AE-Boomianpet",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Boomianpet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-008",
+    "username": "sim.contractor.8",
+    "displayName": "[SIM] Contractor - AE-Sederapet",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Sederapet",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-009",
+    "username": "sim.contractor.9",
+    "displayName": "[SIM] Contractor - AE-Thethampakkam",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Thethampakkam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-010",
+    "username": "sim.contractor.10",
+    "displayName": "[SIM] Contractor - AE-Bahour",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Bahour",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-011",
+    "username": "sim.contractor.11",
+    "displayName": "[SIM] Contractor - AE-Rural south",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Rural south",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-012",
+    "username": "sim.contractor.12",
+    "displayName": "[SIM] Contractor - AE-Thirubhuvanai",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Thirubhuvanai",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-013",
+    "username": "sim.contractor.13",
+    "displayName": "[SIM] Contractor - AE-Eripakkam",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Eripakkam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-014",
+    "username": "sim.contractor.14",
+    "displayName": "[SIM] Contractor - AE-Town I KKL",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Town I KKL",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-015",
+    "username": "sim.contractor.15",
+    "displayName": "[SIM] Contractor - AE-Town II KKL",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Town II KKL",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-016",
+    "username": "sim.contractor.16",
+    "displayName": "[SIM] Contractor - AE-Rural",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Rural",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "PONDICHERRY"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-017",
+    "username": "sim.contractor.17",
+    "displayName": "[SIM] Contractor - AE-Mahe",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Mahe",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "MAHE"
+    ],
+    "simulatorOnly": true
+  },
+  {
+    "id": "sim-contractor-018",
+    "username": "sim.contractor.18",
+    "displayName": "[SIM] Contractor - AE-Yanam",
+    "role": "CONTRACTOR",
+    "subdivision": "AE-Yanam",
+    "division": null,
+    "circle": null,
+    "department": null,
+    "jurisdictions": [
+      "YANAM"
+    ],
+    "simulatorOnly": true
+  }
+]

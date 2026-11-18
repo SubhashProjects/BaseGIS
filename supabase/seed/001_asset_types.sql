@@ -1,0 +1,1 @@
+-- Asset types are seeded by migration 001. Add jurisdiction boundary data here after importing official polygons.
