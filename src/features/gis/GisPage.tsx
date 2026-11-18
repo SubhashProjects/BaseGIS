@@ -11,6 +11,18 @@ export function GisPage({ currentUser }: { currentUser: PowerGISUser }) {
     [assets]
   );
 
+  const hierarchyItems = useMemo(
+    () =>
+      [
+        { label: 'Sub Division', value: currentUser.subdivision },
+        { label: 'Division', value: currentUser.division },
+        { label: 'Circle', value: currentUser.circle },
+        { label: 'Department', value: currentUser.department },
+        { label: 'Region', value: currentUser.region },
+      ].filter((item) => Boolean(item.value && item.value.trim() !== '' && item.value !== '—')),
+    [currentUser]
+  );
+
   if (error) {
     return (
       <div className="content">
@@ -40,35 +52,28 @@ export function GisPage({ currentUser }: { currentUser: PowerGISUser }) {
               <b>{currentUser.displayName}</b>
               <span>{currentUser.role}</span>
               <small>
-                {currentUser.region} • {currentUser.subdivision ?? currentUser.division ?? 'All areas'}
+                {currentUser.region}
+                {currentUser.subdivision
+                  ? ` • ${currentUser.subdivision}`
+                  : currentUser.division
+                  ? ` • ${currentUser.division}`
+                  : ''}
               </small>
             </div>
           </div>
-          <div className="panel">
-            <div className="panel-head">My hierarchy</div>
-            <div className="hierarchy">
-              <div>
-                <b>Sub Division</b>
-                <span>{currentUser.subdivision ?? '—'}</span>
-              </div>
-              <div>
-                <b>Division</b>
-                <span>{currentUser.division ?? '—'}</span>
-              </div>
-              <div>
-                <b>Circle</b>
-                <span>{currentUser.circle ?? '—'}</span>
-              </div>
-              <div>
-                <b>Department</b>
-                <span>{currentUser.department ?? '—'}</span>
-              </div>
-              <div>
-                <b>Region</b>
-                <span>{currentUser.region}</span>
+          {hierarchyItems.length > 0 && (
+            <div className="panel">
+              <div className="panel-head">My hierarchy</div>
+              <div className="hierarchy">
+                {hierarchyItems.map((item) => (
+                  <div key={item.label}>
+                    <b>{item.label}</b>
+                    <span>{item.value}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          )}
           <div className="panel">
             <div className="panel-head">Visible inventory</div>
             <div className="inventory">
