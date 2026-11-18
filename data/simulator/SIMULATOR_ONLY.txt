@@ -1,3 +1,0 @@
-THIS DIRECTORY CONTAINS SIMULATOR-ONLY DATA.
-DO NOT IMPORT INTO PRODUCTION TABLES.
-All users/assets/boundaries are synthetic or illustrative for testing.

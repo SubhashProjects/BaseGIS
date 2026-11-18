@@ -1,19 +1,25 @@
-# PowerGIS MVP
+# PowerGIS
 
-PowerGIS is a jurisdiction-aware electricity distribution GIS foundation using React + TypeScript + Vite, Supabase/PostGIS and Google XYZ basemap tiles.
+PowerGIS is a jurisdiction-aware electricity distribution GIS using React + TypeScript + Vite, Supabase/PostGIS and Google XYZ basemap tiles.
 
-## Current embedded simulator
+## Supabase data source
 
-The simulator is part of the main application rather than a separate page. Demo login identities come from the supplied organisation Excel, including the exact JE / User Name and hierarchy values.
+The application no longer contains a local dataset or toggle. Organisation identities, JE jurisdiction boundaries and GIS assets are stored in Supabase/PostGIS.
 
-Normal demo users are private by design: a JE can see only their assigned simulated assets. GIS Admin is the only demo role with full visibility. Shared-boundary assets can have multiple relevant JE owner ids.
+Run the migrations in `supabase/migrations` in order. Migration `002_powergis_test_data.sql` imports the supplied organisation identities, 41 JE jurisdiction geometries and the complete test GIS asset dataset.
 
-JE demo boundaries are illustrative irregular GeoJSON polygons and are intended to be replaced later with authoritative GIS boundaries. The map already uses the same coordinate/geometry concepts needed for production.
+The frontend reads authorised users, assets and boundaries through Supabase RPC functions. Normal users receive only the GIS data allowed by their hierarchy; GIS Admin receives the full dataset.
 
 ## GIS map
 
-Google XYZ tiles are available as Roadmap, Satellite, Hybrid, Terrain and Roads Only. GIS layers have separate standard colours and line/point rendering.
+Google XYZ tiles are available as Roadmap, Satellite, Hybrid, Terrain and Roads Only. Wheel zoom, double-click zoom, drag pan and mouse rotation are supported. Use **Shift + left-drag** or **right-drag** to rotate; click **N** to reset north.
+
+GIS layers use separate standard colours and line/point rendering. Hovering an asset shows a tooltip and clicking it opens the asset details.
 
 ## Production direction
 
-The production security boundary should be enforced server-side with Supabase/PostGIS RLS and jurisdiction relationships. Client-side filtering in the simulator is only a demonstration of the intended user experience and data model.
+The test directory is deliberately stored in Supabase so the application architecture is already database-first. For production, replace the test login directory with Supabase Auth-backed `profiles` and keep the same PostGIS jurisdiction model and server-side authorization approach.
+
+
+## Test login
+The current build uses Supabase database-backed test identities rather than Supabase Auth. Select an organisation user and sign in with username = password. Production authentication can be introduced later without changing the GIS hierarchy model.

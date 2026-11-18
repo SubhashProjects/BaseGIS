@@ -44,10 +44,7 @@ export function Sidebar({ path, onNavigate, user }: Props) {
           </button>
         ))}
       </nav>
-      <div className="sidebar-footer">
-        Private jurisdiction GIS<br />
-        Supabase + PostGIS
-      </div>
+      <div className="sidebar-footer">Authorised GIS view</div>
     </aside>
   );
 }
