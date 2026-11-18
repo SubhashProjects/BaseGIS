@@ -1,0 +1,2 @@
+import { useMemo } from 'react'; import { usePowerGISData } from './usePowerGISData'; import type { PowerGISUser } from '../services/powergisData';
+export function useApprovalsViewModel(user:PowerGISUser){ const data=usePowerGISData(user); const rows=useMemo(()=>data.assets.filter(a=>['SUBMITTED','APPROVED'].includes(a.status)).slice(0,20),[data.assets]); const stage=(s:string)=>s==='SUBMITTED'?'JE_REVIEW':'AE_REVIEW'; return {...data,rows,stage}; }

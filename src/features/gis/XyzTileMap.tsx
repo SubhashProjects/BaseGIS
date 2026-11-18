@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ASSET_COLORS, ASSET_LABELS, MAP_DEFAULT } from '../../config/constants';
+import type { MapNavigationTarget } from './MapHierarchyNavigator';
 import type { PowerGISAsset, PowerGISBoundary, PowerGISUser } from '../../services/powergisData';
 
 type BaseLayer = 'roadmap' | 'satellite' | 'hybrid' | 'terrain' | 'roads';
@@ -48,10 +49,12 @@ export function XyzTileMap({
   currentUser,
   assets,
   boundaries,
+  navigationTarget,
 }: {
   currentUser: PowerGISUser;
   assets: PowerGISAsset[];
   boundaries: PowerGISBoundary[];
+  navigationTarget?: MapNavigationTarget | null;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [center, setCenter] = useState<Point>(MAP_DEFAULT.center);
@@ -218,6 +221,32 @@ export function XyzTileMap({
     setZoom(initZoom);
     setBearing(0);
   }, [currentUser.id, currentUser.role, boundaries]);
+
+  useEffect(() => {
+    if (!navigationTarget) return;
+    const target = boundaries.filter((b) => navigationTarget.boundaryIds.includes(b.id));
+    if (!target.length) return;
+    const pts = target.flatMap((b) => geometryPoints(b.geometry));
+    if (!pts.length) return;
+    const z =
+      navigationTarget.level === 'je'
+        ? 14
+        : navigationTarget.level === 'subdivision'
+        ? 13
+        : navigationTarget.level === 'division'
+        ? 11
+        : 10;
+    const nextCenter = {
+      lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length,
+      lng: pts.reduce((s, p) => s + p.lng, 0) / pts.length,
+    };
+    centerRef.current = nextCenter;
+    zoomRef.current = z;
+    bearingRef.current = 0;
+    setCenter(nextCenter);
+    setZoom(z);
+    setBearing(0);
+  }, [navigationTarget, boundaries]);
 
   const tiles = useMemo(() => {
     const cx = lngToX(center.lng, zoom) * tileSize;

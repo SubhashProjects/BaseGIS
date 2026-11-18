@@ -1,0 +1,4 @@
+export const THEME = {
+  assetColors: { SUBSTATION: '#7C3AED', EHV_LINE: '#DC2626', HV_LINE: '#F59E0B', DT: '#2563EB', LT_LINE: '#16A34A', POLE: '#475569', SMART_METER: '#0891B2' },
+  statusColors: { ACTIVE: '#16A34A', APPROVED: '#2563EB', SUBMITTED: '#F59E0B', REJECTED: '#DC2626', DRAFT: '#64748B' }
+} as const;

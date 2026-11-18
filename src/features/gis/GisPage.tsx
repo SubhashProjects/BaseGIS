@@ -1,11 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { GisMap } from './GisMap';
+import { MapHierarchyNavigator, type MapNavigationTarget } from './MapHierarchyNavigator';
 import { ASSET_COLORS, ASSET_LABELS } from '../../config/constants';
 import { usePowerGISData } from '../../viewmodels/usePowerGISData';
 import type { PowerGISUser } from '../../services/powergisData';
 
 export function GisPage({ currentUser }: { currentUser: PowerGISUser }) {
   const { assets, boundaries, loading, error } = usePowerGISData(currentUser);
+  const [navigationTarget, setNavigationTarget] = useState<MapNavigationTarget | null>(null);
+
   const counts = useMemo(
     () => Object.keys(ASSET_LABELS).map((k) => [k, assets.filter((a) => a.assetType === k).length] as const),
     [assets]
@@ -37,12 +40,25 @@ export function GisPage({ currentUser }: { currentUser: PowerGISUser }) {
 
   return (
     <div className="content gis-content">
+      {!loading && boundaries.length > 0 && (
+        <MapHierarchyNavigator
+          currentUser={currentUser}
+          boundaries={boundaries}
+          onNavigate={setNavigationTarget}
+          onReset={() => setNavigationTarget(null)}
+        />
+      )}
       <div className="gis-workspace">
         <div className="panel gis-panel">
           {loading ? (
             <div className="map-loading">Loading authorised map data…</div>
           ) : (
-            <GisMap currentUser={currentUser} assets={assets} boundaries={boundaries} />
+            <GisMap
+              currentUser={currentUser}
+              assets={assets}
+              boundaries={boundaries}
+              navigationTarget={navigationTarget}
+            />
           )}
         </div>
         <aside className="gis-side">
