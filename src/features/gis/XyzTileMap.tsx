@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { ASSET_COLORS, ASSET_LABELS, MAP_DEFAULT } from '../../config/constants';
 import type { MapNavigationTarget } from './MapHierarchyNavigator';
 import type { PowerGISAsset, PowerGISBoundary, PowerGISUser } from '../../services/powergisData';
@@ -68,6 +69,18 @@ export function XyzTileMap({
   );
   const [selectedAsset, setSelectedAsset] = useState<PowerGISAsset | null>(null);
   const [hover, setHover] = useState<{ asset: PowerGISAsset; x: number; y: number } | null>(null);
+  const baseMapSelectRef = useRef<HTMLSelectElement>(null);
+
+  const handleBaseMapClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (e.target !== baseMapSelectRef.current) {
+      try {
+        baseMapSelectRef.current?.showPicker();
+      } catch {
+        baseMapSelectRef.current?.focus();
+      }
+    }
+  };
 
   // Synchronization refs to eliminate stale-closure bugs during fast wheel/drag gestures
   const centerRef = useRef(center);
@@ -302,7 +315,7 @@ export function XyzTileMap({
       onPointerDown={(e) => {
         if (e.button !== 0 && e.button !== 2) return;
         const target = e.target as HTMLElement;
-        if (target.closest('.xyz-controls, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
+        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
           return;
         }
         const mode = e.button === 2 || e.shiftKey ? 'rotate' : 'pan';
@@ -476,40 +489,55 @@ export function XyzTileMap({
           z{zoom} • {Math.round((bearing % 360 + 360) % 360)}°
         </span>
       </div>
-      <div className="xyz-layer" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-        <label>
-          Base map
-          <select value={layer} onChange={(e) => setLayer(e.target.value as BaseLayer)}>
-            <option value="roadmap">Roadmap</option>
-            <option value="satellite">Satellite</option>
-            <option value="hybrid">Hybrid</option>
-            <option value="terrain">Terrain</option>
-            <option value="roads">Roads</option>
-          </select>
-        </label>
-      </div>
       <div
-        className="xyz-layer-list"
+        className="xyz-map-left-panel"
         onPointerDown={(e) => e.stopPropagation()}
-        onPointerUp={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        <b>GIS layers</b>
-        {Object.entries(ASSET_LABELS).map(([k, v]) => (
-          <label key={k} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-            <input
-              type="checkbox"
-              checked={visibleTypes[k] !== false}
-              onChange={(e) => {
-                const nextChecked = e.target.checked;
-                setVisibleTypes((prev) => ({ ...prev, [k]: nextChecked }));
-              }}
-            />
-            <i style={{ background: ASSET_COLORS[k] }} />
-            <span>{v}</span>
-          </label>
-        ))}
+        <div
+          className="xyz-layer"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={handleBaseMapClick}
+        >
+          <span className="xyz-layer-title">Base map</span>
+          <div className="xyz-base-select-wrap">
+            <select
+              ref={baseMapSelectRef}
+              value={layer}
+              onChange={(e) => setLayer(e.target.value as BaseLayer)}
+            >
+              <option value="roadmap">Roadmap</option>
+              <option value="satellite">Satellite</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="terrain">Terrain</option>
+              <option value="roads">Roads</option>
+            </select>
+            <ChevronDown size={14} className="xyz-base-chevron" />
+          </div>
+        </div>
+        <div
+          className="xyz-layer-list"
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <b>GIS layers</b>
+          {Object.entries(ASSET_LABELS).map(([k, v]) => (
+            <label key={k} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                checked={visibleTypes[k] !== false}
+                onChange={(e) => {
+                  const nextChecked = e.target.checked;
+                  setVisibleTypes((prev) => ({ ...prev, [k]: nextChecked }));
+                }}
+              />
+              <i style={{ background: ASSET_COLORS[k] }} />
+              <span>{v}</span>
+            </label>
+          ))}
+        </div>
       </div>
       {hover && (
         <div
