@@ -9,18 +9,18 @@
   --c-surface: #ffffff;
   --c-surface-soft: #f7f9fc;
   --c-page: #f3f6fb;
-  --c-primary: #4f46e5;
-  --c-primary-dark: #3730a3;
-  --c-primary-soft: #eef2ff;
+  --c-primary: #1e3a8a;
+  --c-primary-dark: #172554;
+  --c-primary-soft: #eff6ff;
   --c-cyan: #0891b2;
   --c-green: #16a34a;
   --c-amber: #f59e0b;
   --c-red: #dc2626;
   --c-violet: #7c3aed;
-  --c-shadow: 0 10px 30px rgba(31, 41, 75, .08);
-  --c-shadow-lg: 0 22px 70px rgba(31, 41, 75, .14);
-  --radius-sm: 9px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --c-shadow: 0 4px 12px rgba(31, 41, 75, .05);
+  --c-shadow-lg: 0 10px 25px rgba(31, 41, 75, .08);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
   --transition: 160ms ease;
 }

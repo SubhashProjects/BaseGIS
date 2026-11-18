@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { UserRound, Search, ChevronRight } from 'lucide-react';
+import { Search, Eye, EyeOff } from 'lucide-react';
 import { authenticateUser, listLoginUsers, type PowerGISUser } from '../services/powergisData';
 
 const roleOrder = ['SE', 'EE', 'AEE', 'AE', 'JE', 'GIS_ADMIN'] as const;
@@ -19,6 +19,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
   const [selected, setSelected] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState('');
@@ -77,6 +78,22 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
     setError('');
   };
 
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    const matches = users.filter(
+      (u) =>
+        u.role === role &&
+        `${u.displayName} ${u.username} ${u.subdivision ?? ''} ${u.division ?? ''} ${u.circle ?? ''} ${u.department ?? ''} ${u.region}`
+          .toLowerCase()
+          .includes(val.toLowerCase())
+    );
+    if (matches.length > 0) {
+      setSelected(matches[0].id);
+      setUsername(matches[0].username);
+      setPassword(matches[0].username);
+    }
+  };
+
   const signIn = async () => {
     if (!username || !password) {
       setError('Please enter your username and password.');
@@ -113,13 +130,14 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
 
         <div className="login-title-section">
           <h1>Sign In</h1>
-          <p className="login-sub">Select your designation and profile to access the GIS portal.</p>
+          <p className="login-sub">Select your designation and officer profile to continue.</p>
         </div>
 
         <div className="role-tabs">
           {roleOrder.map((r) => (
             <button
               key={r}
+              type="button"
               className={role === r ? 'active' : ''}
               onClick={() => chooseRole(r)}
             >
@@ -128,119 +146,133 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
           ))}
         </div>
 
-        <label className="login-search">
-          <span>Search {roleLabels[role]}</span>
-          <div className="searchbox">
-            <Search size={15} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search ${roleLabels[role]} by name or area…`}
-            />
-          </div>
-        </label>
-
-        {error && <div className="login-error">{error}</div>}
-
         {loading ? (
           <div className="login-loading">Loading users…</div>
         ) : (
-          <div className="login-body">
-            <div className="user-list">
-              {filtered.length === 0 ? (
-                <div className="empty">No users found.</div>
-              ) : (
-                filtered.map((u) => (
-                  <button
-                    key={u.id}
-                    className={current?.id === u.id ? 'selected' : ''}
-                    onClick={() => chooseUser(u)}
-                  >
-                    <span className="user-avatar">
-                      <UserRound size={15} />
-                    </span>
-                    <span className="user-row">
-                      <b>{u.displayName}</b>
-                      <small>{u.subdivision ?? u.division ?? u.circle ?? u.department ?? u.region}</small>
-                    </span>
-                    <ChevronRight size={15} />
-                  </button>
-                ))
+          <>
+            <div className="login-field">
+              <label htmlFor="officer-select">Officer Profile ({roleLabels[role]})</label>
+              {users.filter((u) => u.role === role).length > 5 && (
+                <div className="searchbox" style={{ marginBottom: '6px' }}>
+                  <Search size={14} />
+                  <input
+                    value={query}
+                    onChange={(e) => handleQueryChange(e.target.value)}
+                    placeholder={`Filter ${roleLabels[role]} by name or area…`}
+                  />
+                </div>
               )}
+              <select
+                id="officer-select"
+                className="login-select"
+                value={current?.id ?? ''}
+                onChange={(e) => {
+                  const u = users.find((x) => x.id === e.target.value);
+                  if (u) chooseUser(u);
+                }}
+              >
+                {filtered.length === 0 ? (
+                  <option value="" disabled>
+                    No officers matching query
+                  </option>
+                ) : (
+                  filtered.map((u) => {
+                    const area = u.subdivision || u.division || u.circle || u.department || u.region;
+                    return (
+                      <option key={u.id} value={u.id}>
+                        {u.displayName} {area ? `— ${area}` : ''}
+                      </option>
+                    );
+                  })
+                )}
+              </select>
             </div>
 
             {current && (
-              <div className="login-preview">
-                <div className="preview-top">
-                  <div>
-                    <div className="preview-kicker">Designation Profile</div>
-                    <div className="preview-name">{current.displayName}</div>
-                  </div>
+              <div className="officer-summary">
+                <div className="officer-summary-top">
+                  <span className="officer-name">{current.displayName}</span>
                   <span className="role-chip">{roleLabels[current.role]}</span>
                 </div>
-
-                <div className="preview-grid">
+                <div className="officer-summary-grid">
                   {current.subdivision && (
                     <div>
-                      <span>Sub Division</span>
+                      <span>Sub-Div:</span>
                       <b>{current.subdivision}</b>
                     </div>
                   )}
                   {current.division && (
                     <div>
-                      <span>Division</span>
+                      <span>Division:</span>
                       <b>{current.division}</b>
                     </div>
                   )}
                   {current.circle && (
                     <div>
-                      <span>Circle</span>
+                      <span>Circle:</span>
                       <b>{current.circle}</b>
                     </div>
                   )}
                   <div>
-                    <span>Department</span>
+                    <span>Dept:</span>
                     <b>{current.department ?? 'SE - 1 HOD'}</b>
                   </div>
                   <div>
-                    <span>Region</span>
+                    <span>Region:</span>
                     <b>{current.region}</b>
                   </div>
                 </div>
-
-                <div className="login-fields-wrap">
-                  <label className="login-field">
-                    <span>Username</span>
-                    <input
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      autoComplete="username"
-                    />
-                  </label>
-                  <label className="login-field">
-                    <span>Password</span>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="current-password"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') signIn();
-                      }}
-                    />
-                  </label>
-                </div>
-
-                <button
-                  className="btn primary login-btn"
-                  onClick={signIn}
-                  disabled={signingIn}
-                >
-                  {signingIn ? 'Signing in…' : 'Sign in to PowerGIS'}
-                </button>
               </div>
             )}
-          </div>
+
+            <div className="login-fields-wrap">
+              <div className="login-field">
+                <label htmlFor="username">Username</label>
+                <input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                />
+              </div>
+
+              <div className="login-field">
+                <label htmlFor="password">Password</label>
+                <div className="password-input-wrap">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') signIn();
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {error && <div className="login-error">{error}</div>}
+
+            <button
+              type="button"
+              className="btn primary login-btn"
+              onClick={signIn}
+              disabled={signingIn}
+            >
+              {signingIn ? 'Signing in…' : 'Sign in to PowerGIS'}
+            </button>
+          </>
         )}
       </div>
     </div>
