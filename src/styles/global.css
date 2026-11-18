@@ -95,6 +95,7 @@ button:active{transform:translateY(1px)}
 
 /* Tables */
 .table{width:100%;border-collapse:separate;border-spacing:0}.table th,.table td{text-align:left;padding:11px 13px;border-bottom:1px solid #eef1f6;font-size:11px}.table th{font-size:9px;text-transform:uppercase;color:#475569;letter-spacing:.08em;background:#fafbfe;font-weight:800}.table tbody tr:hover td{background:#f8faff}.table tbody tr:last-child td{border-bottom:0}
+.sortable-th{cursor:pointer;user-select:none;transition:background-color .12s ease,color .12s ease}.sortable-th:hover{background:#f1f5f9;color:#0f172a}.sortable-th.active{color:#1e3a8a;background:#eff6ff}.th-content{display:inline-flex;align-items:center;gap:6px;width:100%}.sort-icon{display:inline-flex;align-items:center;justify-content:center}.sort-idle{color:#94a3b8;opacity:.5}.sortable-th:hover .sort-idle{opacity:1;color:#475569}.sort-active{color:#1e3a8a;stroke-width:2.5}
 .status{font-size:9px;font-weight:900;padding:3px 6px;border-radius:4px;display:inline-block}.status.active{color:#166534;background:#ecfdf3;border:1px solid #bbf7d0}.status.pending{color:#92400e;background:#fffbeb;border:1px solid #fef08a}
 .type-chip{display:inline-flex;align-items:center;gap:6px;font-weight:700}.type-chip i,.layer-dot{width:8px;height:8px;border-radius:2px;display:inline-block}
 
