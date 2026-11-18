@@ -24,7 +24,7 @@ export function AdminPage({ currentUser }: { currentUser: PowerGISUser }) {
           <p>{UI.admin.subtitle}</p>
         </div>
       </div>
-      <div className="cards">
+      <div className="cards admin-cards">
         <div className="card accent-0">
           <div className="metric-label">{UI.admin.users}</div>
           <div className="metric">{vm.users.length || '—'}</div>
@@ -39,11 +39,6 @@ export function AdminPage({ currentUser }: { currentUser: PowerGISUser }) {
           <div className="metric-label">{UI.admin.jurisdictions}</div>
           <div className="metric">{vm.loading ? '—' : vm.boundaries.length}</div>
           <div className="muted">{UI.admin.jurisdictionMetric}</div>
-        </div>
-        <div className="card accent-3">
-          <div className="metric-label">{UI.admin.security}</div>
-          <div className="metric">{UI.admin.securityValue}</div>
-          <div className="muted">{UI.admin.securityMetric}</div>
         </div>
       </div>
       <DataManagementPanel currentUser={currentUser} />

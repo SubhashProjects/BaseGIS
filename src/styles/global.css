@@ -42,6 +42,8 @@ button:active{transform:translateY(1px)}
 
 /* Cards */
 .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.cards.admin-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:900px){.cards.admin-cards{grid-template-columns:1fr}}
 .card{position:relative;background:#ffffff;border:1px solid #d7ddea;border-radius:8px;padding:18px;box-shadow:none;overflow:hidden}
 .card:after{display:none}
 .card:hover{border-color:#94a3b8}
@@ -49,7 +51,43 @@ button:active{transform:translateY(1px)}
 .layout-grid{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:14px;margin-top:14px}.panel{background:#ffffff;border:1px solid #d7ddea;border-radius:8px;overflow:hidden}
 .panel-head{padding:14px 16px;border-bottom:1px solid #eef1f6;font-weight:850;font-size:12px;display:flex;justify-content:space-between;align-items:center;background:#fafbfe;color:#0f172a}
 .panel-head span:first-child{display:inline-flex;align-items:center}
+.panel-body{padding:16px 18px}
 .notice{padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;font-size:12px;line-height:1.55;color:#1e293b}.notice b{font-weight:850}.error-notice{border-color:#fecaca;background:#fff5f5;color:#991b1b}
+.notice.danger{border-color:#fecaca;background:#fff5f5;color:#991b1b}
+.notice.success{border-color:#bbf7d0;background:#f0fdf4;color:#166534}
+
+/* Data Management Panel */
+.panel.data-management{margin-top:14px}
+.data-head{padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.data-head b{font-size:13px;font-weight:800;color:#0f172a}
+.data-head .muted{font-size:11px;color:#64748b;margin-top:2px}
+.data-head-icon{color:#1e3a8a;flex-shrink:0}
+.data-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media(max-width:960px){.data-grid{grid-template-columns:1fr}}
+.data-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:16px;display:flex;flex-direction:column;box-sizing:border-box}
+.data-card:hover{border-color:#cbd5e1;background:#ffffff}
+.data-card-icon{width:36px;height:36px;border-radius:6px;background:#eff6ff;color:#1e3a8a;display:grid;place-items:center;margin-bottom:10px;flex-shrink:0}
+.data-card h3{margin:0 0 5px;font-size:13px;font-weight:800;color:#0f172a}
+.data-card p{margin:0 0 14px;font-size:11px;color:#64748b;line-height:1.5;min-height:33px}
+.field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.field-row label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#475569}
+.field-row select,.field-row .field-static-value{width:100%;height:34px;background:#ffffff;border:1px solid #cbd5e1;border-radius:5px;padding:0 9px;font-size:11px;font-weight:600;color:#0f172a;outline:none;display:flex;align-items:center;box-sizing:border-box}
+.field-row select:focus{border-color:#1e3a8a}
+.data-card .btn{width:100%;height:34px;border-radius:5px;font-size:11px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;transition:background .12s ease,border-color .12s ease;border:1px solid #cbd5e1;background:#ffffff;color:#0f172a;margin-top:auto}
+.data-card .btn.primary{background:#1e3a8a;color:#ffffff;border-color:#1e3a8a}
+.data-card .btn.primary:hover:not(:disabled){background:#172554}
+.data-card .btn:not(.primary):hover:not(:disabled){background:#f1f5f9;border-color:#94a3b8}
+.data-card .btn:disabled{opacity:.6;cursor:not-allowed}
+.file-hint{margin-top:9px;font-size:10px;font-weight:600;color:#64748b;text-align:center;min-height:15px}
+
+.backup-list{margin-top:18px;border-top:1px solid #eef1f6;padding-top:14px}
+.backup-list-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.backup-list-head b{font-size:11px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:.05em}
+.backup-rows{display:flex;flex-direction:column;gap:5px}
+.backup-row{display:grid;grid-template-columns:1fr 180px 90px;align-items:center;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:5px;font-size:11px;font-weight:600;color:#334155}
+.backup-row .backup-id{font-family:monospace;font-size:11px;color:#1e3a8a}
+.backup-row .backup-date{color:#64748b;font-size:10px}
+.backup-row .status{justify-self:end}
 
 /* Buttons / controls */
 .btn{border:1px solid #cbd5e1;background:#fff;color:#1e293b;padding:8px 12px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:800}.btn:hover{border-color:#94a3b8;background:#f8fafc}.btn.primary{background:#1e3a8a;color:#fff;border-color:transparent;box-shadow:none}.btn.primary:hover{background:#172554}
