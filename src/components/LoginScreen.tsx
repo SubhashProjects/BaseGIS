@@ -222,15 +222,9 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
 
           <div className="login-title-section">
             <h1>GIS Admin Sign In</h1>
-            <p className="login-sub">
-              System administrator access for GIS layers, user roles hierarchy, and spatial data.
-            </p>
           </div>
 
           <div className="admin-credentials-box">
-            <div className="admin-note-text">
-              <strong>Admin Clearance Level:</strong> Full administrative authority over PostGIS datasets, user roles mapping, imports, and backups.
-            </div>
 
             <div className="login-fields-wrap">
               <div className="login-field">
@@ -292,7 +286,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
               onClick={() => switchPortal('OFFICER')}
             >
               <Users size={14} />
-              <span>Are you a Department / Field Officer? <strong>Switch to Officer Login →</strong></span>
+              <span><strong>Switch to Officer Login →</strong></span>
             </button>
           </div>
         </div>
@@ -454,7 +448,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
                   onClick={() => switchPortal('ADMIN')}
                 >
                   <ShieldCheck size={14} />
-                  <span>Are you GIS Admin? <strong>Switch to GIS Admin Login →</strong></span>
+                  <span><strong>Switch to GIS Admin Login →</strong></span>
                 </button>
               </div>
             </>

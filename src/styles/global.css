@@ -28,7 +28,7 @@ button:active{transform:translateY(1px)}
 .main{min-width:0}
 
 /* Top bar */
-.topbar{height:68px;background:rgba(255,255,255,.98);border-bottom:1px solid #d7ddea;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:20}
+.topbar{height:48px;background:rgba(255,255,255,.98);border-bottom:1px solid #d7ddea;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:sticky;top:0;z-index:20}
 .topbar-left{display:flex;align-items:center;gap:12px}
 .topbar-right{display:flex;align-items:center;gap:14px;margin-left:auto}
 .mobile-menu-btn{display:none;background:transparent;border:1px solid #cbd5e1;border-radius:6px;width:36px;height:36px;align-items:center;justify-content:center;color:#0f172a;cursor:pointer;padding:0;transition:background 0.15s ease}
@@ -309,7 +309,7 @@ button:active{transform:translateY(1px)}
   .mobile-overlay{display:block;position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(2px);z-index:11500;animation:overlayFadeIn 0.2s ease}
   .mobile-menu-btn{display:flex!important}
   .mobile-brand{display:flex!important}
-  .topbar{padding:0 12px;height:58px}
+  .topbar{padding:0 12px;height:48px}
   .content{padding:14px 14px 76px 14px}
   .panel{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .cards{grid-template-columns:1fr}
@@ -1888,18 +1888,7 @@ button:active{transform:translateY(1px)}
 :root{--chart-track:#e8edf6;--c-page:#f5f7fc;--c-border:#e3e8f2;--c-muted:#64748b}
 body{background:var(--c-page);color:#172033}
 .shell{grid-template-columns:256px minmax(0,1fr)}
-.sidebar{background:linear-gradient(180deg,#111b36 0%,#17264a 100%);border-right:0;color:#e8efff}
-.sidebar .brand{border-color:rgba(255,255,255,.12)}
-.sidebar .brand-mark,.mobile-brand-mark{background:linear-gradient(135deg,#5b7cfa,#16b8c9);border:0;color:white;border-radius:11px}
-.sidebar .brand-mark svg{color:white;fill:none}
-.sidebar .brand-title{color:#fff}.sidebar .brand-sub{color:#aab8d5}
-.sidebar .nav button{color:#c4cee4;border-radius:10px;padding:11px 12px;font-size:12px}
-.sidebar .nav button svg{color:#aab8d5}
-.sidebar .nav button:hover{background:rgba(255,255,255,.08);color:#fff}
-.sidebar .nav button.active{background:linear-gradient(90deg,rgba(93,124,250,.28),rgba(22,184,201,.12));border-color:rgba(132,157,255,.26);color:#fff;box-shadow:inset 3px 0 #69d6e2}
-.sidebar .nav button.active svg{color:#83e5ed}
-.sidebar-footer{color:#aab8d5;border-color:rgba(255,255,255,.12)}
-.topbar{height:72px;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-color:#e7ebf3;padding:0 28px}
+.topbar{height:48px;background:rgba(255,255,255,.98);border-bottom:1px solid #d7ddea;padding:0 18px}
 .content{padding:28px;max-width:1900px}
 .page-title h1,.dashboard-welcome h1{font-size:clamp(22px,2vw,29px);font-weight:850;letter-spacing:-.045em;color:#172033}
 .card,.panel{border:1px solid #e6eaf2;border-radius:15px;box-shadow:0 5px 20px rgba(25,43,82,.045)}
