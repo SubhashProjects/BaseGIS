@@ -515,22 +515,34 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
               </div>
 
               <div className="staging-toolbar">
-                <button type="button" className="btn-sm" onClick={selectAllFeatures} title="Select all features">
-                  Select All
-                </button>
-                <button type="button" className="btn-sm" onClick={deselectAllFeatures} title="Deselect all features">
-                  Deselect All
-                </button>
-                <button
-                  type="button"
-                  className="btn-sm danger"
-                  disabled={selectedCount === 0}
-                  onClick={removeSelectedFeatures}
-                  title="Remove selected features from staging"
-                >
-                  <Trash2 size={12} />
-                  Remove Selected ({selectedCount})
-                </button>
+                <div className="dm-synced-btn-group">
+                  <button
+                    type="button"
+                    className="dm-sync-btn"
+                    onClick={selectAllFeatures}
+                    title="Select all features"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    className="dm-sync-btn"
+                    onClick={deselectAllFeatures}
+                    title="Deselect all features"
+                  >
+                    Deselect All
+                  </button>
+                  <button
+                    type="button"
+                    className={`dm-sync-btn danger ${selectedCount > 0 ? 'active' : ''}`}
+                    disabled={selectedCount === 0}
+                    onClick={removeSelectedFeatures}
+                    title={selectedCount > 0 ? `Remove ${selectedCount} selected feature(s) from staging` : 'Select features to remove'}
+                  >
+                    <Trash2 size={13} />
+                    <span>Remove Selected ({selectedCount})</span>
+                  </button>
+                </div>
 
                 <div className="strategy-selector-wrap">
                   <label>Duplicate Handling:</label>
@@ -698,39 +710,46 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
                 ))}
               </select>
 
-              <button
-                type="button"
-                className="btn-sm"
-                onClick={selectAllActive}
-                disabled={filteredActiveAssets.length === 0}
-              >
-                Select All
-              </button>
-              <button
-                type="button"
-                className="btn-sm"
-                onClick={deselectAllActive}
-                disabled={selectedActiveIds.size === 0}
-              >
-                Deselect All
-              </button>
-              <button
-                type="button"
-                className="btn-sm danger"
-                disabled={selectedActiveIds.size === 0}
-                onClick={handleDeleteSelectedActive}
-              >
-                <Trash2 size={12} />
-                Delete Selected ({selectedActiveIds.size})
-              </button>
-              <button
-                type="button"
-                className="btn-sm reset"
-                disabled={activeImported.length === 0}
-                onClick={handleClearAllActive}
-              >
-                Clear All
-              </button>
+              <div className="dm-synced-btn-group">
+                <button
+                  type="button"
+                  className="dm-sync-btn"
+                  onClick={selectAllActive}
+                  disabled={filteredActiveAssets.length === 0}
+                  title="Select all imported records"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  className="dm-sync-btn"
+                  onClick={deselectAllActive}
+                  disabled={selectedActiveIds.size === 0}
+                  title="Deselect all records"
+                >
+                  Deselect All
+                </button>
+                <button
+                  type="button"
+                  className={`dm-sync-btn danger ${selectedActiveIds.size > 0 ? 'active' : ''}`}
+                  disabled={selectedActiveIds.size === 0}
+                  onClick={handleDeleteSelectedActive}
+                  title={selectedActiveIds.size > 0 ? `Delete ${selectedActiveIds.size} selected record(s)` : 'Select records to delete'}
+                >
+                  <Trash2 size={13} />
+                  <span>Delete Selected ({selectedActiveIds.size})</span>
+                </button>
+                <button
+                  type="button"
+                  className={`dm-sync-btn danger ${activeImported.length > 0 ? 'active' : ''}`}
+                  disabled={activeImported.length === 0}
+                  onClick={handleClearAllActive}
+                  title="Clear all imported records from storage"
+                >
+                  <Trash2 size={13} />
+                  <span>Clear All</span>
+                </button>
+              </div>
             </div>
           </div>
 

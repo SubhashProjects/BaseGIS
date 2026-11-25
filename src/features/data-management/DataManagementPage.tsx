@@ -956,7 +956,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
               <div className="dm-page-btns">
                 <button
                   type="button"
-                  className="btn-sm"
+                  className="dm-sync-btn"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
@@ -964,7 +964,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                 </button>
                 <button
                   type="button"
-                  className="btn-sm"
+                  className="dm-sync-btn"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 >
@@ -1322,7 +1322,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                   />
                   <button
                     type="button"
-                    className="btn-sm"
+                    className="dm-sync-btn"
                     disabled={!newMetaKey.trim()}
                     onClick={() => {
                       if (newMetaKey.trim()) {

@@ -718,17 +718,23 @@ button:active{transform:translateY(1px)}
   gap: 8px;
 }
 .active-search-input {
-  padding: 4px 8px;
+  height: 28px;
+  padding: 0 8px;
   border: 1px solid #cbd5e1;
   border-radius: 4px;
   font-size: 12px;
   width: 180px;
+  box-sizing: border-box;
 }
 .active-filter-select {
-  padding: 4px 8px;
+  height: 28px;
+  padding: 0 8px;
   border: 1px solid #cbd5e1;
   border-radius: 4px;
   font-size: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  box-sizing: border-box;
 }
 .active-imported-table-wrap {
   max-height: 320px;
@@ -1348,6 +1354,54 @@ button:active{transform:translateY(1px)}
   background: #ffe4e6;
   border-color: #fda4af;
   color: #be123c;
+}
+
+/* --- UNIFIED SMALL ACTION BUTTONS --- */
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-sm:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+.btn-sm:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-sm.danger {
+  color: #e11d48;
+  border-color: #fecdd3;
+  background: #ffffff;
+}
+.btn-sm.danger:hover:not(:disabled),
+.btn-sm.danger.active {
+  background: #ffe4e6;
+  border-color: #fda4af;
+  color: #be123c;
+}
+.btn-sm.reset {
+  color: #475569;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.btn-sm.reset:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 /* --- ROW ACTIONS & MODAL EDITING --- */
