@@ -41,7 +41,9 @@ export function detectAssetType(filename: string, fallback: string = 'DT'): stri
   if (low.includes('transmission line') || low.includes('ehv')) return 'EHV_LINE';
   if (low.includes('ht feeder') || low.includes('ht ') || low.includes('ht-') || low.includes('hv')) return 'HV_LINE';
   if (low.includes('currenttransformer') || low.includes('distribution') || low.includes('transformer') || low.includes('dt')) return 'DT';
+  if (low.includes('pillar')) return 'PILLAR_WAY';
   if (low.includes('meter')) return 'SMART_METER';
+  if (low.includes('street pole') || low.includes('streetpole') || low.includes('street_pole')) return 'STREET_POLE';
   if (low.includes('tower') || low.includes('pole')) return 'POLE';
   if (low.includes('lt')) return 'LT_LINE';
   return fallback;
@@ -79,23 +81,34 @@ function normalizeFeature(feature: any, index: number, defaultType: string, file
   let assetNo =
     properties.asset_no ??
     properties.assetNo ??
+    properties.PILLAR_WAY ??
+    properties.PILLAR_W_1 ??
     properties.name ??
     properties.CT_AIN ??
     properties.DT_AIN ??
     properties.FM_AIN ??
     properties.PTR_AIN ??
     properties.LTC_CIN ??
+    properties.fid ??
+    properties.OBJECTID ??
     properties.id;
 
   if (!assetNo || String(assetNo).trim() === '') {
-    const prefix = filename ? filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') : assetType;
-    assetNo = `${prefix}-${index + 1}`;
+    if (properties.type_of_pole || properties.connect_dt || properties.connect_feeder) {
+      const polePrefix = properties.type_of_pole
+        ? String(properties.type_of_pole).replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()
+        : 'POLE';
+      assetNo = `${polePrefix}-${index + 1}`;
+    } else {
+      const prefix = filename ? filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') : assetType;
+      assetNo = `${prefix}-${index + 1}`;
+    }
   }
 
   return {
     assetNo: String(assetNo),
     assetType,
-    status: String(properties.status ?? 'ACTIVE'),
+    status: String(properties.status ?? properties.PILLAR_W_18 ?? 'ACTIVE'),
     geometry,
     metadata: properties,
     ...point,

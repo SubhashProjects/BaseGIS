@@ -13,6 +13,7 @@ import {
   Pencil,
   Save,
   Plus,
+  RotateCcw,
 } from '../../components/icons';
 import { useGisLayers } from '../../services/layerService';
 import { usePowerGISData } from '../../viewmodels/usePowerGISData';
@@ -24,6 +25,8 @@ import {
 import {
   deleteAssets,
   updateAsset,
+  getDeletedAssetIds,
+  restoreAllDeletedAssets,
   type PowerGISAsset,
   type PowerGISUser,
 } from '../../services/powergisData';
@@ -157,6 +160,72 @@ const NEW_FOLDER_SCHEMAS: FileSchemaInfo[] = [
     properties: ['fid', 'name', 'layer', 'vilnam_soi', 'tname', 'sname', 'dname', 'villcode', 'asset_no', 'asset_type'],
     description: 'Transmission lattice tower locations supporting extra-high-voltage transmission circuits.',
   },
+  {
+    name: 'Pillar_ways',
+    format: 'KML / XML',
+    count: 3648,
+    geomType: 'Point',
+    primaryKey: 'PILLAR_WAY / PILLAR_W_1 / OBJECTID',
+    properties: [
+      'OBJECTID',
+      'PILLAR_WAY',
+      'PILLAR_W_1',
+      'PILLAR_W_2 (Region)',
+      'PILLAR_W_3 (Division EE - IV)',
+      'PILLAR_W_4 (Subdivision KALAPET)',
+      'PILLAR_W_5 (KALAPET O & M)',
+      'PILLAR_W_6 (Substation KALAPET 110/22 SS)',
+      'PILLAR_W_7 (Feeder KC KULAM)',
+      'PILLAR_W_8 (Locality)',
+      'PILLAR_W_9',
+      'PILLAR__10',
+      'PILLAR__11',
+      'PILLAR__18',
+      'PILLAR__20',
+      'PILLAR__21',
+      'PILLAR__22',
+      'PILLAR__23 (Connected DT)',
+      'PILLAR__24',
+      'Enabled',
+    ],
+    description: 'Low-tension pillar ways connecting distribution transformers to end consumer service points across Puducherry.',
+  },
+  {
+    name: 'Street Poles',
+    format: 'CSV / GPKG (StreetPoles.gpkg)',
+    count: 79636,
+    geomType: 'Point',
+    primaryKey: 'fid / type_of_pole + connect_feeder',
+    properties: [
+      'type_of_pole',
+      'voltage',
+      'additional_information',
+      'number_of_lines',
+      'street_light',
+      'connect_dt',
+      'connect_feeder',
+      'inserted_by',
+      'inserted_date',
+      'st_astext (POINT WKT)',
+    ],
+    description: 'Complete island/regional electrical distribution street poles dataset with voltage ratings, line count, and feeding substation/DT.',
+  },
+  {
+    name: 'PoleMap25',
+    format: 'QGZ (QGIS Project Archive)',
+    count: '79,636 features ref',
+    geomType: 'Point',
+    primaryKey: 'PoleMap25.qgs / fOTuMl_styles.db',
+    properties: [
+      'type_of_pole',
+      'voltage',
+      'connect_feeder',
+      'connect_dt',
+      'symbology_rules',
+      'layer_definitions',
+    ],
+    description: 'QGIS cartographic styling and symbology project container for Puducherry street poles.',
+  },
 ];
 
 type TabMode = 'tables' | 'import' | 'schemas';
@@ -168,6 +237,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
 
   const [activeTab, setActiveTab] = useState<TabMode>('tables');
   const [localAssets, setLocalAssets] = useState<PowerGISAsset[]>(getLocalImportedAssets);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(getDeletedAssetIds);
 
   // Table View state
   const [dataSource, setDataSource] = useState<'ALL' | 'LIVE' | 'IMPORTED'>('ALL');
@@ -246,7 +316,8 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
 
   const handleDeleteSingle = async (id: string, name: string) => {
     if (window.confirm(`Delete asset "${name}"? This will remove it from the map, table, and storage.`)) {
-      await deleteAssets([id]);
+      await deleteAssets([id, name]);
+      setDeletedIds(getDeletedAssetIds());
       if (editingAsset?.id === id) setEditingAsset(null);
       if (inspectedAsset?.id === id) setInspectedAsset(null);
       setSelectedIds((prev) => {
@@ -261,6 +332,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
   useEffect(() => {
     const handleAssetsChanged = () => {
       setLocalAssets(getLocalImportedAssets());
+      setDeletedIds(getDeletedAssetIds());
     };
     window.addEventListener('powergis:assets-changed', handleAssetsChanged);
     return () => {
@@ -270,15 +342,21 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
 
   // Combine live and local imported assets based on source selection
   const combinedAssets = useMemo(() => {
-    if (dataSource === 'LIVE') return liveAssets;
-    if (dataSource === 'IMPORTED') return localAssets;
+    const notDeleted = (a: PowerGISAsset) =>
+      !deletedIds.has(a.id) &&
+      !deletedIds.has(a.assetNo) &&
+      !deletedIds.has(String(a.id).trim()) &&
+      !deletedIds.has(String(a.assetNo).trim());
+
+    if (dataSource === 'LIVE') return liveAssets.filter(notDeleted);
+    if (dataSource === 'IMPORTED') return localAssets.filter(notDeleted);
 
     // 'ALL': Merge local and live without duplicate assetNo
     const map = new Map<string, PowerGISAsset>();
-    liveAssets.forEach((a) => map.set(a.id, a));
-    localAssets.forEach((a) => map.set(a.id, a));
+    liveAssets.filter(notDeleted).forEach((a) => map.set(a.id, a));
+    localAssets.filter(notDeleted).forEach((a) => map.set(a.id, a));
     return Array.from(map.values());
-  }, [liveAssets, localAssets, dataSource]);
+  }, [liveAssets, localAssets, dataSource, deletedIds]);
 
   // Filtered assets
   const filteredAssets = useMemo(() => {
@@ -374,27 +452,102 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
   const handleDeleteSelected = async () => {
     if (!selectedIds.size) return;
     if (window.confirm(`Delete ${selectedIds.size} selected asset(s)? This will remove them from the live grid, map, and storage.`)) {
-      await deleteAssets(Array.from(selectedIds));
+      const idsToDelete: string[] = [];
+      combinedAssets.forEach((a) => {
+        if (selectedIds.has(a.id)) {
+          idsToDelete.push(a.id);
+          if (a.assetNo) idsToDelete.push(a.assetNo);
+        }
+      });
+      selectedIds.forEach((id) => idsToDelete.push(id));
+
+      await deleteAssets(idsToDelete);
+      setDeletedIds(getDeletedAssetIds());
       setSelectedIds(new Set());
     }
   };
 
-  // Export current filtered table to CSV
+  const handleRestoreDefaults = async () => {
+    if (window.confirm('Restore all default sample assets and clear deleted items?')) {
+      restoreAllDeletedAssets();
+      setDeletedIds(new Set());
+      setSelectedIds(new Set());
+      window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
+    }
+  };
+
+  // Export current filtered table to CSV with ALL Raw Feature Metadata / Attributes
   const exportTableCsv = () => {
-    const headers = ['Asset No', 'Layer Type', 'Layer Label', 'Status', 'Geometry Type', 'Latitude', 'Longitude', 'Jurisdictions'];
-    const rows = sortedAssets.map((a) => [
-      `"${a.assetNo.replace(/"/g, '""')}"`,
-      `"${a.assetType}"`,
-      `"${(layerLabels[a.assetType] || a.assetType).replace(/"/g, '""')}"`,
-      `"${a.status}"`,
-      `"${a.geometry?.type || 'Point'}"`,
-      a.latitude ?? (a.lat || ''),
-      a.longitude ?? (a.lng || ''),
-      `"${(a.jurisdictions || []).join('; ')}"`,
-    ]);
+    // Gather all unique metadata keys across the current filtered dataset
+    const metaKeySet = new Set<string>();
+    sortedAssets.forEach((a) => {
+      if (a.metadata && typeof a.metadata === 'object') {
+        Object.keys(a.metadata).forEach((k) => metaKeySet.add(k));
+      }
+    });
+    const metaKeys = Array.from(metaKeySet).sort();
+
+    const baseHeaders = [
+      'Asset No',
+      'Layer Type',
+      'Layer Label',
+      'Status',
+      'Geometry Type',
+      'Latitude',
+      'Longitude',
+      'Jurisdictions',
+      'Shared Boundary',
+    ];
+    const headers = [...baseHeaders, ...metaKeys];
+
+    const escapeCsv = (val: any) => {
+      if (val === null || val === undefined) return '""';
+      const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    const rows = sortedAssets.map((a) => {
+      const lat = a.latitude ?? (a.lat !== undefined ? a.lat : '');
+      const lng = a.longitude ?? (a.lng !== undefined ? a.lng : '');
+      const baseValues = [
+        escapeCsv(a.assetNo),
+        escapeCsv(a.assetType),
+        escapeCsv(layerLabels[a.assetType] || a.assetType),
+        escapeCsv(a.status),
+        escapeCsv(a.geometry?.type || 'Point'),
+        lat,
+        lng,
+        escapeCsv((a.jurisdictions || []).join('; ')),
+        escapeCsv(a.shared ? 'Yes' : 'No'),
+      ];
+
+      const metaValues = metaKeys.map((k) => {
+        const v = a.metadata ? a.metadata[k] : undefined;
+        return escapeCsv(v);
+      });
+
+      return [...baseValues, ...metaValues];
+    });
+
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     downloadBlob(blob, `powergis-table-${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
+  // Export metadata for inspected single asset to CSV
+  const exportInspectedMetaCsv = () => {
+    if (!inspectedAsset) return;
+    const meta = inspectedAsset.metadata || {};
+    const headers = ['Property / Attribute Key', 'Value'];
+    const rows = Object.entries(meta).map(([k, v]) => {
+      const escapedKey = `"${String(k).replace(/"/g, '""')}"`;
+      const strVal = v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+      const escapedVal = `"${strVal.replace(/"/g, '""')}"`;
+      return [escapedKey, escapedVal];
+    });
+    const content = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `asset-${inspectedAsset.assetNo}-attributes.csv`);
   };
 
   // Export current filtered table to GeoJSON
@@ -607,6 +760,15 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                 <button type="button" className="dm-sync-btn" onClick={exportTableGeoJson} title="Export current filtered table to GeoJSON">
                   <Download size={13} />
                   <span>Export GeoJSON</span>
+                </button>
+                <button
+                  type="button"
+                  className="dm-sync-btn"
+                  onClick={handleRestoreDefaults}
+                  title="Restore default sample assets and clear deleted items"
+                >
+                  <RotateCcw size={13} />
+                  <span>Restore Defaults</span>
                 </button>
               </div>
 
@@ -943,9 +1105,20 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                     setInspectedAsset(null);
                     openEditModal(target);
                   }}
-                  style={{ marginRight: 'auto' }}
+                  style={{ marginRight: 8 }}
                 >
                   <Pencil size={13} /> Edit Asset Data
+                </button>
+              )}
+              {inspectedAsset.metadata && Object.keys(inspectedAsset.metadata).length > 0 && (
+                <button
+                  type="button"
+                  className="btn secondary"
+                  onClick={exportInspectedMetaCsv}
+                  style={{ marginRight: 'auto' }}
+                  title="Export raw attribute properties of this asset to CSV"
+                >
+                  <Download size={13} /> Export Attributes CSV
                 </button>
               )}
               <button type="button" className="btn secondary" onClick={() => setInspectedAsset(null)}>

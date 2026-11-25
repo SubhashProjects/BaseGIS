@@ -68,6 +68,7 @@ export function defaultIconForType(idOrLabel: string): LayerIconKey {
   const norm = idOrLabel.toUpperCase();
   if (norm.includes('SUBSTATION') || norm.includes('GRID')) return 'tower';
   if (norm.includes('TRANSFORMER') || norm.includes('DT')) return 'transformer';
+  if (norm.includes('PILLAR')) return 'square';
   if (norm.includes('POLE') || norm.includes('TOWER')) return 'pole';
   if (norm.includes('METER')) return 'meter';
   if (norm.includes('SOLAR') || norm.includes('SUN')) return 'sun';

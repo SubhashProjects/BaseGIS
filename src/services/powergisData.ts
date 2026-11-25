@@ -232,22 +232,47 @@ export async function updateAsset(id: string, updates: Partial<PowerGISAsset>): 
 
 export async function deleteAssets(ids: string[]): Promise<void> {
   const currentDeleted = getDeletedAssetIds();
-  ids.forEach((id) => currentDeleted.add(id));
-  saveDeletedAssetIds(currentDeleted);
+  const toDelete = new Set(ids.map((x) => String(x).trim()));
 
-  // Also remove from local imported store if present
+  // 1. Scan and collect all matching IDs and assetNos from sample data
+  SAMPLE_GIS_ASSETS.forEach((sa) => {
+    if (toDelete.has(sa.id) || toDelete.has(sa.assetNo) || toDelete.has(sa.assetNo.trim())) {
+      currentDeleted.add(sa.id);
+      currentDeleted.add(sa.assetNo);
+    }
+  });
+
+  // 2. Scan and remove from local imported store
   try {
-    const { removeImportedAssets } = await import('./dataManagementService');
-    removeImportedAssets(ids);
+    const { getLocalImportedAssets, saveLocalImportedAssets } = await import('./dataManagementService');
+    const local = getLocalImportedAssets();
+    local.forEach((la) => {
+      if (toDelete.has(la.id) || toDelete.has(la.assetNo) || toDelete.has(la.assetNo.trim())) {
+        currentDeleted.add(la.id);
+        currentDeleted.add(la.assetNo);
+      }
+    });
+    const remaining = local.filter((la) => !currentDeleted.has(la.id) && !currentDeleted.has(la.assetNo));
+    saveLocalImportedAssets(remaining);
   } catch {
     /* ignore */
   }
 
-  // Attempt database deletion if connected
+  // 3. Add raw passed IDs and asset numbers
+  ids.forEach((id) => {
+    const clean = String(id).trim();
+    if (clean) {
+      currentDeleted.add(clean);
+    }
+  });
+
+  saveDeletedAssetIds(currentDeleted);
+
+  // 4. Attempt database deletion if connected
   try {
     const client: any = requireSupabase();
     if (client && typeof client.from === 'function') {
-      await client.from('gis_assets').delete?.().in?.('id', ids);
+      await client.from('gis_assets').delete?.().in?.('id', Array.from(currentDeleted));
     }
   } catch {
     /* ignore offline */
@@ -288,6 +313,10 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
     }
   }
 
+  if (error) {
+    console.warn('Supabase asset fetch notice:', error);
+  }
+
   const mappedDbAssets: PowerGISAsset[] = (data ?? []).map((row: any) => ({
     id: String(row.id),
     assetNo: String(row.asset_no),
@@ -312,7 +341,11 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
   }));
 
   const deletedIds = getDeletedAssetIds();
-  const filterNotDeleted = (a: PowerGISAsset) => !deletedIds.has(a.id) && !deletedIds.has(a.assetNo);
+  const filterNotDeleted = (a: PowerGISAsset) =>
+    !deletedIds.has(a.id) &&
+    !deletedIds.has(a.assetNo) &&
+    !deletedIds.has(String(a.id).trim()) &&
+    !deletedIds.has(String(a.assetNo).trim());
 
   const overrides = getAssetOverrides();
   const applyOverrides = (a: PowerGISAsset): PowerGISAsset => {
@@ -327,7 +360,9 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
     };
   };
 
-  const existingIds = new Set(mappedDbAssets.map((a) => a.id));
+  const filteredDbAssets = mappedDbAssets.filter(filterNotDeleted);
+  const existingIds = new Set(filteredDbAssets.map((a) => a.id));
+  const existingAssetNos = new Set(filteredDbAssets.map((a) => a.assetNo));
   const isHighLevel =
     userId === 'org-admin-001' ||
     userId.startsWith('org-se') ||
@@ -338,22 +373,16 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
   const matchingSampleAssets = SAMPLE_GIS_ASSETS.filter(
     (sa) =>
       !existingIds.has(sa.id) &&
+      !existingAssetNos.has(sa.assetNo) &&
       filterNotDeleted(sa) &&
       (isHighLevel || sa.shared || sa.owners.includes(userId))
   );
 
-  const localImported = getLocalImportedAssets().filter((a) => !existingIds.has(a.id) && filterNotDeleted(a));
-  const combined = [...mappedDbAssets.filter(filterNotDeleted), ...localImported, ...matchingSampleAssets].map(applyOverrides);
-  if (combined.length > 0) {
-    return combined;
-  }
-
-  if (error) {
-    console.warn('Falling back to local sample GIS data:', error);
-    return SAMPLE_GIS_ASSETS.filter(filterNotDeleted).map(applyOverrides);
-  }
-
-  return SAMPLE_GIS_ASSETS.filter(filterNotDeleted).map(applyOverrides);
+  const localImported = getLocalImportedAssets().filter(
+    (a) => !existingIds.has(a.id) && !existingAssetNos.has(a.assetNo) && filterNotDeleted(a)
+  );
+  const combined = [...filteredDbAssets, ...localImported, ...matchingSampleAssets].map(applyOverrides);
+  return combined;
 }
 
 export async function getVisibleBoundaries(userId: string): Promise<PowerGISBoundary[]> {
