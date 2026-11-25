@@ -54,8 +54,7 @@ export function detectAssetType(filename: string, fallback: string = 'DT'): stri
   if (low.includes('currenttransformer') || low.includes('distribution') || low.includes('transformer') || low.includes('dt')) return 'DT';
   if (low.includes('pillar')) return 'PILLAR_WAY';
   if (low.includes('meter')) return 'SMART_METER';
-  if (low.includes('street pole') || low.includes('streetpole') || low.includes('street_pole')) return 'STREET_POLE';
-  if (low.includes('tower') || low.includes('pole')) return 'POLE';
+  if (low.includes('street pole') || low.includes('streetpole') || low.includes('street_pole') || low.includes('tower') || low.includes('pole')) return 'POLE';
   if (low.includes('lt')) return 'LT_LINE';
   return fallback;
 }
@@ -87,6 +86,9 @@ function normalizeFeature(feature: any, index: number, defaultType: string, file
     } else {
       assetType = 'ASSET';
     }
+  }
+  if (assetType === 'STREET_POLE' || assetType === 'STREETPOLES' || assetType === 'STREET_POLES' || assetType === 'POLES') {
+    assetType = 'POLE';
   }
 
   let assetNo =
@@ -610,6 +612,18 @@ export async function saveToIndexedDb(assets: PowerGISAsset[]): Promise<void> {
   }
 }
 
+function normalizeImportedAsset(a: PowerGISAsset): PowerGISAsset {
+  if (
+    a.assetType === 'STREET_POLE' ||
+    a.assetType === 'STREETPOLES' ||
+    a.assetType === 'STREET_POLES' ||
+    a.assetType === 'POLES'
+  ) {
+    return { ...a, assetType: 'POLE' };
+  }
+  return a;
+}
+
 export async function loadFromIndexedDb(): Promise<PowerGISAsset[]> {
   try {
     const db = await openIndexedDb();
@@ -617,7 +631,7 @@ export async function loadFromIndexedDb(): Promise<PowerGISAsset[]> {
       const tx = db.transaction(IDB_STORE, 'readonly');
       const store = tx.objectStore(IDB_STORE);
       const req = store.getAll();
-      req.onsuccess = () => resolve(req.result || []);
+      req.onsuccess = () => resolve((req.result || []).map(normalizeImportedAsset));
       req.onerror = () => resolve([]);
     });
   } catch {
@@ -640,15 +654,15 @@ if (typeof window !== 'undefined') {
 
 export function getLocalImportedAssets(): PowerGISAsset[] {
   if (cachedLocalAssets !== null) {
-    return cachedLocalAssets;
+    return cachedLocalAssets.map(normalizeImportedAsset);
   }
   try {
     const saved = localStorage.getItem(IMPORTED_ASSETS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
-        cachedLocalAssets = parsed;
-        return parsed;
+        cachedLocalAssets = parsed.map(normalizeImportedAsset);
+        return cachedLocalAssets;
       }
     }
   } catch (e) {
@@ -658,18 +672,19 @@ export function getLocalImportedAssets(): PowerGISAsset[] {
 }
 
 export function saveLocalImportedAssets(assets: PowerGISAsset[]): void {
-  cachedLocalAssets = assets;
+  const normalized = assets.map(normalizeImportedAsset);
+  cachedLocalAssets = normalized;
   // Asynchronously persist to IndexedDB (can hold 100s of MBs with 0ms UI blocking)
-  void saveToIndexedDb(assets);
+  void saveToIndexedDb(normalized);
 
   // If size is small, also store in localStorage for instant sync
   try {
-    if (assets.length <= 500) {
-      localStorage.setItem(IMPORTED_ASSETS_KEY, JSON.stringify(assets));
+    if (normalized.length <= 500) {
+      localStorage.setItem(IMPORTED_ASSETS_KEY, JSON.stringify(normalized));
     } else {
       localStorage.setItem(
         IMPORTED_ASSETS_KEY,
-        JSON.stringify({ _indexedDb: true, count: assets.length, updated: Date.now() })
+        JSON.stringify({ _indexedDb: true, count: normalized.length, updated: Date.now() })
       );
     }
   } catch {

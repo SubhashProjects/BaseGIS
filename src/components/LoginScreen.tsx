@@ -211,7 +211,6 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
               </div>
               <div>
                 <strong>PowerGIS Administrator</strong>
-                <span>Infrastructure & Grid Security Portal</span>
               </div>
             </div>
             <div className="admin-portal-badge">

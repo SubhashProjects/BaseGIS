@@ -630,28 +630,34 @@ export async function getLiveGridAssets(userId: string): Promise<PowerGISAsset[]
     console.warn('Supabase asset fetch notice:', error);
   }
 
-  const mappedDbAssets: PowerGISAsset[] = (data ?? []).map((row: any) => ({
-    id: String(row.id),
-    assetNo: String(row.asset_no),
-    assetType: String(row.asset_type),
-    status: String(row.status),
-    jurisdictions: row.jurisdiction_ids ?? [],
-    owners: row.owner_je_ids ?? [],
-    shared: !!row.shared_boundary,
-    geometry: row.geometry,
-    lat:
-      row.latitude != null
-        ? Number(row.latitude)
-        : row.geometry?.type === 'Point' && Array.isArray(row.geometry.coordinates)
-        ? Number(row.geometry.coordinates[1])
-        : undefined,
-    lng:
-      row.longitude != null
-        ? Number(row.longitude)
-        : row.geometry?.type === 'Point' && Array.isArray(row.geometry.coordinates)
-        ? Number(row.geometry.coordinates[0])
-        : undefined,
-  }));
+  const mappedDbAssets: PowerGISAsset[] = (data ?? []).map((row: any) => {
+    let rawType = String(row.asset_type || 'ASSET').toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+    if (rawType === 'STREET_POLE' || rawType === 'STREETPOLES' || rawType === 'STREET_POLES' || rawType === 'POLES') {
+      rawType = 'POLE';
+    }
+    return {
+      id: String(row.id),
+      assetNo: String(row.asset_no),
+      assetType: rawType,
+      status: String(row.status),
+      jurisdictions: row.jurisdiction_ids ?? [],
+      owners: row.owner_je_ids ?? [],
+      shared: !!row.shared_boundary,
+      geometry: row.geometry,
+      lat:
+        row.latitude != null
+          ? Number(row.latitude)
+          : row.geometry?.type === 'Point' && Array.isArray(row.geometry.coordinates)
+          ? Number(row.geometry.coordinates[1])
+          : undefined,
+      lng:
+        row.longitude != null
+          ? Number(row.longitude)
+          : row.geometry?.type === 'Point' && Array.isArray(row.geometry.coordinates)
+          ? Number(row.geometry.coordinates[0])
+          : undefined,
+    };
+  });
 
   const deletedIds = getDeletedAssetIds();
   const filterNotDeleted = (a: PowerGISAsset) =>

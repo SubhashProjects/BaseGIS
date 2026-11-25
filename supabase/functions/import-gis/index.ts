@@ -27,7 +27,12 @@ function normalizeFeature(feature: any, index: number, defaultType: string) {
   const geometry = feature?.geometry ?? null;
   if (!isValidGeometry(geometry)) return null;
   const coords = geometry.type === 'Point' && Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
-  return { assetNo: String(properties.asset_no ?? properties.assetNo ?? properties.id ?? `IMP-${crypto.randomUUID()}`), assetType: ALLOWED_ASSET_TYPES.has(String(properties.asset_type ?? properties.assetType ?? defaultType)) ? String(properties.asset_type ?? properties.assetType ?? defaultType) : defaultType, status: String(properties.status ?? 'ACTIVE'), geometry, latitude: coords.length > 1 ? Number(coords[1]) : undefined, longitude: coords.length ? Number(coords[0]) : undefined, metadata: properties };
+  let rawType = String(properties.asset_type ?? properties.assetType ?? defaultType).toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+  if (rawType === 'STREET_POLE' || rawType === 'STREETPOLES' || rawType === 'STREET_POLES' || rawType === 'POLES') {
+    rawType = 'POLE';
+  }
+  const assetType = ALLOWED_ASSET_TYPES.has(rawType) ? rawType : (ALLOWED_ASSET_TYPES.has(defaultType) ? defaultType : 'DT');
+  return { assetNo: String(properties.asset_no ?? properties.assetNo ?? properties.id ?? `IMP-${crypto.randomUUID()}`), assetType, status: String(properties.status ?? 'ACTIVE'), geometry, latitude: coords.length > 1 ? Number(coords[1]) : undefined, longitude: coords.length ? Number(coords[0]) : undefined, metadata: properties };
 }
 
 function parseKml(text: string, defaultType: string) {
@@ -69,7 +74,9 @@ async function parseGpkg(bytes: Uint8Array, defaultType: string) {
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') return new Response(JSON.stringify({ok:false,error:'Method not allowed.'}),{status:405,headers:{'content-type':'application/json'}});
-    const form=await req.formData(); const file=form.get('file'); const requestedType=String(form.get('defaultType')??'DT'); const defaultType=ALLOWED_ASSET_TYPES.has(requestedType) ? requestedType : 'DT'; const sessionToken=String(form.get('sessionToken')??'');
+    const form=await req.formData(); const file=form.get('file'); let requestedType=String(form.get('defaultType')??'DT').toUpperCase();
+    if (requestedType === 'STREET_POLE' || requestedType === 'STREETPOLES' || requestedType === 'STREET_POLES' || requestedType === 'POLES') requestedType = 'POLE';
+    const defaultType=ALLOWED_ASSET_TYPES.has(requestedType) ? requestedType : 'DT'; const sessionToken=String(form.get('sessionToken')??'');
     if(!(file instanceof File)) return new Response(JSON.stringify({ok:false,error:'No GIS file supplied.'}),{status:400});
     if (file.size <= 0 || file.size > MAX_IMPORT_BYTES) return new Response(JSON.stringify({ok:false,error:`File must be between 1 byte and ${MAX_IMPORT_BYTES} bytes.`}),{status:413,headers:{'content-type':'application/json'}});
     const {data:user,error:userError}=await admin.rpc('session_user',{p_session_token:sessionToken});

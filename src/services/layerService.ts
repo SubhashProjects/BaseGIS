@@ -86,10 +86,23 @@ export function getStoredLayers(): GisLayer[] {
     if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.map((l) => ({
-          ...l,
-          icon: l.icon || defaultIconForType(l.id || l.label),
-        }));
+        const seenIds = new Set<string>();
+        const list: GisLayer[] = [];
+        for (const l of parsed) {
+          let id = l.id;
+          if (id === 'STREET_POLES' || id === 'STREETPOLES' || id === 'STREET_POLE' || id === 'POLES') {
+            id = 'POLE';
+          }
+          if (seenIds.has(id)) continue;
+          seenIds.add(id);
+          list.push({
+            ...l,
+            id,
+            label: id === 'POLE' && (l.label === 'Street Poles' || l.label === 'Streetpoles') ? 'Poles' : l.label,
+            icon: l.icon || defaultIconForType(id || l.label),
+          });
+        }
+        return list;
       }
     }
   } catch (e) {
@@ -110,15 +123,21 @@ export function saveStoredLayers(layers: GisLayer[]): void {
 export function addLayer(label: string, color: string, id?: string, icon?: LayerIconKey): GisLayer {
   const current = getStoredLayers();
   const cleanLabel = label.trim();
-  const cleanId = (
+  let cleanId = (
     id ||
     cleanLabel.toUpperCase().replace(/[^A-Z0-9]/g, '_') ||
     `LAYER_${Date.now()}`
   ).replace(/^_+|_+$/g, '');
+  if (cleanId === 'STREET_POLES' || cleanId === 'STREETPOLES' || cleanId === 'STREET_POLE' || cleanId === 'POLES') {
+    cleanId = 'POLE';
+  }
 
   let uniqueId = cleanId;
   let counter = 1;
   while (current.some((l) => l.id === uniqueId)) {
+    if (uniqueId === 'POLE') {
+      return current.find((l) => l.id === 'POLE')!;
+    }
     uniqueId = `${cleanId}_${counter++}`;
   }
 
@@ -177,11 +196,14 @@ export function resetLayers(): GisLayer[] {
 export function ensureLayer(label: string, color?: string, id?: string, icon?: LayerIconKey): GisLayer {
   const current = getStoredLayers();
   const cleanLabel = label.trim();
-  const targetId = (
+  let targetId = (
     id ||
     cleanLabel.toUpperCase().replace(/[^A-Z0-9]/g, '_') ||
     `LAYER_${Date.now()}`
   ).replace(/^_+|_+$/g, '');
+  if (targetId === 'STREET_POLES' || targetId === 'STREETPOLES' || targetId === 'STREET_POLE' || targetId === 'POLES') {
+    targetId = 'POLE';
+  }
 
   const existing = current.find(
     (l) => l.id.toUpperCase() === targetId.toUpperCase() || l.label.toLowerCase() === cleanLabel.toLowerCase()
@@ -211,13 +233,16 @@ export function filenameToLayerInfo(filename: string): { id: string; label: stri
     .split(' ')
     .map((w) => (w.length > 0 ? w.charAt(0).toUpperCase() + w.slice(1) : ''))
     .join(' ');
-  const cleanId = base
+  let cleanId = base
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '_')
     .replace(/^_+|_+$/g, '') || `LAYER_${Date.now()}`;
+  if (cleanId === 'STREET_POLES' || cleanId === 'STREETPOLES' || cleanId === 'STREET_POLE' || cleanId === 'POLES') {
+    cleanId = 'POLE';
+  }
   return {
     id: cleanId,
-    label: titleCaseLabel || cleanId,
+    label: cleanId === 'POLE' ? 'Poles' : (titleCaseLabel || cleanId),
     icon: defaultIconForType(cleanId),
   };
 }
