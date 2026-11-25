@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Plus, Pencil, Trash2, RotateCcw } from '../../components/icons';
+import { ChevronDown, Plus, Pencil, Trash2, RotateCcw, FileUp } from '../../components/icons';
 import { MAP_DEFAULT } from '../../config/constants';
-import { useGisLayers, PRESET_LAYER_COLORS } from '../../services/layerService';
+import { useGisLayers, PRESET_LAYER_COLORS, filenameToLayerInfo } from '../../services/layerService';
+import { parseImportFile, importAssets, supportedImportAccept } from '../../services/dataManagementService';
 import type { MapNavigationTarget } from './MapHierarchyNavigator';
 import type { PowerGISAsset, PowerGISBoundary, PowerGISUser } from '../../services/powergisData';
 
@@ -70,6 +71,7 @@ export function XyzTileMap({
     layerLabels,
     layerColors,
     addLayer,
+    ensureLayer,
     editLayer,
     deleteLayer,
     deleteAllLayers,
@@ -86,6 +88,33 @@ export function XyzTileMap({
   const [showAddBox, setShowAddBox] = useState<boolean>(false);
   const [newLabel, setNewLabel] = useState<string>('');
   const [newColor, setNewColor] = useState<string>(PRESET_LAYER_COLORS[0]);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState<boolean>(false);
+  const addFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCreateOrImport = async () => {
+    const label = newLabel.trim();
+    if (!label) return;
+    try {
+      setIsImporting(true);
+      if (attachedFile) {
+        const layer = ensureLayer(label, newColor);
+        const features = await parseImportFile(attachedFile, layer.id);
+        if (features.length > 0) {
+          await importAssets(features);
+        }
+      } else {
+        addLayer(label, newColor);
+      }
+      setNewLabel('');
+      setAttachedFile(null);
+      setShowAddBox(false);
+    } catch (err: any) {
+      alert(`Import error: ${err?.message || 'Failed to import file'}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const activeLayerIds = useMemo(() => new Set(layers.map((l) => l.id)), [layers]);
   const [selectedAsset, setSelectedAsset] = useState<PowerGISAsset | null>(null);
@@ -605,8 +634,21 @@ export function XyzTileMap({
           </div>
 
           {showAddBox && (
-            <div className="layer-edit-box">
-              <div className="layer-edit-title">New Layer</div>
+            <div
+              className="layer-edit-box"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const f = e.dataTransfer.files?.[0];
+                if (f) {
+                  setAttachedFile(f);
+                  if (!newLabel.trim()) {
+                    setNewLabel(filenameToLayerInfo(f.name).label);
+                  }
+                }
+              }}
+            >
+              <div className="layer-edit-title">New Layer / Import</div>
               <input
                 type="text"
                 className="layer-edit-input"
@@ -615,15 +657,58 @@ export function XyzTileMap({
                 onChange={(e) => setNewLabel(e.target.value)}
                 autoFocus
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newLabel.trim()) {
-                    addLayer(newLabel.trim(), newColor);
-                    setNewLabel('');
-                    setShowAddBox(false);
+                  if (e.key === 'Enter' && newLabel.trim() && !isImporting) {
+                    void handleCreateOrImport();
                   } else if (e.key === 'Escape') {
                     setShowAddBox(false);
+                    setAttachedFile(null);
                   }
                 }}
               />
+
+              <div className="layer-file-upload-zone">
+                <button
+                  type="button"
+                  className="layer-file-select-btn"
+                  onClick={() => addFileInputRef.current?.click()}
+                  title="Select KML, GeoJSON, CSV, or GPKG file to import"
+                >
+                  <FileUp size={12} />
+                  <span>{attachedFile ? attachedFile.name : 'Choose GIS File to Import…'}</span>
+                </button>
+                <input
+                  ref={addFileInputRef}
+                  type="file"
+                  hidden
+                  accept={supportedImportAccept()}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setAttachedFile(f);
+                      if (!newLabel.trim()) {
+                        setNewLabel(filenameToLayerInfo(f.name).label);
+                      }
+                    }
+                    e.currentTarget.value = '';
+                  }}
+                />
+                {attachedFile && (
+                  <div className="layer-attached-file">
+                    <span className="layer-attached-name">
+                      {(attachedFile.size / 1024).toFixed(1)} KB attached
+                    </span>
+                    <button
+                      type="button"
+                      className="layer-attached-remove"
+                      onClick={() => setAttachedFile(null)}
+                      title="Remove file"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="layer-color-palette">
                 {PRESET_LAYER_COLORS.map((c) => (
                   <button
@@ -636,25 +721,28 @@ export function XyzTileMap({
                   />
                 ))}
               </div>
+
               <div className="layer-edit-actions">
                 <button
                   type="button"
                   className="layer-save-btn"
-                  disabled={!newLabel.trim()}
-                  onClick={() => {
-                    if (newLabel.trim()) {
-                      addLayer(newLabel.trim(), newColor);
-                      setNewLabel('');
-                      setShowAddBox(false);
-                    }
-                  }}
+                  disabled={!newLabel.trim() || isImporting}
+                  onClick={handleCreateOrImport}
                 >
-                  Create
+                  {isImporting
+                    ? 'Importing…'
+                    : attachedFile
+                    ? 'Create & Import'
+                    : 'Create'}
                 </button>
                 <button
                   type="button"
                   className="layer-cancel-btn"
-                  onClick={() => setShowAddBox(false)}
+                  disabled={isImporting}
+                  onClick={() => {
+                    setShowAddBox(false);
+                    setAttachedFile(null);
+                  }}
                 >
                   Cancel
                 </button>

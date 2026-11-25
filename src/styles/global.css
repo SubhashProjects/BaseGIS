@@ -170,6 +170,13 @@ button:active{transform:translateY(1px)}
 .layer-edit-title{font-size:10px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.04em}
 .layer-edit-input{width:100%;height:28px;padding:0 7px;font-size:11px;font-weight:600;color:#0f172a;border:1px solid #cbd5e1;border-radius:4px;outline:none;background:#ffffff;box-sizing:border-box}
 .layer-edit-input:focus{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,0.12)}
+.layer-file-upload-zone{display:grid;gap:4px}
+.layer-file-select-btn{width:100%;height:27px;background:#ffffff;border:1px dashed #94a3b8;border-radius:4px;color:#1e3a8a;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all .12s ease;padding:0 6px}
+.layer-file-select-btn:hover{background:#eff6ff;border-color:#2563eb}
+.layer-attached-file{display:flex;align-items:center;justify-content:space-between;background:#eff6ff;border:1px solid #bfdbfe;border-radius:3px;padding:2px 6px;font-size:10px;color:#1e3a8a}
+.layer-attached-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.layer-attached-remove{background:transparent;border:none;color:#64748b;font-size:14px;line-height:1;cursor:pointer;padding:0 2px}
+.layer-attached-remove:hover{color:#dc2626}
 .layer-color-palette{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 .layer-color-swatch{width:15px;height:15px;border-radius:3px;cursor:pointer;border:1px solid rgba(0,0,0,0.15);padding:0;transition:transform .1s ease}
 .layer-color-swatch:hover{transform:scale(1.15)}
