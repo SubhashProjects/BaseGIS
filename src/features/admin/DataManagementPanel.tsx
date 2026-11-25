@@ -22,13 +22,12 @@ import {
   parseImportFile,
   importAssets,
   getLocalImportedAssets,
-  removeImportedAssets,
   clearAllImportedAssets,
   type DuplicateStrategy,
   type ImportFeature,
 } from '../../services/dataManagementService';
 import { useDataManagementViewModel } from '../../viewmodels/useDataManagementViewModel';
-import type { PowerGISAsset, PowerGISUser } from '../../services/powergisData';
+import { deleteAssets, type PowerGISAsset, type PowerGISUser } from '../../services/powergisData';
 
 interface StagedFileMeta {
   id: string;
@@ -290,10 +289,10 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
     setSelectedActiveIds(new Set());
   };
 
-  const handleDeleteSelectedActive = () => {
+  const handleDeleteSelectedActive = async () => {
     if (!selectedActiveIds.size) return;
     if (window.confirm(`Delete ${selectedActiveIds.size} selected imported asset(s)?`)) {
-      removeImportedAssets(Array.from(selectedActiveIds));
+      await deleteAssets(Array.from(selectedActiveIds));
       setSelectedActiveIds(new Set());
     }
   };
@@ -796,7 +795,7 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
                           type="button"
                           className="row-remove-btn"
                           title="Delete asset"
-                          onClick={() => removeImportedAssets([asset.id])}
+                          onClick={() => deleteAssets([asset.id])}
                         >
                           <Trash2 size={12} />
                         </button>

@@ -10,16 +10,23 @@ import {
   ArrowDown,
   LayerIconGlyph,
   ShieldCheck,
+  Pencil,
+  Save,
+  Plus,
 } from '../../components/icons';
 import { useGisLayers } from '../../services/layerService';
 import { usePowerGISData } from '../../viewmodels/usePowerGISData';
 import { DataManagementPanel } from '../admin/DataManagementPanel';
 import {
   getLocalImportedAssets,
-  removeImportedAssets,
   downloadBlob,
 } from '../../services/dataManagementService';
-import type { PowerGISAsset, PowerGISUser } from '../../services/powergisData';
+import {
+  deleteAssets,
+  updateAsset,
+  type PowerGISAsset,
+  type PowerGISUser,
+} from '../../services/powergisData';
 
 // Embedded schema metadata analyzed locally from c:\Users\HARISH VYAS\Project\BaseGIS\New folder
 interface FileSchemaInfo {
@@ -177,6 +184,79 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
   // Inspector modal state
   const [inspectedAsset, setInspectedAsset] = useState<PowerGISAsset | null>(null);
 
+  // Asset Editing modal state (for GIS Admin)
+  const [editingAsset, setEditingAsset] = useState<PowerGISAsset | null>(null);
+  const [editAssetNo, setEditAssetNo] = useState<string>('');
+  const [editAssetType, setEditAssetType] = useState<string>('');
+  const [editStatus, setEditStatus] = useState<string>('ACTIVE');
+  const [editLat, setEditLat] = useState<string>('');
+  const [editLng, setEditLng] = useState<string>('');
+  const [editJurisdiction, setEditJurisdiction] = useState<string>('');
+  const [editShared, setEditShared] = useState<boolean>(true);
+  const [editMetadata, setEditMetadata] = useState<Record<string, any>>({});
+  const [newMetaKey, setNewMetaKey] = useState<string>('');
+  const [newMetaVal, setNewMetaVal] = useState<string>('');
+
+  const openEditModal = (asset: PowerGISAsset) => {
+    setEditingAsset(asset);
+    setEditAssetNo(asset.assetNo || '');
+    setEditAssetType(asset.assetType || '');
+    setEditStatus(asset.status || 'ACTIVE');
+    setEditLat(
+      asset.latitude !== undefined
+        ? String(asset.latitude)
+        : asset.lat !== undefined
+        ? String(asset.lat)
+        : ''
+    );
+    setEditLng(
+      asset.longitude !== undefined
+        ? String(asset.longitude)
+        : asset.lng !== undefined
+        ? String(asset.lng)
+        : ''
+    );
+    setEditJurisdiction((asset.jurisdictions || []).join(', '));
+    setEditShared(asset.shared ?? true);
+    setEditMetadata(asset.metadata ? { ...asset.metadata } : {});
+    setNewMetaKey('');
+    setNewMetaVal('');
+  };
+
+  const handleSaveAsset = async () => {
+    if (!editingAsset || !editAssetNo.trim()) return;
+    const parsedLat = parseFloat(editLat);
+    const parsedLng = parseFloat(editLng);
+    const jurs = editJurisdiction.split(',').map((s) => s.trim()).filter(Boolean);
+
+    await updateAsset(editingAsset.id, {
+      assetNo: editAssetNo.trim(),
+      assetType: editAssetType,
+      status: editStatus as any,
+      lat: Number.isFinite(parsedLat) ? parsedLat : editingAsset.lat,
+      lng: Number.isFinite(parsedLng) ? parsedLng : editingAsset.lng,
+      latitude: Number.isFinite(parsedLat) ? parsedLat : editingAsset.latitude,
+      longitude: Number.isFinite(parsedLng) ? parsedLng : editingAsset.longitude,
+      jurisdictions: jurs.length > 0 ? jurs : editingAsset.jurisdictions,
+      shared: editShared,
+      metadata: editMetadata,
+    });
+    setEditingAsset(null);
+  };
+
+  const handleDeleteSingle = async (id: string, name: string) => {
+    if (window.confirm(`Delete asset "${name}"? This will remove it from the map, table, and storage.`)) {
+      await deleteAssets([id]);
+      if (editingAsset?.id === id) setEditingAsset(null);
+      if (inspectedAsset?.id === id) setInspectedAsset(null);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
   // Listen to asset changes
   useEffect(() => {
     const handleAssetsChanged = () => {
@@ -291,10 +371,10 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
     setSelectedIds(new Set());
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (!selectedIds.size) return;
-    if (window.confirm(`Delete ${selectedIds.size} selected asset(s)?`)) {
-      removeImportedAssets(Array.from(selectedIds));
+    if (window.confirm(`Delete ${selectedIds.size} selected asset(s)? This will remove them from the live grid, map, and storage.`)) {
+      await deleteAssets(Array.from(selectedIds));
       setSelectedIds(new Set());
     }
   };
@@ -491,43 +571,44 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                 Showing <strong>{sortedAssets.length}</strong> matching records
                 {selectedIds.size > 0 && <span className="dm-selected-badge"> • {selectedIds.size} selected</span>}
               </span>
+            </div>
 
-              <div className="dm-btn-group">
-                <button type="button" className="btn-sm" onClick={selectAllPage} title="Select all on this page">
+            <div className="dm-toolbar-actions">
+              <div className="dm-synced-btn-group">
+                <button type="button" className="dm-sync-btn" onClick={selectAllPage} title="Select all records on current page">
                   Select Page
                 </button>
-                <button type="button" className="btn-sm" onClick={selectAllFiltered} title="Select all filtered records">
+                <button type="button" className="dm-sync-btn" onClick={selectAllFiltered} title="Select all filtered records">
                   Select All ({sortedAssets.length})
                 </button>
                 <button
                   type="button"
-                  className="btn-sm"
+                  className="dm-sync-btn"
                   onClick={deselectAll}
                   disabled={selectedIds.size === 0}
-                  title="Deselect all"
+                  title="Deselect all records"
                 >
                   Deselect All
                 </button>
-              </div>
-            </div>
-
-            <div className="dm-toolbar-right">
-              {selectedIds.size > 0 && (
-                <button type="button" className="btn-sm danger" onClick={handleDeleteSelected}>
+                <button
+                  type="button"
+                  className={`dm-sync-btn danger ${selectedIds.size > 0 ? 'active' : ''}`}
+                  onClick={handleDeleteSelected}
+                  disabled={selectedIds.size === 0}
+                  title={selectedIds.size > 0 ? `Delete ${selectedIds.size} selected record(s)` : 'Select records to delete'}
+                >
                   <Trash2 size={13} />
-                  Delete Selected ({selectedIds.size})
+                  <span>Delete Selected ({selectedIds.size})</span>
                 </button>
-              )}
-
-              <button type="button" className="btn-sm" onClick={exportTableCsv} title="Export current table to CSV">
-                <Download size={13} />
-                Export CSV
-              </button>
-
-              <button type="button" className="btn-sm" onClick={exportTableGeoJson} title="Export current table to GeoJSON">
-                <Download size={13} />
-                Export GeoJSON
-              </button>
+                <button type="button" className="dm-sync-btn" onClick={exportTableCsv} title="Export current filtered table to CSV">
+                  <Download size={13} />
+                  <span>Export CSV</span>
+                </button>
+                <button type="button" className="dm-sync-btn" onClick={exportTableGeoJson} title="Export current filtered table to GeoJSON">
+                  <Download size={13} />
+                  <span>Export GeoJSON</span>
+                </button>
+              </div>
 
               <select
                 className="dm-pagesize-select"
@@ -610,7 +691,9 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                       )}
                     </div>
                   </th>
-                  <th style={{ width: 100, textAlign: 'center' }}>Attributes</th>
+                  <th style={{ width: currentUser.role === 'GIS_ADMIN' ? 140 : 90, textAlign: 'center' }}>
+                    {currentUser.role === 'GIS_ADMIN' ? 'Actions' : 'Attributes'}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -672,14 +755,27 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                           <span className="muted">{(asset.jurisdictions || []).join(', ') || 'Pondicherry'}</span>
                         </td>
                         <td style={{ textAlign: 'center' }}>
-                          <button
-                            type="button"
-                            className="dm-inspect-btn"
-                            title="Inspect full attributes"
-                            onClick={() => setInspectedAsset(asset)}
-                          >
-                            Inspect
-                          </button>
+                          <div className="dm-row-actions">
+                            {currentUser.role === 'GIS_ADMIN' && (
+                              <button
+                                type="button"
+                                className="dm-row-btn edit"
+                                title="Edit asset name & data (GIS Admin)"
+                                onClick={() => openEditModal(asset)}
+                              >
+                                <Pencil size={11} />
+                                <span>Edit</span>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="dm-row-btn inspect"
+                              title="Inspect full attributes"
+                              onClick={() => setInspectedAsset(asset)}
+                            >
+                              Inspect
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -838,9 +934,262 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
             </div>
 
             <div className="dm-modal-footer">
+              {currentUser.role === 'GIS_ADMIN' && (
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() => {
+                    const target = inspectedAsset;
+                    setInspectedAsset(null);
+                    openEditModal(target);
+                  }}
+                  style={{ marginRight: 'auto' }}
+                >
+                  <Pencil size={13} /> Edit Asset Data
+                </button>
+              )}
               <button type="button" className="btn secondary" onClick={() => setInspectedAsset(null)}>
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSET EDITING MODAL (FOR GIS ADMIN) */}
+      {editingAsset && (
+        <div className="dm-modal-overlay" onClick={() => setEditingAsset(null)}>
+          <div className="dm-modal-box dm-edit-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="dm-modal-header">
+              <div>
+                <span className="asset-kicker">GIS ADMIN / ASSET EDITOR</span>
+                <h3>Edit Asset: {editingAsset.assetNo}</h3>
+              </div>
+              <button type="button" className="dm-modal-close" onClick={() => setEditingAsset(null)}>
+                ×
+              </button>
+            </div>
+
+            <div className="dm-modal-body">
+              <div className="dm-edit-form-grid">
+                <div className="dm-edit-field">
+                  <label>
+                    Asset Name / Number: <span className="req">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={editAssetNo}
+                    onChange={(e) => setEditAssetNo(e.target.value)}
+                    placeholder="Asset Number / ID"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Layer / Asset Type:</label>
+                  <select
+                    className="dm-edit-select"
+                    value={editAssetType}
+                    onChange={(e) => setEditAssetType(e.target.value)}
+                  >
+                    {layers.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.label} ({l.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Operational Status:</label>
+                  <select
+                    className="dm-edit-select"
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="MAINTENANCE">MAINTENANCE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Jurisdictions (comma-separated):</label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={editJurisdiction}
+                    onChange={(e) => setEditJurisdiction(e.target.value)}
+                    placeholder="e.g. Pondicherry, Oulgaret"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Latitude:</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    className="dm-edit-input"
+                    value={editLat}
+                    onChange={(e) => setEditLat(e.target.value)}
+                    placeholder="Latitude (e.g. 11.9416)"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Longitude:</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    className="dm-edit-input"
+                    value={editLng}
+                    onChange={(e) => setEditLng(e.target.value)}
+                    placeholder="Longitude (e.g. 79.8083)"
+                  />
+                </div>
+              </div>
+
+              <div className="dm-edit-checkbox-row">
+                <label className="dm-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={editShared}
+                    onChange={(e) => setEditShared(e.target.checked)}
+                  />
+                  <span>Shared Boundary (visible across sub-jurisdictions)</span>
+                </label>
+              </div>
+
+              {/* Extended Metadata Attributes Editor */}
+              <div className="dm-metadata-editor-section">
+                <div className="dm-section-head-row">
+                  <h4>Extended Feature Attributes / Properties</h4>
+                  <span className="muted">{Object.keys(editMetadata).length} properties</span>
+                </div>
+
+                <div className="dm-meta-table-wrap">
+                  <table className="dm-meta-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40%' }}>Attribute Key</th>
+                        <th>Attribute Value</th>
+                        <th style={{ width: 50, textAlign: 'center' }}>Remove</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.keys(editMetadata).length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="muted" style={{ textAlign: 'center', padding: 12 }}>
+                            No custom attributes defined. Add a new property below.
+                          </td>
+                        </tr>
+                      ) : (
+                        Object.entries(editMetadata).map(([k, v]) => (
+                          <tr key={k}>
+                            <td>
+                              <code>{k}</code>
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                className="dm-meta-val-input"
+                                value={v === null || v === undefined ? '' : String(v)}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditMetadata((prev) => ({ ...prev, [k]: val }));
+                                }}
+                              />
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                className="row-remove-btn"
+                                title={`Delete ${k}`}
+                                onClick={() => {
+                                  setEditMetadata((prev) => {
+                                    const next = { ...prev };
+                                    delete next[k];
+                                    return next;
+                                  });
+                                }}
+                              >
+                                ×
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Add New Attribute Form */}
+                <div className="dm-add-attr-bar">
+                  <input
+                    type="text"
+                    className="dm-add-attr-key"
+                    placeholder="Property name (e.g. VOLTAGE_KV)"
+                    value={newMetaKey}
+                    onChange={(e) => setNewMetaKey(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="dm-add-attr-val"
+                    placeholder="Property value"
+                    value={newMetaVal}
+                    onChange={(e) => setNewMetaVal(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newMetaKey.trim()) {
+                        e.preventDefault();
+                        setEditMetadata((prev) => ({ ...prev, [newMetaKey.trim()]: newMetaVal }));
+                        setNewMetaKey('');
+                        setNewMetaVal('');
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-sm"
+                    disabled={!newMetaKey.trim()}
+                    onClick={() => {
+                      if (newMetaKey.trim()) {
+                        setEditMetadata((prev) => ({ ...prev, [newMetaKey.trim()]: newMetaVal }));
+                        setNewMetaKey('');
+                        setNewMetaVal('');
+                      }
+                    }}
+                  >
+                    <Plus size={13} />
+                    <span>Add</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="dm-modal-footer dm-edit-footer">
+              <button
+                type="button"
+                className="btn danger"
+                onClick={() => handleDeleteSingle(editingAsset.id, editingAsset.assetNo)}
+              >
+                <Trash2 size={13} />
+                <span>Delete Asset</span>
+              </button>
+
+              <div className="dm-footer-right">
+                <button type="button" className="btn secondary" onClick={() => setEditingAsset(null)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={!editAssetNo.trim()}
+                  onClick={handleSaveAsset}
+                >
+                  <Save size={14} />
+                  <span>Save Changes</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

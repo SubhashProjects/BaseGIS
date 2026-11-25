@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Plus, Pencil, Trash2, RotateCcw, FileUp, LayerIconGlyph } from '../../components/icons';
+import { ChevronDown, Plus, Pencil, Trash2, RotateCcw, FileUp, LayerIconGlyph, Save } from '../../components/icons';
 import { MAP_DEFAULT } from '../../config/constants';
 import {
   useGisLayers,
@@ -9,18 +9,20 @@ import {
   type LayerIconKey,
 } from '../../services/layerService';
 import { parseImportFile, importAssets, supportedImportAccept } from '../../services/dataManagementService';
+import { updateAsset, deleteAssets } from '../../services/powergisData';
 import type { MapNavigationTarget } from './MapHierarchyNavigator';
 import type { PowerGISAsset, PowerGISBoundary, PowerGISUser } from '../../services/powergisData';
 
-type BaseLayer = 'roadmap' | 'satellite' | 'hybrid' | 'terrain' | 'roads';
+type BaseLayer = 'roadmap' | 'satellite' | 'hybrid' | 'terrain' | 'roads' | 'osm' | 'empty';
 type Point = { lat: number; lng: number };
 
-const TILE_URLS: Record<BaseLayer, string> = {
+const TILE_URLS: Record<Exclude<BaseLayer, 'empty'>, string> = {
   satellite: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
   hybrid: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
   roadmap: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
   terrain: 'https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
   roads: 'https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',
+  osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 };
 
 const tileSize = 256;
@@ -89,6 +91,19 @@ export function XyzTileMap({
     Object.fromEntries(layers.map((l) => [l.id, true]))
   );
 
+  const [iconScale, setIconScale] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('powergis_marker_scale');
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if (Number.isFinite(parsed) && parsed >= 0.5 && parsed <= 3) return parsed;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 1;
+  });
+
   const [showAreaNames, setShowAreaNames] = useState<boolean>(true);
   const [visibleAreas, setVisibleAreas] = useState<Record<string, boolean>>({});
   const [showAreaSublist, setShowAreaSublist] = useState<boolean>(false);
@@ -131,6 +146,37 @@ export function XyzTileMap({
 
   const activeLayerIds = useMemo(() => new Set(layers.map((l) => l.id)), [layers]);
   const [selectedAsset, setSelectedAsset] = useState<PowerGISAsset | null>(null);
+
+  // Asset editing on map
+  const [isEditingAsset, setIsEditingAsset] = useState<boolean>(false);
+  const [editAssetNo, setEditAssetNo] = useState<string>('');
+  const [editAssetType, setEditAssetType] = useState<string>('');
+  const [editAssetStatus, setEditAssetStatus] = useState<string>('ACTIVE');
+  const [editLat, setEditLat] = useState<string>('');
+  const [editLng, setEditLng] = useState<string>('');
+
+  useEffect(() => {
+    if (selectedAsset) {
+      setEditAssetNo(selectedAsset.assetNo || '');
+      setEditAssetType(selectedAsset.assetType || '');
+      setEditAssetStatus(selectedAsset.status || 'ACTIVE');
+      setEditLat(
+        selectedAsset.latitude !== undefined
+          ? String(selectedAsset.latitude)
+          : selectedAsset.lat !== undefined
+          ? String(selectedAsset.lat)
+          : ''
+      );
+      setEditLng(
+        selectedAsset.longitude !== undefined
+          ? String(selectedAsset.longitude)
+          : selectedAsset.lng !== undefined
+          ? String(selectedAsset.lng)
+          : ''
+      );
+      setIsEditingAsset(false);
+    }
+  }, [selectedAsset]);
   const [hover, setHover] = useState<{ asset: PowerGISAsset; x: number; y: number } | null>(null);
   const baseMapSelectRef = useRef<HTMLSelectElement>(null);
 
@@ -325,6 +371,7 @@ export function XyzTileMap({
   }, [navigationTarget, boundaries]);
 
   const tiles = useMemo(() => {
+    if (layer === 'empty') return [];
     const cx = lngToX(center.lng, zoom) * tileSize;
     const cy = latToY(center.lat, zoom) * tileSize;
     // Diagonal extent provides 100% tile coverage at all rotation angles without needing artificial scale
@@ -344,7 +391,10 @@ export function XyzTileMap({
           y,
           left: x * tileSize - (cx - size.width / 2),
           top: y * tileSize - (cy - size.height / 2),
-          url: TILE_URLS[layer].replace('{x}', String(wx)).replace('{y}', String(y)).replace('{z}', String(zoom)),
+          url: TILE_URLS[layer as Exclude<BaseLayer, 'empty'>]
+            .replace('{x}', String(wx))
+            .replace('{y}', String(y))
+            .replace('{z}', String(zoom)),
         });
       }
     }
@@ -372,13 +422,13 @@ export function XyzTileMap({
 
   return (
     <div
-      className={`xyz-map ${isDragging ? 'dragging' : ''}`}
+      className={`xyz-map ${isDragging ? 'dragging' : ''} ${layer === 'empty' ? 'empty-base' : ''}`}
       ref={mapRef}
       onContextMenu={(e) => e.preventDefault()}
       onPointerDown={(e) => {
         if (e.button !== 0 && e.button !== 2) return;
         const target = e.target as HTMLElement;
-        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
+        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-scale-control, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
           return;
         }
         const mode = e.button === 2 || e.shiftKey ? 'rotate' : 'pan';
@@ -437,7 +487,7 @@ export function XyzTileMap({
       }}
       onWheel={(e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
+        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-scale-control, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
           return;
         }
         e.preventDefault();
@@ -457,7 +507,7 @@ export function XyzTileMap({
       }}
       onDoubleClick={(e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
+        if (target.closest('.xyz-controls, .xyz-map-left-panel, .xyz-scale-control, .xyz-layer, .xyz-layer-list, .asset-detail, button, select, input, label')) {
           return;
         }
         e.preventDefault();
@@ -525,21 +575,31 @@ export function XyzTileMap({
               const p = pos({ lat: a.lat!, lng: a.lng! }, center, zoom, size.width, size.height);
               const layerIcon = layerIcons[a.assetType] || 'circle';
               const layerColor = layerColors[a.assetType] || '#2563EB';
+              const markerDiameter = Math.round(18 * iconScale);
+              const glyphSize = Math.max(7, Math.round(11 * iconScale));
+              const radius = markerDiameter / 2;
               return (
                 <button
                   key={a.id}
                   aria-label={a.assetNo}
                   className={`asset-marker ${a.assetType.toLowerCase()} ${selectedAsset?.id === a.id ? 'selected' : ''}`}
-                  style={{ left: p.left - 9, top: p.top - 9, background: layerColor }}
+                  style={{
+                    left: p.left - radius,
+                    top: p.top - radius,
+                    width: markerDiameter,
+                    height: markerDiameter,
+                    background: layerColor,
+                  }}
                   onMouseEnter={(e) => setHover({ asset: a, x: e.clientX, y: e.clientY })}
                   onMouseMove={(e) => setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h))}
                   onMouseLeave={() => setHover(null)}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedAsset(a);
+                    setIsEditingAsset(false);
                   }}
                 >
-                  <LayerIconGlyph icon={layerIcon} size={11} color="#ffffff" strokeWidth={2.5} />
+                  <LayerIconGlyph icon={layerIcon} size={glyphSize} color="#ffffff" strokeWidth={2.5} />
                 </button>
               );
             })}
@@ -589,13 +649,74 @@ export function XyzTileMap({
               value={layer}
               onChange={(e) => setLayer(e.target.value as BaseLayer)}
             >
-              <option value="roadmap">Roadmap</option>
-              <option value="satellite">Satellite</option>
+              <option value="roadmap">Roadmap (Google)</option>
+              <option value="satellite">Satellite (Google)</option>
               <option value="hybrid">Hybrid</option>
               <option value="terrain">Terrain</option>
-              <option value="roads">Roads</option>
+              <option value="roads">Roads only</option>
+              <option value="osm">OpenStreetMap</option>
+              <option value="empty">Empty Canvas (No Map)</option>
             </select>
             <ChevronDown size={14} className="xyz-base-chevron" />
+          </div>
+        </div>
+
+        <div
+          className="xyz-scale-control"
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="xyz-scale-header">
+            <span className="xyz-scale-title">Icon Scale</span>
+            <span className="xyz-scale-value">
+              {iconScale.toFixed(1)}x ({Math.round(18 * iconScale)}px)
+            </span>
+          </div>
+          <div className="xyz-scale-body">
+            <input
+              type="range"
+              min="0.5"
+              max="2.5"
+              step="0.1"
+              value={iconScale}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setIconScale(val);
+                try {
+                  localStorage.setItem('powergis_marker_scale', String(val));
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="xyz-scale-slider"
+              title="Scale icon size across map"
+            />
+            <div className="xyz-scale-presets">
+              {[
+                { label: 'S', val: 0.7 },
+                { label: 'M', val: 1.0 },
+                { label: 'L', val: 1.4 },
+                { label: 'XL', val: 1.8 },
+              ].map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  className={`xyz-scale-preset-btn ${Math.abs(iconScale - p.val) < 0.05 ? 'active' : ''}`}
+                  onClick={() => {
+                    setIconScale(p.val);
+                    try {
+                      localStorage.setItem('powergis_marker_scale', String(p.val));
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                  title={`Set scale to ${p.val}x`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <div
@@ -1061,22 +1182,155 @@ export function XyzTileMap({
               <span className="asset-kicker">{layerLabels[selectedAsset.assetType] ?? selectedAsset.assetType}</span>
               <b>{selectedAsset.assetNo}</b>
             </div>
-            <button title="Close" onClick={() => setSelectedAsset(null)}>
-              ×
-            </button>
+            <div className="asset-head-actions">
+              {currentUser.role === 'GIS_ADMIN' && (
+                <button
+                  type="button"
+                  className="asset-head-edit-btn"
+                  onClick={() => setIsEditingAsset(!isEditingAsset)}
+                  title={isEditingAsset ? 'Cancel editing' : 'Edit asset name & data (GIS Admin)'}
+                >
+                  <Pencil size={11} />
+                  <span>{isEditingAsset ? 'Cancel' : 'Edit'}</span>
+                </button>
+              )}
+              <button
+                title="Close"
+                onClick={() => {
+                  setSelectedAsset(null);
+                  setIsEditingAsset(false);
+                }}
+              >
+                ×
+              </button>
+            </div>
           </div>
-          <div className="asset-detail-grid">
-            <span>Status</span>
-            <b>{selectedAsset.status}</b>
-            <span>Visibility</span>
-            <b>{selectedAsset.shared ? 'Shared boundary' : 'Private'}</b>
-            <span>Jurisdiction</span>
-            <b>{selectedAsset.jurisdictions.join(', ')}</b>
-            <span>Coordinates</span>
-            <b>
-              {selectedAsset.lat?.toFixed(6)}, {selectedAsset.lng?.toFixed(6)}
-            </b>
-          </div>
+
+          {isEditingAsset ? (
+            <div className="asset-edit-form">
+              <div className="asset-edit-field">
+                <label>Asset Name / No:</label>
+                <input
+                  type="text"
+                  value={editAssetNo}
+                  onChange={(e) => setEditAssetNo(e.target.value)}
+                  placeholder="Asset Number"
+                />
+              </div>
+
+              <div className="asset-edit-field">
+                <label>Layer / Asset Type:</label>
+                <select value={editAssetType} onChange={(e) => setEditAssetType(e.target.value)}>
+                  {layers.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.label} ({l.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="asset-edit-field">
+                <label>Status:</label>
+                <select value={editAssetStatus} onChange={(e) => setEditAssetStatus(e.target.value)}>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="MAINTENANCE">MAINTENANCE</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                </select>
+              </div>
+
+              <div className="asset-edit-row">
+                <div className="asset-edit-field">
+                  <label>Latitude:</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={editLat}
+                    onChange={(e) => setEditLat(e.target.value)}
+                    placeholder="Lat"
+                  />
+                </div>
+                <div className="asset-edit-field">
+                  <label>Longitude:</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={editLng}
+                    onChange={(e) => setEditLng(e.target.value)}
+                    placeholder="Lng"
+                  />
+                </div>
+              </div>
+
+              <div className="asset-edit-actions">
+                <button
+                  type="button"
+                  className="asset-save-btn"
+                  disabled={!editAssetNo.trim()}
+                  onClick={async () => {
+                    const parsedLat = parseFloat(editLat);
+                    const parsedLng = parseFloat(editLng);
+                    await updateAsset(selectedAsset.id, {
+                      assetNo: editAssetNo.trim(),
+                      assetType: editAssetType,
+                      status: editAssetStatus as any,
+                      lat: Number.isFinite(parsedLat) ? parsedLat : selectedAsset.lat,
+                      lng: Number.isFinite(parsedLng) ? parsedLng : selectedAsset.lng,
+                      latitude: Number.isFinite(parsedLat) ? parsedLat : selectedAsset.latitude,
+                      longitude: Number.isFinite(parsedLng) ? parsedLng : selectedAsset.longitude,
+                    });
+                    setSelectedAsset((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            assetNo: editAssetNo.trim(),
+                            assetType: editAssetType,
+                            status: editAssetStatus as any,
+                            lat: Number.isFinite(parsedLat) ? parsedLat : prev.lat,
+                            lng: Number.isFinite(parsedLng) ? parsedLng : prev.lng,
+                            latitude: Number.isFinite(parsedLat) ? parsedLat : prev.latitude,
+                            longitude: Number.isFinite(parsedLng) ? parsedLng : prev.longitude,
+                          }
+                        : null
+                    );
+                    setIsEditingAsset(false);
+                  }}
+                >
+                  <Save size={12} />
+                  <span>Save</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="asset-delete-btn"
+                  title="Delete asset from map and storage"
+                  onClick={async () => {
+                    if (window.confirm(`Delete asset "${selectedAsset.assetNo}"? This will remove it from the map.`)) {
+                      await deleteAssets([selectedAsset.id]);
+                      setSelectedAsset(null);
+                      setIsEditingAsset(false);
+                    }
+                  }}
+                >
+                  <Trash2 size={12} />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="asset-detail-grid">
+              <span>Status</span>
+              <b>{selectedAsset.status}</b>
+              <span>Visibility</span>
+              <b>{selectedAsset.shared ? 'Shared boundary' : 'Private'}</b>
+              <span>Jurisdiction</span>
+              <b>{selectedAsset.jurisdictions?.join(', ') || 'Pondicherry'}</b>
+              <span>Coordinates</span>
+              <b>
+                {selectedAsset.lat?.toFixed(6) ?? selectedAsset.latitude?.toFixed(6) ?? '—'},{' '}
+                {selectedAsset.lng?.toFixed(6) ?? selectedAsset.longitude?.toFixed(6) ?? '—'}
+              </b>
+            </div>
+          )}
         </div>
       )}
       <div className="xyz-legend">
