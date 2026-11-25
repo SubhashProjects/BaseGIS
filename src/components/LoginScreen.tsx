@@ -266,9 +266,11 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
             </div>
           </div>
 
-          <div className="login-error-slot">
-            {adminError && <span className="login-error-text">{adminError}</span>}
-          </div>
+          {adminError && (
+            <div className="login-error-slot">
+              <span className="login-error-text">{adminError}</span>
+            </div>
+          )}
 
           <button
             type="button"
