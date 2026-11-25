@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Plus, Pencil, Trash2, RotateCcw, FileUp, LayerIconGlyph, Save } from '../../components/icons';
 import { MAP_DEFAULT } from '../../config/constants';
+import { MAP_CONFIG } from '../../config/map.config';
 import {
   useGisLayers,
   PRESET_LAYER_COLORS,
@@ -16,14 +17,7 @@ import type { PowerGISAsset, PowerGISBoundary, PowerGISUser } from '../../servic
 type BaseLayer = 'roadmap' | 'satellite' | 'hybrid' | 'terrain' | 'roads' | 'osm' | 'empty';
 type Point = { lat: number; lng: number };
 
-const TILE_URLS: Record<Exclude<BaseLayer, 'empty'>, string> = {
-  satellite: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-  hybrid: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-  roadmap: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-  terrain: 'https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
-  roads: 'https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',
-  osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-};
+const TILE_URLS = Object.fromEntries(Object.entries(MAP_CONFIG.layers).map(([key, layer]) => [key, layer.url])) as Record<Exclude<BaseLayer, 'empty'>, string>;
 
 const tileSize = 256;
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));

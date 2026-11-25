@@ -5,7 +5,13 @@ const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const bucket = Deno.env.get('POWERGIS_BACKUP_BUCKET') ?? 'powergis-backups';
 const supabase = createClient(url, serviceKey);
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: { Allow: 'POST' } });
+  const expectedSecret = Deno.env.get('POWERGIS_BACKUP_CRON_SECRET');
+  const suppliedSecret = req.headers.get('x-backup-secret') ?? '';
+  if (!expectedSecret || suppliedSecret.length !== expectedSecret.length || suppliedSecret !== expectedSecret) {
+    return new Response('Forbidden', { status: 403 });
+  }
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const path = `daily/${stamp}.json`;
   try {
@@ -17,6 +23,7 @@ Deno.serve(async () => {
     if (users.error) throw users.error;
     if (jurisdictions.error) throw jurisdictions.error;
     if (assets.error) throw assets.error;
+    // Backup storage must remain private; never return a public URL or backup contents.
     const payload = { exportedAt: new Date().toISOString(), users: users.data, jurisdictions: jurisdictions.data, assets: assets.data };
     const body = new TextEncoder().encode(JSON.stringify(payload));
     const upload = await supabase.storage.from(bucket).upload(path, body, { contentType: 'application/json', upsert: false });

@@ -6,12 +6,28 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const admin = createClient(supabaseUrl, serviceKey);
 
+const MAX_IMPORT_BYTES = Number(Deno.env.get('POWERGIS_MAX_IMPORT_BYTES') ?? 52428800);
+const MAX_IMPORT_FEATURES = Number(Deno.env.get('POWERGIS_MAX_IMPORT_FEATURES') ?? 50000);
+const ALLOWED_ASSET_TYPES = new Set(['SUBSTATION','EHV_LINE','HV_LINE','DT','LT_LINE','POLE','SMART_METER']);
+
+function isValidGeometry(geometry: any): boolean {
+  if (!geometry || !['Point','MultiPoint','LineString','MultiLineString','Polygon','MultiPolygon'].includes(geometry.type)) return false;
+  const walk = (value: any): boolean => Array.isArray(value) ? value.length > 0 && value.every(walk) : typeof value === 'number' && Number.isFinite(value);
+  if (!walk(geometry.coordinates)) return false;
+  const validatePairs = (value: any): boolean => {
+    if (!Array.isArray(value)) return false;
+    if (value.length >= 2 && typeof value[0] === 'number' && typeof value[1] === 'number') return value[0] >= -180 && value[0] <= 180 && value[1] >= -90 && value[1] <= 90;
+    return value.every(validatePairs);
+  };
+  return validatePairs(geometry.coordinates);
+}
+
 function normalizeFeature(feature: any, index: number, defaultType: string) {
   const properties = feature?.properties ?? {};
   const geometry = feature?.geometry ?? null;
-  if (!geometry) return null;
+  if (!isValidGeometry(geometry)) return null;
   const coords = geometry.type === 'Point' && Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
-  return { assetNo: String(properties.asset_no ?? properties.assetNo ?? properties.id ?? `IMP-${Date.now()}-${index + 1}`), assetType: String(properties.asset_type ?? properties.assetType ?? defaultType), status: String(properties.status ?? 'ACTIVE'), geometry, latitude: coords.length > 1 ? Number(coords[1]) : undefined, longitude: coords.length ? Number(coords[0]) : undefined, metadata: properties };
+  return { assetNo: String(properties.asset_no ?? properties.assetNo ?? properties.id ?? `IMP-${crypto.randomUUID()}`), assetType: ALLOWED_ASSET_TYPES.has(String(properties.asset_type ?? properties.assetType ?? defaultType)) ? String(properties.asset_type ?? properties.assetType ?? defaultType) : defaultType, status: String(properties.status ?? 'ACTIVE'), geometry, latitude: coords.length > 1 ? Number(coords[1]) : undefined, longitude: coords.length ? Number(coords[0]) : undefined, metadata: properties };
 }
 
 function parseKml(text: string, defaultType: string) {
@@ -52,8 +68,10 @@ async function parseGpkg(bytes: Uint8Array, defaultType: string) {
 
 Deno.serve(async (req) => {
   try {
-    const form=await req.formData(); const file=form.get('file'); const defaultType=String(form.get('defaultType')??'DT'); const sessionToken=String(form.get('sessionToken')??'');
+    if (req.method !== 'POST') return new Response(JSON.stringify({ok:false,error:'Method not allowed.'}),{status:405,headers:{'content-type':'application/json'}});
+    const form=await req.formData(); const file=form.get('file'); const requestedType=String(form.get('defaultType')??'DT'); const defaultType=ALLOWED_ASSET_TYPES.has(requestedType) ? requestedType : 'DT'; const sessionToken=String(form.get('sessionToken')??'');
     if(!(file instanceof File)) return new Response(JSON.stringify({ok:false,error:'No GIS file supplied.'}),{status:400});
+    if (file.size <= 0 || file.size > MAX_IMPORT_BYTES) return new Response(JSON.stringify({ok:false,error:`File must be between 1 byte and ${MAX_IMPORT_BYTES} bytes.`}),{status:413,headers:{'content-type':'application/json'}});
     const {data:user,error:userError}=await admin.rpc('session_user',{p_session_token:sessionToken});
     if(userError || !user?.length || user[0].role!=='GIS_ADMIN') return new Response(JSON.stringify({ok:false,error:'GIS Admin session required.'}),{status:403});
     const bytes=new Uint8Array(await file.arrayBuffer()); const name=file.name.toLowerCase(); let features:any[]=[];
@@ -63,7 +81,8 @@ Deno.serve(async (req) => {
     else if(name.endsWith('.xlsx')||name.endsWith('.xls')) features=await parseXlsx(bytes,defaultType);
     else if(name.endsWith('.gpkg')) features=await parseGpkg(bytes,defaultType);
     else throw new Error(`Unsupported GIS format: ${file.name}`);
-    if(!features.length) throw new Error('No GIS features could be read from the selected file.');
+    if(!features.length) throw new Error('No valid GIS features could be read from the selected file.');
+    if(features.length > MAX_IMPORT_FEATURES) throw new Error(`Import exceeds the configured feature limit (${MAX_IMPORT_FEATURES}).`);
     const {data,error}=await admin.rpc('admin_import_assets',{p_session_token:sessionToken,p_assets:features});
     if(error) throw error;
     return new Response(JSON.stringify({ok:true,...(data?.[0]??{})}),{headers:{'content-type':'application/json'}});
