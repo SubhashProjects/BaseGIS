@@ -574,32 +574,32 @@ export function XyzTileMap({
                 <Plus size={11} />
                 <span>Add</span>
               </button>
-              {layers.length > 0 && (
-                <button
-                  type="button"
-                  className="layer-tool-btn danger"
-                  title="Delete all GIS layers"
-                  onClick={() => {
-                    if (window.confirm('Delete all GIS layers? All layer lines and markers will be cleared.')) {
-                      deleteAllLayers();
-                    }
-                  }}
-                >
-                  <Trash2 size={11} />
-                  <span>Clear</span>
-                </button>
-              )}
               <button
                 type="button"
-                className="layer-reset-icon-btn"
-                title="Reset to default layers"
+                className="layer-tool-btn danger"
+                title={layers.length > 0 ? 'Delete all GIS layers' : 'No layers to delete'}
+                disabled={layers.length === 0}
                 onClick={() => {
-                  if (window.confirm('Reset all layers to default configuration?')) {
+                  if (layers.length > 0 && window.confirm('Delete all GIS layers? All layer lines and markers will be cleared.')) {
+                    deleteAllLayers();
+                  }
+                }}
+              >
+                <Trash2 size={11} />
+                <span>Delete</span>
+              </button>
+              <button
+                type="button"
+                className="layer-tool-btn reset"
+                title="Refresh & reset all layers to defaults"
+                onClick={() => {
+                  if (window.confirm('Refresh and restore all layers to default configuration?')) {
                     resetLayers();
                   }
                 }}
               >
                 <RotateCcw size={11} />
+                <span>Refresh</span>
               </button>
             </div>
           </div>
