@@ -1,20 +1,35 @@
 import { useState, useEffect, useCallback } from 'react';
 
+export type LayerIconKey =
+  | 'zap'
+  | 'tower'
+  | 'transformer'
+  | 'pole'
+  | 'meter'
+  | 'pin'
+  | 'circle'
+  | 'square'
+  | 'triangle'
+  | 'diamond'
+  | 'sun'
+  | 'layers';
+
 export interface GisLayer {
   id: string;
   label: string;
   color: string;
+  icon?: LayerIconKey;
   isDefault?: boolean;
 }
 
 export const DEFAULT_GIS_LAYERS: GisLayer[] = [
-  { id: 'SUBSTATION', label: 'Substations', color: '#7C3AED', isDefault: true },
-  { id: 'EHV_LINE', label: 'EHV Lines', color: '#DC2626', isDefault: true },
-  { id: 'HV_LINE', label: 'HT Lines', color: '#F59E0B', isDefault: true },
-  { id: 'DT', label: 'Power / Distribution Transformers', color: '#2563EB', isDefault: true },
-  { id: 'LT_LINE', label: 'LT Lines', color: '#16A34A', isDefault: true },
-  { id: 'POLE', label: 'Poles', color: '#475569', isDefault: true },
-  { id: 'SMART_METER', label: 'Smart Meters', color: '#0891B2', isDefault: true },
+  { id: 'SUBSTATION', label: 'Substations', color: '#7C3AED', icon: 'tower', isDefault: true },
+  { id: 'EHV_LINE', label: 'EHV Lines', color: '#DC2626', icon: 'zap', isDefault: true },
+  { id: 'HV_LINE', label: 'HT Lines', color: '#F59E0B', icon: 'zap', isDefault: true },
+  { id: 'DT', label: 'Power / Distribution Transformers', color: '#2563EB', icon: 'transformer', isDefault: true },
+  { id: 'LT_LINE', label: 'LT Lines', color: '#16A34A', icon: 'layers', isDefault: true },
+  { id: 'POLE', label: 'Poles', color: '#475569', icon: 'pole', isDefault: true },
+  { id: 'SMART_METER', label: 'Smart Meters', color: '#0891B2', icon: 'meter', isDefault: true },
 ];
 
 export const PRESET_LAYER_COLORS = [
@@ -34,6 +49,33 @@ export const PRESET_LAYER_COLORS = [
   '#059669', // Emerald
 ];
 
+export const PRESET_LAYER_ICONS: LayerIconKey[] = [
+  'zap',
+  'tower',
+  'transformer',
+  'pole',
+  'meter',
+  'pin',
+  'circle',
+  'square',
+  'triangle',
+  'diamond',
+  'sun',
+  'layers',
+];
+
+export function defaultIconForType(idOrLabel: string): LayerIconKey {
+  const norm = idOrLabel.toUpperCase();
+  if (norm.includes('SUBSTATION') || norm.includes('GRID')) return 'tower';
+  if (norm.includes('TRANSFORMER') || norm.includes('DT')) return 'transformer';
+  if (norm.includes('POLE') || norm.includes('TOWER')) return 'pole';
+  if (norm.includes('METER')) return 'meter';
+  if (norm.includes('SOLAR') || norm.includes('SUN')) return 'sun';
+  if (norm.includes('LINE') || norm.includes('EHV') || norm.includes('HV') || norm.includes('LT')) return 'zap';
+  if (norm.includes('PIN') || norm.includes('SITE')) return 'pin';
+  return 'circle';
+}
+
 const LAYERS_STORAGE_KEY = 'powergis_user_layers';
 const LAYERS_CHANGE_EVENT = 'powergis:layers-changed';
 
@@ -43,7 +85,10 @@ export function getStoredLayers(): GisLayer[] {
     if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed;
+        return parsed.map((l) => ({
+          ...l,
+          icon: l.icon || defaultIconForType(l.id || l.label),
+        }));
       }
     }
   } catch (e) {
@@ -61,7 +106,7 @@ export function saveStoredLayers(layers: GisLayer[]): void {
   }
 }
 
-export function addLayer(label: string, color: string, id?: string): GisLayer {
+export function addLayer(label: string, color: string, id?: string, icon?: LayerIconKey): GisLayer {
   const current = getStoredLayers();
   const cleanLabel = label.trim();
   const cleanId = (
@@ -76,10 +121,13 @@ export function addLayer(label: string, color: string, id?: string): GisLayer {
     uniqueId = `${cleanId}_${counter++}`;
   }
 
+  const chosenIcon = icon || defaultIconForType(cleanLabel || uniqueId);
+
   const newLayer: GisLayer = {
     id: uniqueId,
     label: cleanLabel || uniqueId,
     color: color || PRESET_LAYER_COLORS[current.length % PRESET_LAYER_COLORS.length],
+    icon: chosenIcon,
     isDefault: false,
   };
 
@@ -88,7 +136,7 @@ export function addLayer(label: string, color: string, id?: string): GisLayer {
   return newLayer;
 }
 
-export function editLayer(id: string, newLabel: string, newColor?: string): GisLayer | null {
+export function editLayer(id: string, newLabel: string, newColor?: string, newIcon?: LayerIconKey): GisLayer | null {
   const current = getStoredLayers();
   const index = current.findIndex((l) => l.id === id);
   if (index === -1) return null;
@@ -98,6 +146,7 @@ export function editLayer(id: string, newLabel: string, newColor?: string): GisL
     ...existing,
     label: newLabel.trim() || existing.label,
     color: newColor || existing.color,
+    icon: newIcon || existing.icon || defaultIconForType(existing.id),
   };
 
   const updated = [...current];
@@ -124,7 +173,7 @@ export function resetLayers(): GisLayer[] {
   return DEFAULT_GIS_LAYERS;
 }
 
-export function ensureLayer(label: string, color?: string, id?: string): GisLayer {
+export function ensureLayer(label: string, color?: string, id?: string, icon?: LayerIconKey): GisLayer {
   const current = getStoredLayers();
   const cleanLabel = label.trim();
   const targetId = (
@@ -137,17 +186,21 @@ export function ensureLayer(label: string, color?: string, id?: string): GisLaye
     (l) => l.id.toUpperCase() === targetId.toUpperCase() || l.label.toLowerCase() === cleanLabel.toLowerCase()
   );
   if (existing) {
+    if (icon && existing.icon !== icon) {
+      editLayer(existing.id, existing.label, existing.color, icon);
+    }
     return existing;
   }
 
   return addLayer(
     cleanLabel || targetId,
     color || PRESET_LAYER_COLORS[current.length % PRESET_LAYER_COLORS.length],
-    targetId
+    targetId,
+    icon || defaultIconForType(cleanLabel || targetId)
   );
 }
 
-export function filenameToLayerInfo(filename: string): { id: string; label: string } {
+export function filenameToLayerInfo(filename: string): { id: string; label: string; icon: LayerIconKey } {
   const base = filename.replace(/\.[^/.]+$/, '').trim();
   const cleanLabel = base
     .replace(/[._-]+/g, ' ')
@@ -164,6 +217,7 @@ export function filenameToLayerInfo(filename: string): { id: string; label: stri
   return {
     id: cleanId,
     label: titleCaseLabel || cleanId,
+    icon: defaultIconForType(cleanId),
   };
 }
 
@@ -175,6 +229,11 @@ export function getLayerLabels(): Record<string, string> {
 export function getLayerColors(): Record<string, string> {
   const layers = getStoredLayers();
   return Object.fromEntries(layers.map((l) => [l.id, l.color]));
+}
+
+export function getLayerIcons(): Record<string, LayerIconKey> {
+  const layers = getStoredLayers();
+  return Object.fromEntries(layers.map((l) => [l.id, l.icon || defaultIconForType(l.id)]));
 }
 
 export function useGisLayers() {
@@ -192,14 +251,14 @@ export function useGisLayers() {
     };
   }, []);
 
-  const handleAdd = useCallback((label: string, color: string, id?: string) => {
-    const created = addLayer(label, color, id);
+  const handleAdd = useCallback((label: string, color: string, id?: string, icon?: LayerIconKey) => {
+    const created = addLayer(label, color, id, icon);
     setLayers(getStoredLayers());
     return created;
   }, []);
 
-  const handleEdit = useCallback((id: string, newLabel: string, newColor?: string) => {
-    const res = editLayer(id, newLabel, newColor);
+  const handleEdit = useCallback((id: string, newLabel: string, newColor?: string, newIcon?: LayerIconKey) => {
+    const res = editLayer(id, newLabel, newColor, newIcon);
     setLayers(getStoredLayers());
     return res;
   }, []);
@@ -215,8 +274,8 @@ export function useGisLayers() {
     setLayers([]);
   }, []);
 
-  const handleEnsure = useCallback((label: string, color?: string, id?: string) => {
-    const res = ensureLayer(label, color, id);
+  const handleEnsure = useCallback((label: string, color?: string, id?: string, icon?: LayerIconKey) => {
+    const res = ensureLayer(label, color, id, icon);
     setLayers(getStoredLayers());
     return res;
   }, []);
@@ -229,11 +288,13 @@ export function useGisLayers() {
 
   const layerLabels = Object.fromEntries(layers.map((l) => [l.id, l.label]));
   const layerColors = Object.fromEntries(layers.map((l) => [l.id, l.color]));
+  const layerIcons = Object.fromEntries(layers.map((l) => [l.id, l.icon || defaultIconForType(l.id)]));
 
   return {
     layers,
     layerLabels,
     layerColors,
+    layerIcons,
     addLayer: handleAdd,
     ensureLayer: handleEnsure,
     editLayer: handleEdit,

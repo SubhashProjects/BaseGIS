@@ -1,5 +1,5 @@
 import type { LucideIcon } from './icons';
-import { LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck } from './icons';
+import { LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck, DatabaseBackup } from './icons';
 import { ROUTES } from '../config/constants';
 import type { PowerGISUser } from '../services/powergisData';
 
@@ -23,7 +23,12 @@ export function MobileBottomNav({
     { label: 'Map', route: ROUTES.gis, Icon: Map },
     { label: 'Assets', route: ROUTES.assets, Icon: Database },
     { label: 'Approvals', route: ROUTES.approvals, Icon: ClipboardCheck },
-    ...(user?.role === 'GIS_ADMIN' ? [{ label: 'Admin', route: ROUTES.admin, Icon: ShieldCheck }] : []),
+    ...(user?.role === 'GIS_ADMIN'
+      ? [
+          { label: 'Data', route: ROUTES.dataManagement, Icon: DatabaseBackup },
+          { label: 'Admin', route: ROUTES.admin, Icon: ShieldCheck },
+        ]
+      : []),
   ];
 
   return (

@@ -29,6 +29,9 @@ export type PowerGISAsset = {
   geometry: any;
   lat?: number;
   lng?: number;
+  latitude?: number;
+  longitude?: number;
+  metadata?: Record<string, any>;
 };
 
 export type PowerGISBoundary = {

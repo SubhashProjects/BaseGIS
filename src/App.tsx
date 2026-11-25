@@ -8,6 +8,7 @@ import { GisPage } from './features/gis/GisPage';
 import { AssetsPage } from './features/assets/AssetsPage';
 import { ApprovalsPage } from './features/approvals/ApprovalsPage';
 import { AdminPage } from './features/admin/AdminPage';
+import { DataManagementPage } from './features/data-management/DataManagementPage';
 import { ROUTES } from './config/constants';
 import type { PowerGISUser } from './services/powergisData';
 
@@ -117,6 +118,8 @@ export default function App() {
       <AssetsPage currentUser={user} />
     ) : path === ROUTES.approvals ? (
       <ApprovalsPage currentUser={user} />
+    ) : path === ROUTES.dataManagement && user.role === 'GIS_ADMIN' ? (
+      <DataManagementPage currentUser={user} />
     ) : path === ROUTES.admin ? (
       <AdminPage currentUser={user} />
     ) : (

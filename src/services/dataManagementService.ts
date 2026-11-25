@@ -390,31 +390,83 @@ export function saveLocalImportedAssets(assets: PowerGISAsset[]): void {
   }
 }
 
-export async function importAssets(features: ImportFeature[]): Promise<ImportResult> {
+export type DuplicateStrategy = 'overwrite' | 'skip' | 'rename';
+
+export function removeImportedAssets(ids: string[]): void {
+  const current = getLocalImportedAssets();
+  const toDelete = new Set(ids);
+  const remaining = current.filter((a) => !toDelete.has(a.id) && !toDelete.has(a.assetNo));
+  saveLocalImportedAssets(remaining);
+  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
+}
+
+export function clearAllImportedAssets(): void {
+  saveLocalImportedAssets([]);
+  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
+}
+
+export async function importAssets(
+  features: ImportFeature[],
+  duplicateStrategy: DuplicateStrategy = 'overwrite'
+): Promise<ImportResult> {
   let inserted = 0;
   let skipped = 0;
   const errors: string[] = [];
 
-  // Convert features to PowerGISAsset format for immediate local application availability
-  const newAssets: PowerGISAsset[] = features.map((f, i) => ({
-    id: `imp-${Date.now()}-${i + 1}`,
-    assetNo: f.assetNo || `IMP-${i + 1}`,
-    assetType: f.assetType || 'DT',
-    status: f.status || 'ACTIVE',
-    geometry: f.geometry,
-    latitude: f.latitude,
-    longitude: f.longitude,
-    jurisdictions: f.jurisdictionIds || ['PONDICHERRY'],
-    owners: f.ownerJeIds || [],
-    shared: f.sharedBoundary || false,
-    metadata: f.metadata,
-  }));
-
   const existingLocal = getLocalImportedAssets();
-  const existingNos = new Set(existingLocal.map((a) => a.assetNo));
-  const toAdd = newAssets.filter((a) => !existingNos.has(a.assetNo));
-  saveLocalImportedAssets([...existingLocal, ...toAdd]);
+  const existingMap = new Map(existingLocal.map((a) => [a.assetNo, a]));
+
+  const preparedAssets: PowerGISAsset[] = [];
+
+  for (let i = 0; i < features.length; i++) {
+    const f = features[i];
+    let assetNo = f.assetNo || `IMP-${i + 1}`;
+
+    if (existingMap.has(assetNo)) {
+      if (duplicateStrategy === 'skip') {
+        skipped++;
+        continue;
+      } else if (duplicateStrategy === 'rename') {
+        let counter = 1;
+        let candidate = `${assetNo}_${counter}`;
+        while (existingMap.has(candidate) || preparedAssets.some((p) => p.assetNo === candidate)) {
+          counter++;
+          candidate = `${assetNo}_${counter}`;
+        }
+        assetNo = candidate;
+      }
+    }
+
+    preparedAssets.push({
+      id: `imp-${Date.now()}-${i + 1}-${Math.random().toString(36).slice(2, 6)}`,
+      assetNo,
+      assetType: f.assetType || 'DT',
+      status: f.status || 'ACTIVE',
+      geometry: f.geometry,
+      latitude: f.latitude,
+      longitude: f.longitude,
+      lat: f.latitude,
+      lng: f.longitude,
+      jurisdictions: f.jurisdictionIds || ['PONDICHERRY'],
+      owners: f.ownerJeIds || [],
+      shared: f.sharedBoundary || false,
+      metadata: f.metadata,
+    });
+  }
+
+  let finalLocal: PowerGISAsset[] = [];
+  if (duplicateStrategy === 'overwrite') {
+    const incomingNos = new Set(preparedAssets.map((a) => a.assetNo));
+    const retained = existingLocal.filter((a) => !incomingNos.has(a.assetNo));
+    finalLocal = [...retained, ...preparedAssets];
+  } else {
+    finalLocal = [...existingLocal, ...preparedAssets];
+  }
+
+  saveLocalImportedAssets(finalLocal);
   window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
+
+  inserted = preparedAssets.length;
 
   // Attempt database synchronization in chunks of 150
   if (supabase) {
@@ -430,22 +482,12 @@ export async function importAssets(features: ImportFeature[]): Promise<ImportRes
         if (error) {
           errors.push(error.message || String(error));
         } else if (data?.[0]) {
-          inserted += data[0].inserted ?? slice.length;
-          skipped += data[0].skipped ?? 0;
-        } else {
-          inserted += slice.length;
+          // synced
         }
       } catch (err: any) {
         errors.push(err.message || String(err));
       }
     }
-  } else {
-    inserted = toAdd.length;
-    skipped = newAssets.length - toAdd.length;
-  }
-
-  if (inserted === 0 && toAdd.length > 0) {
-    inserted = toAdd.length;
   }
 
   return { inserted, skipped, errors };

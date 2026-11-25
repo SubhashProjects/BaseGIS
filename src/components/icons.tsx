@@ -264,3 +264,134 @@ export const RotateCcw: FC<IconProps> = (props) => (
   </svg>
 );
 
+export const Circle: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <circle cx="12" cy="12" r="10" />
+  </svg>
+);
+
+export const Square: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+  </svg>
+);
+
+export const Triangle: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <path d="M13.73 4a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+  </svg>
+);
+
+export const Diamond: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <path d="M12 2 2 12l10 10 10-10Z" />
+  </svg>
+);
+
+export const Tower: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <path d="M4 22h16" />
+    <path d="m7 22 4-18h2l4 18" />
+    <path d="M6 14h12" />
+    <path d="M8 8h8" />
+    <path d="m9 14 3-6 3 6" />
+    <path d="m8 22 4-8 4 8" />
+  </svg>
+);
+
+export const Transformer: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <circle cx="9" cy="12" r="6" />
+    <circle cx="15" cy="12" r="6" />
+    <path d="M3 12h0" />
+    <path d="M21 12h0" />
+  </svg>
+);
+
+export const Pole: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <line x1="12" x2="12" y1="2" y2="22" />
+    <line x1="5" x2="19" y1="6" y2="6" />
+    <line x1="7" x2="17" y1="10" y2="10" />
+    <circle cx="5" cy="6" r="1" />
+    <circle cx="19" cy="6" r="1" />
+  </svg>
+);
+
+export const Gauge: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <path d="m12 14 4-4" />
+    <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+  </svg>
+);
+
+export const Sun: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2" />
+    <path d="M12 20v2" />
+    <path d="m4.93 4.93 1.41 1.41" />
+    <path d="m17.66 17.66 1.41 1.41" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
+    <path d="m6.34 17.66-1.41 1.41" />
+    <path d="m19.07 4.93-1.41 1.41" />
+  </svg>
+);
+
+export const Layers: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
+    <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" />
+    <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" />
+  </svg>
+);
+
+export const MapPin: FC<IconProps> = (props) => (
+  <svg {...baseProps(props)}>
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+export const LayerIconGlyph: FC<{
+  icon?: string;
+  size?: number | string;
+  className?: string;
+  color?: string;
+  fill?: string;
+  strokeWidth?: number | string;
+}> = ({ icon, size = 14, className, color = 'currentColor', fill = 'none', strokeWidth = 2 }) => {
+  const p = { size, className, color, fill, strokeWidth };
+  switch (icon?.toLowerCase()) {
+    case 'zap':
+      return <Zap {...p} />;
+    case 'tower':
+      return <Tower {...p} />;
+    case 'transformer':
+      return <Transformer {...p} />;
+    case 'pole':
+      return <Pole {...p} />;
+    case 'meter':
+    case 'gauge':
+      return <Gauge {...p} />;
+    case 'pin':
+      return <MapPin {...p} />;
+    case 'circle':
+      return <Circle {...p} />;
+    case 'square':
+      return <Square {...p} />;
+    case 'triangle':
+      return <Triangle {...p} />;
+    case 'diamond':
+      return <Diamond {...p} />;
+    case 'sun':
+      return <Sun {...p} />;
+    case 'layers':
+      return <Layers {...p} />;
+    default:
+      return <Circle {...p} />;
+  }
+};
+
+

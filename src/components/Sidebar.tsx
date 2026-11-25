@@ -1,5 +1,5 @@
 import type { LucideIcon } from './icons';
-import { Zap, LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck, X } from './icons';
+import { Zap, LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck, DatabaseBackup, X } from './icons';
 import { APP, ROUTES } from '../config/constants';
 
 interface Props {
@@ -22,7 +22,12 @@ export function Sidebar({ path, onNavigate, user, mobileOpen, onCloseMobile }: P
     { label: 'GIS Master Map', route: ROUTES.gis, Icon: Map },
     { label: 'Assets', route: ROUTES.assets, Icon: Database },
     { label: 'Approvals', route: ROUTES.approvals, Icon: ClipboardCheck },
-    ...(user?.role === 'GIS_ADMIN' ? [{ label: 'Administration', route: ROUTES.admin, Icon: ShieldCheck }] : []),
+    ...(user?.role === 'GIS_ADMIN'
+      ? [
+          { label: 'Data Management', route: ROUTES.dataManagement, Icon: DatabaseBackup },
+          { label: 'Administration', route: ROUTES.admin, Icon: ShieldCheck },
+        ]
+      : []),
   ];
 
   const handleNav = (route: string) => {

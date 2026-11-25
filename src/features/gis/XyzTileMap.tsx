@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Plus, Pencil, Trash2, RotateCcw, FileUp } from '../../components/icons';
+import { ChevronDown, Plus, Pencil, Trash2, RotateCcw, FileUp, LayerIconGlyph } from '../../components/icons';
 import { MAP_DEFAULT } from '../../config/constants';
-import { useGisLayers, PRESET_LAYER_COLORS, filenameToLayerInfo } from '../../services/layerService';
+import {
+  useGisLayers,
+  PRESET_LAYER_COLORS,
+  PRESET_LAYER_ICONS,
+  filenameToLayerInfo,
+  type LayerIconKey,
+} from '../../services/layerService';
 import { parseImportFile, importAssets, supportedImportAccept } from '../../services/dataManagementService';
 import type { MapNavigationTarget } from './MapHierarchyNavigator';
 import type { PowerGISAsset, PowerGISBoundary, PowerGISUser } from '../../services/powergisData';
@@ -70,6 +76,7 @@ export function XyzTileMap({
     layers,
     layerLabels,
     layerColors,
+    layerIcons,
     addLayer,
     ensureLayer,
     editLayer,
@@ -82,12 +89,18 @@ export function XyzTileMap({
     Object.fromEntries(layers.map((l) => [l.id, true]))
   );
 
+  const [showAreaNames, setShowAreaNames] = useState<boolean>(true);
+  const [visibleAreas, setVisibleAreas] = useState<Record<string, boolean>>({});
+  const [showAreaSublist, setShowAreaSublist] = useState<boolean>(false);
+
   const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState<string>('');
   const [editColor, setEditColor] = useState<string>('');
+  const [editIcon, setEditIcon] = useState<LayerIconKey>('circle');
   const [showAddBox, setShowAddBox] = useState<boolean>(false);
   const [newLabel, setNewLabel] = useState<string>('');
   const [newColor, setNewColor] = useState<string>(PRESET_LAYER_COLORS[0]);
+  const [newIcon, setNewIcon] = useState<LayerIconKey>('circle');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState<boolean>(false);
   const addFileInputRef = useRef<HTMLInputElement>(null);
@@ -98,13 +111,13 @@ export function XyzTileMap({
     try {
       setIsImporting(true);
       if (attachedFile) {
-        const layer = ensureLayer(label, newColor);
+        const layer = ensureLayer(label, newColor, undefined, newIcon);
         const features = await parseImportFile(attachedFile, layer.id);
         if (features.length > 0) {
           await importAssets(features);
         }
       } else {
-        addLayer(label, newColor);
+        addLayer(label, newColor, undefined, newIcon);
       }
       setNewLabel('');
       setAttachedFile(null);
@@ -464,10 +477,12 @@ export function XyzTileMap({
           ))}
         </div>
         <svg className="xyz-svg" width={size.width} height={size.height} aria-hidden="true">
-          {boundaries.map((b) => {
-            const pts = geometryPoints(b.geometry).map((p) => pos(p, center, zoom, size.width, size.height));
-            return <polygon key={b.id} points={pts.map((p) => `${p.left},${p.top}`).join(' ')} className="je-polygon" />;
-          })}
+          {boundaries
+            .filter((b) => showAreaNames && visibleAreas[b.id] !== false)
+            .map((b) => {
+              const pts = geometryPoints(b.geometry).map((p) => pos(p, center, zoom, size.width, size.height));
+              return <polygon key={b.id} points={pts.map((p) => `${p.left},${p.top}`).join(' ')} className="je-polygon" />;
+            })}
           {assets
             .filter((a) => a.geometry.type !== 'Point' && activeLayerIds.has(a.assetType) && visibleTypes[a.assetType] !== false)
             .map((a) => {
@@ -491,27 +506,31 @@ export function XyzTileMap({
             })}
         </svg>
         <div className="xyz-overlay">
-          {boundaries.map((b) => {
-            const pts = geometryPoints(b.geometry);
-            const c = pts.reduce((a, p) => ({ lat: a.lat + p.lat, lng: a.lng + p.lng }), { lat: 0, lng: 0 });
-            const cp = { lat: c.lat / pts.length, lng: c.lng / pts.length };
-            const p = pos(cp, center, zoom, size.width, size.height);
-            return (
-              <div key={b.id} className="je-label" style={{ left: p.left, top: p.top }}>
-                {b.name.replace(/^JE-/, '')}
-              </div>
-            );
-          })}
+          {boundaries
+            .filter((b) => showAreaNames && visibleAreas[b.id] !== false)
+            .map((b) => {
+              const pts = geometryPoints(b.geometry);
+              const c = pts.reduce((a, p) => ({ lat: a.lat + p.lat, lng: a.lng + p.lng }), { lat: 0, lng: 0 });
+              const cp = { lat: c.lat / pts.length, lng: c.lng / pts.length };
+              const p = pos(cp, center, zoom, size.width, size.height);
+              return (
+                <div key={b.id} className="je-label" style={{ left: p.left, top: p.top }}>
+                  {b.name.replace(/^JE-/, '')}
+                </div>
+              );
+            })}
           {assets
             .filter((a) => a.geometry.type === 'Point' && activeLayerIds.has(a.assetType) && visibleTypes[a.assetType] !== false)
             .map((a) => {
               const p = pos({ lat: a.lat!, lng: a.lng! }, center, zoom, size.width, size.height);
+              const layerIcon = layerIcons[a.assetType] || 'circle';
+              const layerColor = layerColors[a.assetType] || '#2563EB';
               return (
                 <button
                   key={a.id}
                   aria-label={a.assetNo}
                   className={`asset-marker ${a.assetType.toLowerCase()} ${selectedAsset?.id === a.id ? 'selected' : ''}`}
-                  style={{ left: p.left - 7, top: p.top - 7, background: layerColors[a.assetType] || '#2563EB' }}
+                  style={{ left: p.left - 9, top: p.top - 9, background: layerColor }}
                   onMouseEnter={(e) => setHover({ asset: a, x: e.clientX, y: e.clientY })}
                   onMouseMove={(e) => setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h))}
                   onMouseLeave={() => setHover(null)}
@@ -519,7 +538,9 @@ export function XyzTileMap({
                     e.stopPropagation();
                     setSelectedAsset(a);
                   }}
-                />
+                >
+                  <LayerIconGlyph icon={layerIcon} size={11} color="#ffffff" strokeWidth={2.5} />
+                </button>
               );
             })}
         </div>
@@ -598,6 +619,7 @@ export function XyzTileMap({
                   setEditingLayerId(null);
                   setNewLabel('');
                   setNewColor(PRESET_LAYER_COLORS[layers.length % PRESET_LAYER_COLORS.length]);
+                  setNewIcon('circle');
                 }}
               >
                 <Plus size={11} />
@@ -633,6 +655,108 @@ export function XyzTileMap({
             </div>
           </div>
 
+          <div className="area-names-section">
+            <div className="area-names-header-row">
+              <label
+                className="layer-item-main"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <input
+                  type="checkbox"
+                  checked={showAreaNames}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setShowAreaNames(checked);
+                    if (checked) {
+                      const next: Record<string, boolean> = {};
+                      boundaries.forEach((b) => {
+                        next[b.id] = true;
+                      });
+                      setVisibleAreas(next);
+                    }
+                  }}
+                />
+                <span className="area-swatch-badge">
+                  <LayerIconGlyph icon="pin" size={10} color="#ffffff" strokeWidth={2.5} />
+                </span>
+                <span className="layer-name-text">Area Names ({boundaries.length})</span>
+              </label>
+              <button
+                type="button"
+                className="area-expand-btn"
+                title={showAreaSublist ? 'Collapse individual area list' : 'Expand individual area list'}
+                onClick={() => setShowAreaSublist((prev) => !prev)}
+              >
+                <ChevronDown
+                  size={13}
+                  style={{
+                    transform: showAreaSublist ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.15s ease',
+                  }}
+                />
+              </button>
+            </div>
+            {showAreaSublist && (
+              <div className="area-sublist">
+                <div className="area-sublist-toolbar">
+                  <button
+                    type="button"
+                    className="area-sub-link"
+                    onClick={() => {
+                      const next: Record<string, boolean> = {};
+                      boundaries.forEach((b) => {
+                        next[b.id] = true;
+                      });
+                      setVisibleAreas(next);
+                      setShowAreaNames(true);
+                    }}
+                  >
+                    Select All
+                  </button>
+                  <span className="area-sub-div">·</span>
+                  <button
+                    type="button"
+                    className="area-sub-link"
+                    onClick={() => {
+                      const next: Record<string, boolean> = {};
+                      boundaries.forEach((b) => {
+                        next[b.id] = false;
+                      });
+                      setVisibleAreas(next);
+                    }}
+                  >
+                    Deselect All
+                  </button>
+                </div>
+                {boundaries.map((b) => {
+                  const isAreaVisible = showAreaNames && visibleAreas[b.id] !== false;
+                  return (
+                    <label
+                      key={b.id}
+                      className="area-sub-item"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isAreaVisible}
+                        onChange={(e) => {
+                          const nextChecked = e.target.checked;
+                          setVisibleAreas((prev) => ({ ...prev, [b.id]: nextChecked }));
+                          if (nextChecked && !showAreaNames) {
+                            setShowAreaNames(true);
+                          }
+                        }}
+                      />
+                      <span className="area-sub-name">{b.name.replace(/^JE-/, '')}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {showAddBox && (
             <div
               className="layer-edit-box"
@@ -643,7 +767,9 @@ export function XyzTileMap({
                 if (f) {
                   setAttachedFile(f);
                   if (!newLabel.trim()) {
-                    setNewLabel(filenameToLayerInfo(f.name).label);
+                    const info = filenameToLayerInfo(f.name);
+                    setNewLabel(info.label);
+                    setNewIcon(info.icon);
                   }
                 }
               }}
@@ -686,7 +812,9 @@ export function XyzTileMap({
                     if (f) {
                       setAttachedFile(f);
                       if (!newLabel.trim()) {
-                        setNewLabel(filenameToLayerInfo(f.name).label);
+                        const info = filenameToLayerInfo(f.name);
+                        setNewLabel(info.label);
+                        setNewIcon(info.icon);
                       }
                     }
                     e.currentTarget.value = '';
@@ -709,6 +837,7 @@ export function XyzTileMap({
                 )}
               </div>
 
+              <div className="layer-palette-label">Layer Color:</div>
               <div className="layer-color-palette">
                 {PRESET_LAYER_COLORS.map((c) => (
                   <button
@@ -719,6 +848,21 @@ export function XyzTileMap({
                     onClick={() => setNewColor(c)}
                     title={c}
                   />
+                ))}
+              </div>
+
+              <div className="layer-palette-label">Layer Icon:</div>
+              <div className="layer-icon-palette">
+                {PRESET_LAYER_ICONS.map((ic) => (
+                  <button
+                    key={ic}
+                    type="button"
+                    className={`layer-icon-choice ${newIcon === ic ? 'active' : ''}`}
+                    onClick={() => setNewIcon(ic)}
+                    title={ic}
+                  >
+                    <LayerIconGlyph icon={ic} size={14} color={newIcon === ic ? newColor : '#94A3B8'} />
+                  </button>
                 ))}
               </div>
 
@@ -757,6 +901,7 @@ export function XyzTileMap({
           ) : (
             layers.map((l) => {
             const isEditing = editingLayerId === l.id;
+            const currentIcon = l.icon || layerIcons[l.id] || 'circle';
             return (
               <div key={l.id}>
                 <div className="layer-item-row">
@@ -773,7 +918,9 @@ export function XyzTileMap({
                         setVisibleTypes((prev) => ({ ...prev, [l.id]: nextChecked }));
                       }}
                     />
-                    <i style={{ background: l.color }} />
+                    <span className="layer-color-swatch-badge" style={{ background: l.color }}>
+                      <LayerIconGlyph icon={currentIcon} size={10} color="#ffffff" strokeWidth={2.5} />
+                    </span>
                     <span className="layer-name-text" title={l.label}>
                       {l.label}
                     </span>
@@ -782,7 +929,7 @@ export function XyzTileMap({
                     <button
                       type="button"
                       className="layer-icon-btn"
-                      title="Edit layer name & color"
+                      title="Edit layer name, color & icon"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (isEditing) {
@@ -791,6 +938,7 @@ export function XyzTileMap({
                           setEditingLayerId(l.id);
                           setEditLabel(l.label);
                           setEditColor(l.color);
+                          setEditIcon(currentIcon);
                           setShowAddBox(false);
                         }
                       }}
@@ -827,13 +975,15 @@ export function XyzTileMap({
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && editLabel.trim()) {
-                          editLayer(l.id, editLabel.trim(), editColor);
+                          editLayer(l.id, editLabel.trim(), editColor, editIcon);
                           setEditingLayerId(null);
                         } else if (e.key === 'Escape') {
                           setEditingLayerId(null);
                         }
                       }}
                     />
+
+                    <div className="layer-palette-label">Layer Color:</div>
                     <div className="layer-color-palette">
                       {PRESET_LAYER_COLORS.map((c) => (
                         <button
@@ -846,6 +996,22 @@ export function XyzTileMap({
                         />
                       ))}
                     </div>
+
+                    <div className="layer-palette-label">Layer Icon:</div>
+                    <div className="layer-icon-palette">
+                      {PRESET_LAYER_ICONS.map((ic) => (
+                        <button
+                          key={ic}
+                          type="button"
+                          className={`layer-icon-choice ${editIcon === ic ? 'active' : ''}`}
+                          onClick={() => setEditIcon(ic)}
+                          title={ic}
+                        >
+                          <LayerIconGlyph icon={ic} size={14} color={editIcon === ic ? editColor : '#94A3B8'} />
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="layer-edit-actions">
                       <button
                         type="button"
@@ -853,7 +1019,7 @@ export function XyzTileMap({
                         disabled={!editLabel.trim()}
                         onClick={() => {
                           if (editLabel.trim()) {
-                            editLayer(l.id, editLabel.trim(), editColor);
+                            editLayer(l.id, editLabel.trim(), editColor, editIcon);
                             setEditingLayerId(null);
                           }
                         }}
@@ -914,9 +1080,19 @@ export function XyzTileMap({
         </div>
       )}
       <div className="xyz-legend">
+        {showAreaNames && (
+          <span className="xyz-legend-item">
+            <span className="legend-swatch-badge" style={{ background: '#38BDF8' }}>
+              <LayerIconGlyph icon="pin" size={9} color="#ffffff" strokeWidth={2.5} />
+            </span>
+            Area Boundaries
+          </span>
+        )}
         {layers.map((l) => (
-          <span key={l.id}>
-            <i style={{ background: l.color }} />
+          <span key={l.id} className="xyz-legend-item">
+            <span className="legend-swatch-badge" style={{ background: l.color }}>
+              <LayerIconGlyph icon={l.icon || layerIcons[l.id]} size={9} color="#ffffff" strokeWidth={2.5} />
+            </span>
             {l.label}
           </span>
         ))}
