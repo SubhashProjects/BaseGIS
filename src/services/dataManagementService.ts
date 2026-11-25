@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import { DATA_IMPORT_FORMATS } from '../config/dataManagement.config';
 import { parseGeoPackageArrayBuffer } from './gpkgParser';
+import { filenameToLayerInfo } from './layerService';
 import type { PowerGISAsset } from './powergisData';
 
 export type ImportFeature = {
@@ -62,11 +63,18 @@ function normalizeFeature(feature: any, index: number, defaultType: string, file
   const geometry = feature?.geometry ?? null;
   const point = geometryToPoint(geometry);
 
-  const inferredType = filename ? detectAssetType(filename, defaultType) : defaultType;
-  const rawType = properties.asset_type ?? properties.assetType ?? inferredType;
-  const typeKey = String(rawType).toUpperCase();
-  const validTypes = ['SUBSTATION', 'EHV_LINE', 'HV_LINE', 'DT', 'LT_LINE', 'POLE', 'SMART_METER'];
-  const assetType = validTypes.includes(typeKey) ? typeKey : inferredType;
+  let assetType = defaultType;
+  if (!assetType || assetType === 'AUTO') {
+    const rawType = properties.asset_type ?? properties.assetType;
+    if (rawType) {
+      assetType = String(rawType).toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+    } else if (filename) {
+      const derived = filenameToLayerInfo(filename);
+      assetType = derived.id;
+    } else {
+      assetType = 'ASSET';
+    }
+  }
 
   let assetNo =
     properties.asset_no ??
@@ -80,7 +88,7 @@ function normalizeFeature(feature: any, index: number, defaultType: string, file
     properties.id;
 
   if (!assetNo || String(assetNo).trim() === '') {
-    const prefix = filename ? filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') : 'IMP';
+    const prefix = filename ? filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') : assetType;
     assetNo = `${prefix}-${index + 1}`;
   }
 
@@ -322,13 +330,13 @@ function parseKml(text: string, defaultType: string, filename?: string): ImportF
     .filter((x) => x.geometry);
 }
 
-export async function parseImportFile(file: File, defaultType: string): Promise<ImportFeature[]> {
+export async function parseImportFile(file: File, defaultType?: string): Promise<ImportFeature[]> {
   const extension = ext(file.name);
-  const detectedType = detectAssetType(file.name, defaultType);
+  const resolvedType = defaultType || filenameToLayerInfo(file.name).id;
 
   if (extension === '.gpkg') {
     const buffer = await file.arrayBuffer();
-    const features = parseGeoPackageArrayBuffer(buffer, detectedType);
+    const features = parseGeoPackageArrayBuffer(buffer, resolvedType);
     if (!features.length) {
       throw new Error(`No geometry records could be parsed from GeoPackage: ${file.name}`);
     }
@@ -336,15 +344,15 @@ export async function parseImportFile(file: File, defaultType: string): Promise<
   }
 
   if (extension === '.geojson' || extension === '.json') {
-    return parseGeoJSON(await file.text(), detectedType, file.name);
+    return parseGeoJSON(await file.text(), resolvedType, file.name);
   }
 
   if (extension === '.kml') {
-    return parseKml(await file.text(), detectedType, file.name);
+    return parseKml(await file.text(), resolvedType, file.name);
   }
 
   if (extension === '.csv') {
-    return parseCsv(await file.text(), detectedType, file.name);
+    return parseCsv(await file.text(), resolvedType, file.name);
   }
 
   if (extension === '.kmz') {
@@ -406,6 +414,7 @@ export async function importAssets(features: ImportFeature[]): Promise<ImportRes
   const existingNos = new Set(existingLocal.map((a) => a.assetNo));
   const toAdd = newAssets.filter((a) => !existingNos.has(a.assetNo));
   saveLocalImportedAssets([...existingLocal, ...toAdd]);
+  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
 
   // Attempt database synchronization in chunks of 150
   if (supabase) {

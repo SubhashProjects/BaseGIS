@@ -40,9 +40,9 @@ const LAYERS_CHANGE_EVENT = 'powergis:layers-changed';
 export function getStoredLayers(): GisLayer[] {
   try {
     const raw = localStorage.getItem(LAYERS_STORAGE_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
@@ -115,9 +115,56 @@ export function deleteLayer(id: string): boolean {
   return true;
 }
 
+export function deleteAllLayers(): void {
+  saveStoredLayers([]);
+}
+
 export function resetLayers(): GisLayer[] {
   saveStoredLayers(DEFAULT_GIS_LAYERS);
   return DEFAULT_GIS_LAYERS;
+}
+
+export function ensureLayer(label: string, color?: string, id?: string): GisLayer {
+  const current = getStoredLayers();
+  const cleanLabel = label.trim();
+  const targetId = (
+    id ||
+    cleanLabel.toUpperCase().replace(/[^A-Z0-9]/g, '_') ||
+    `LAYER_${Date.now()}`
+  ).replace(/^_+|_+$/g, '');
+
+  const existing = current.find(
+    (l) => l.id.toUpperCase() === targetId.toUpperCase() || l.label.toLowerCase() === cleanLabel.toLowerCase()
+  );
+  if (existing) {
+    return existing;
+  }
+
+  return addLayer(
+    cleanLabel || targetId,
+    color || PRESET_LAYER_COLORS[current.length % PRESET_LAYER_COLORS.length],
+    targetId
+  );
+}
+
+export function filenameToLayerInfo(filename: string): { id: string; label: string } {
+  const base = filename.replace(/\.[^/.]+$/, '').trim();
+  const cleanLabel = base
+    .replace(/[._-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const titleCaseLabel = cleanLabel
+    .split(' ')
+    .map((w) => (w.length > 0 ? w.charAt(0).toUpperCase() + w.slice(1) : ''))
+    .join(' ');
+  const cleanId = base
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '_')
+    .replace(/^_+|_+$/g, '') || `LAYER_${Date.now()}`;
+  return {
+    id: cleanId,
+    label: titleCaseLabel || cleanId,
+  };
 }
 
 export function getLayerLabels(): Record<string, string> {
@@ -163,6 +210,17 @@ export function useGisLayers() {
     return res;
   }, []);
 
+  const handleDeleteAll = useCallback(() => {
+    deleteAllLayers();
+    setLayers([]);
+  }, []);
+
+  const handleEnsure = useCallback((label: string, color?: string, id?: string) => {
+    const res = ensureLayer(label, color, id);
+    setLayers(getStoredLayers());
+    return res;
+  }, []);
+
   const handleReset = useCallback(() => {
     const res = resetLayers();
     setLayers(res);
@@ -177,8 +235,10 @@ export function useGisLayers() {
     layerLabels,
     layerColors,
     addLayer: handleAdd,
+    ensureLayer: handleEnsure,
     editLayer: handleEdit,
     deleteLayer: handleDelete,
+    deleteAllLayers: handleDeleteAll,
     resetLayers: handleReset,
   };
 }

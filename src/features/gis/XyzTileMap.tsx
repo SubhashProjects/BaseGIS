@@ -72,6 +72,7 @@ export function XyzTileMap({
     addLayer,
     editLayer,
     deleteLayer,
+    deleteAllLayers,
     resetLayers,
   } = useGisLayers();
 
@@ -573,6 +574,21 @@ export function XyzTileMap({
                 <Plus size={11} />
                 <span>Add</span>
               </button>
+              {layers.length > 0 && (
+                <button
+                  type="button"
+                  className="layer-tool-btn danger"
+                  title="Delete all GIS layers"
+                  onClick={() => {
+                    if (window.confirm('Delete all GIS layers? All layer lines and markers will be cleared.')) {
+                      deleteAllLayers();
+                    }
+                  }}
+                >
+                  <Trash2 size={11} />
+                  <span>Clear</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="layer-reset-icon-btn"
@@ -646,7 +662,12 @@ export function XyzTileMap({
             </div>
           )}
 
-          {layers.map((l) => {
+          {layers.length === 0 ? (
+            <div className="layer-empty-msg">
+              No active layers. Click <b>+ Add</b> to create a layer or <RotateCcw size={10} style={{ verticalAlign: 'middle' }} /> to restore defaults.
+            </div>
+          ) : (
+            layers.map((l) => {
             const isEditing = editingLayerId === l.id;
             return (
               <div key={l.id}>
@@ -763,7 +784,7 @@ export function XyzTileMap({
                 )}
               </div>
             );
-          })}
+          }))}
         </div>
       </div>
       {hover && (
