@@ -1,5 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
-import { Zap, LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck, X } from 'lucide-react';
+import type { LucideIcon } from './icons';
+import { Zap, LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck, X } from './icons';
 import { APP, ROUTES } from '../config/constants';
 
 interface Props {

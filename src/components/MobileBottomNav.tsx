@@ -1,5 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck } from 'lucide-react';
+import type { LucideIcon } from './icons';
+import { LayoutDashboard, Map, Database, ClipboardCheck, ShieldCheck } from './icons';
 import { ROUTES } from '../config/constants';
 import type { PowerGISUser } from '../services/powergisData';
 

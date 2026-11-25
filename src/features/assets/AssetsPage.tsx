@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from '../../components/icons';
 import { ASSET_COLORS, ASSET_LABELS } from '../../config/constants';
 import { usePowerGISData } from '../../viewmodels/usePowerGISData';
 import type { PowerGISUser } from '../../services/powergisData';

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Eye, EyeOff, Zap, ChevronDown } from 'lucide-react';
+import { Search, Eye, EyeOff, Zap, ChevronDown } from './icons';
 import { authenticateUser, listLoginUsers, type PowerGISUser } from '../services/powergisData';
 
 const roleOrder = ['SE', 'EE', 'AEE', 'AE', 'JE', 'GIS_ADMIN'] as const;

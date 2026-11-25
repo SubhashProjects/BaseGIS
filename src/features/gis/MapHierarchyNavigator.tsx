@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, MapPinned, LocateFixed } from 'lucide-react';
+import { ChevronDown, MapPinned, LocateFixed } from '../../components/icons';
 import { UI } from '../../config/ui.config';
 import type { PowerGISBoundary, PowerGISUser } from '../../services/powergisData';
 

@@ -1,4 +1,4 @@
-import { Bell, UserCircle, LogOut, Menu, Zap } from 'lucide-react';
+import { Bell, UserCircle, LogOut, Menu, Zap } from './icons';
 import type { PowerGISUser } from '../services/powergisData';
 import { APP } from '../config/constants';
 

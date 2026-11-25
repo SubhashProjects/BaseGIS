@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { DatabaseBackup, Download, FileUp, RefreshCw, ShieldCheck } from 'lucide-react';
+import { DatabaseBackup, Download, FileUp, RefreshCw, ShieldCheck } from '../../components/icons';
 import { ASSET_LABELS, ASSET_TYPES } from '../../config/constants';
 import { UI } from '../../config/ui.config';
 import { supportedImportAccept } from '../../services/dataManagementService';
