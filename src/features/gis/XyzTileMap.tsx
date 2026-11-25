@@ -569,40 +569,93 @@ export function XyzTileMap({
                 </div>
               );
             })}
-          {assets
-            .filter((a) => a.geometry.type === 'Point' && activeLayerIds.has(a.assetType) && visibleTypes[a.assetType] !== false)
-            .map((a) => {
+          {(() => {
+            const rawPoints = assets.filter(
+              (a) =>
+                a.geometry.type === 'Point' &&
+                a.lat !== undefined &&
+                a.lng !== undefined &&
+                activeLayerIds.has(a.assetType) &&
+                visibleTypes[a.assetType] !== false
+            );
+
+            // Fast viewport bounds check with 60px margin
+            const margin = 60;
+            const inViewPoints: { asset: PowerGISAsset; p: { left: number; top: number } }[] = [];
+
+            for (let i = 0; i < rawPoints.length; i++) {
+              const a = rawPoints[i];
               const p = pos({ lat: a.lat!, lng: a.lng! }, center, zoom, size.width, size.height);
-              const layerIcon = layerIcons[a.assetType] || 'circle';
-              const layerColor = layerColors[a.assetType] || '#2563EB';
-              const markerDiameter = Math.round(18 * iconScale);
-              const glyphSize = Math.max(7, Math.round(11 * iconScale));
-              const radius = markerDiameter / 2;
-              return (
-                <button
-                  key={a.id}
-                  aria-label={a.assetNo}
-                  className={`asset-marker ${a.assetType.toLowerCase()} ${selectedAsset?.id === a.id ? 'selected' : ''}`}
-                  style={{
-                    left: p.left - radius,
-                    top: p.top - radius,
-                    width: markerDiameter,
-                    height: markerDiameter,
-                    background: layerColor,
-                  }}
-                  onMouseEnter={(e) => setHover({ asset: a, x: e.clientX, y: e.clientY })}
-                  onMouseMove={(e) => setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h))}
-                  onMouseLeave={() => setHover(null)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedAsset(a);
-                    setIsEditingAsset(false);
-                  }}
-                >
-                  <LayerIconGlyph icon={layerIcon} size={glyphSize} color="#ffffff" strokeWidth={2.5} />
-                </button>
-              );
-            })}
+              if (
+                p.left >= -margin &&
+                p.left <= size.width + margin &&
+                p.top >= -margin &&
+                p.top <= size.height + margin
+              ) {
+                inViewPoints.push({ asset: a, p });
+              }
+            }
+
+            const MAX_VISIBLE_DOM_MARKERS = 1200;
+            let displayPoints = inViewPoints;
+            const isThinned = inViewPoints.length > MAX_VISIBLE_DOM_MARKERS;
+
+            if (isThinned) {
+              const step = Math.ceil(inViewPoints.length / MAX_VISIBLE_DOM_MARKERS);
+              displayPoints = [];
+              for (let i = 0; i < inViewPoints.length; i += step) {
+                displayPoints.push(inViewPoints[i]);
+              }
+              // Always guarantee selectedAsset is rendered if within view
+              if (selectedAsset && inViewPoints.some((x) => x.asset.id === selectedAsset.id)) {
+                if (!displayPoints.some((x) => x.asset.id === selectedAsset.id)) {
+                  const sel = inViewPoints.find((x) => x.asset.id === selectedAsset.id);
+                  if (sel) displayPoints.push(sel);
+                }
+              }
+            }
+
+            return (
+              <>
+                {displayPoints.map(({ asset: a, p }) => {
+                  const layerIcon = layerIcons[a.assetType] || 'circle';
+                  const layerColor = layerColors[a.assetType] || '#2563EB';
+                  const markerDiameter = Math.round(18 * iconScale);
+                  const glyphSize = Math.max(7, Math.round(11 * iconScale));
+                  const radius = markerDiameter / 2;
+                  return (
+                    <button
+                      key={a.id}
+                      aria-label={a.assetNo}
+                      className={`asset-marker ${a.assetType.toLowerCase()} ${selectedAsset?.id === a.id ? 'selected' : ''}`}
+                      style={{
+                        left: p.left - radius,
+                        top: p.top - radius,
+                        width: markerDiameter,
+                        height: markerDiameter,
+                        background: layerColor,
+                      }}
+                      onMouseEnter={(e) => setHover({ asset: a, x: e.clientX, y: e.clientY })}
+                      onMouseMove={(e) => setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h))}
+                      onMouseLeave={() => setHover(null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAsset(a);
+                        setIsEditingAsset(false);
+                      }}
+                    >
+                      <LayerIconGlyph icon={layerIcon} size={glyphSize} color="#ffffff" strokeWidth={2.5} />
+                    </button>
+                  );
+                })}
+                {isThinned && (
+                  <div className="map-density-pill">
+                    Displaying {displayPoints.length.toLocaleString()} of {inViewPoints.length.toLocaleString()} points in view (zoom in for full detail)
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
       <div className="xyz-controls" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>

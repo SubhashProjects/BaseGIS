@@ -56,6 +56,7 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
   const vm = useDataManagementViewModel(currentUser);
   const { layers, ensureLayer } = useGisLayers();
   const input = useRef<HTMLInputElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
 
   const [stagedFiles, setStagedFiles] = useState<StagedFileMeta[]>([]);
   const [stagedFeatures, setStagedFeatures] = useState<StagedFeatureRow[]>([]);
@@ -63,11 +64,44 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
   const [isParsingFiles, setIsParsingFiles] = useState<boolean>(false);
   const [format, setFormat] = useState<'geojson' | 'csv' | 'json'>('geojson');
 
-  // Active imported GIS assets state
+  // Pagination for staged features preview
+  const [stagePage, setStagePage] = useState<number>(1);
+  const [stagePageSize, setStagePageSize] = useState<number>(50);
+
+  // Active imported GIS assets state & pagination
   const [activeImported, setActiveImported] = useState<PowerGISAsset[]>(getLocalImportedAssets);
   const [selectedActiveIds, setSelectedActiveIds] = useState<Set<string>>(new Set());
   const [searchActive, setSearchActive] = useState<string>('');
   const [filterActiveLayer, setFilterActiveLayer] = useState<string>('ALL');
+  const [activePage, setActivePage] = useState<number>(1);
+  const [activePageSize, setActivePageSize] = useState<number>(25);
+
+  // Real-time streaming import progress & live logging bar
+  const [importProgress, setImportProgress] = useState<{
+    active: boolean;
+    stage: 'reading' | 'parsing' | 'indexing' | 'complete' | 'error';
+    title: string;
+    percent: number;
+    message: string;
+    processedCount: number;
+    totalCount: number;
+    logs: string[];
+  }>({
+    active: false,
+    stage: 'reading',
+    title: '',
+    percent: 0,
+    message: '',
+    processedCount: 0,
+    totalCount: 0,
+    logs: [],
+  });
+
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [importProgress.logs]);
 
   useEffect(() => {
     const handleAssetsChanged = () => {
@@ -86,6 +120,20 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
   const handleFilesChosen = async (fileList: File[]) => {
     if (!fileList.length) return;
     setIsParsingFiles(true);
+    setImportProgress({
+      active: true,
+      stage: 'reading',
+      title: `Processing ${fileList.map((f) => f.name).join(', ')}`,
+      percent: 5,
+      message: 'Opening file and initializing streaming parser...',
+      processedCount: 0,
+      totalCount: 0,
+      logs: [
+        `[${new Date().toLocaleTimeString()}] Selected ${fileList.length} file(s) for import: ${fileList
+          .map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)} MB)`)
+          .join(', ')}`,
+      ],
+    });
 
     const newFiles: StagedFileMeta[] = [];
     const newRows: StagedFeatureRow[] = [];
@@ -108,8 +156,34 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
       newFiles.push(fileMeta);
 
       try {
-        const parsed = await parseImportFile(f, derived.id);
-        parsed.forEach((feat, featIdx) => {
+        const parsed = await parseImportFile(f, derived.id, (prog) => {
+          setImportProgress((prev) => ({
+            ...prev,
+            active: true,
+            stage: prog.stage,
+            percent: prog.percent,
+            message: prog.message,
+            processedCount: prog.processed ?? prev.processedCount,
+            totalCount: prog.total ?? prev.totalCount,
+            logs: prog.log ? [...prev.logs, prog.log] : prev.logs,
+          }));
+        });
+
+        setImportProgress((prev) => ({
+          ...prev,
+          stage: 'parsing',
+          percent: 92,
+          message: `Staging ${parsed.length.toLocaleString()} features...`,
+          processedCount: parsed.length,
+          totalCount: parsed.length,
+          logs: [
+            ...prev.logs,
+            `[${new Date().toLocaleTimeString()}] Normalizing ${parsed.length.toLocaleString()} features for preview...`,
+          ],
+        }));
+
+        for (let featIdx = 0; featIdx < parsed.length; featIdx++) {
+          const feat = parsed[featIdx];
           const assetNo = feat.assetNo || `${derived.id}-${featIdx + 1}`;
           const geomType = feat.geometry?.type || 'Point';
           let coords = '';
@@ -134,15 +208,34 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
             isDuplicate: existingAssetNos.has(assetNo),
             raw: feat,
           });
-        });
+        }
       } catch (err: any) {
-        console.warn(`Error parsing features from ${f.name}:`, err);
+        setImportProgress((prev) => ({
+          ...prev,
+          stage: 'error',
+          message: err?.message || 'Error parsing file',
+          logs: [...prev.logs, `[${new Date().toLocaleTimeString()}] ERROR: ${err?.message || err}`],
+        }));
       }
     }
 
     setStagedFiles((prev) => [...prev, ...newFiles]);
     setStagedFeatures((prev) => [...prev, ...newRows]);
+    setStagePage(1);
     setIsParsingFiles(false);
+
+    setImportProgress((prev) => ({
+      ...prev,
+      stage: 'complete',
+      percent: 100,
+      message: `Parsed ${newRows.length.toLocaleString()} feature(s) successfully without UI lag. Ready to review or import.`,
+      processedCount: newRows.length,
+      totalCount: newRows.length,
+      logs: [
+        ...prev.logs,
+        `[${new Date().toLocaleTimeString()}] Ready: ${newRows.length.toLocaleString()} features staged into interactive preview.`,
+      ],
+    }));
   };
 
   const updateStagedFile = (id: string, updates: Partial<StagedFileMeta>) => {
@@ -222,6 +315,19 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
     if (!toImport.length) return;
 
     try {
+      setImportProgress({
+        active: true,
+        stage: 'indexing',
+        title: `Committing ${toImport.length.toLocaleString()} Assets`,
+        percent: 5,
+        message: 'Synchronizing layer configurations...',
+        processedCount: 0,
+        totalCount: toImport.length,
+        logs: [
+          `[${new Date().toLocaleTimeString()}] Commencing import of ${toImport.length.toLocaleString()} features (Strategy: ${duplicateStrategy.toUpperCase()})...`,
+        ],
+      });
+
       // 1. Ensure all associated layers exist with user-specified name, color and icon
       for (const fileMeta of stagedFiles) {
         ensureLayer(fileMeta.layerLabel, fileMeta.layerColor, fileMeta.layerId, fileMeta.layerIcon);
@@ -235,8 +341,19 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
         status: r.status,
       }));
 
-      // 3. Import with selected duplicate strategy
-      const result = await importAssets(featuresPayload, duplicateStrategy);
+      // 3. Import with selected duplicate strategy and progress streaming
+      const result = await importAssets(featuresPayload, duplicateStrategy, (prog) => {
+        setImportProgress((prev) => ({
+          ...prev,
+          active: true,
+          stage: prog.stage,
+          percent: prog.percent,
+          message: prog.message,
+          processedCount: prog.processed ?? prev.processedCount,
+          totalCount: prog.total ?? prev.totalCount,
+          logs: prog.log ? [...prev.logs, prog.log] : prev.logs,
+        }));
+      });
 
       // 4. Remove imported features from staging
       const importedUids = new Set(toImport.map((r) => r.uid));
@@ -247,14 +364,34 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
         prev.filter((f) => stagedFeatures.some((r) => !importedUids.has(r.uid) && r.fileId === f.id))
       );
 
-      // Show result message
-      alert(
-        `Import Successful!\n• Added/Updated: ${result.inserted} feature(s)\n• Skipped: ${result.skipped}\nDuplicate Strategy used: ${duplicateStrategy.toUpperCase()}`
-      );
+      setImportProgress((prev) => ({
+        ...prev,
+        stage: 'complete',
+        percent: 100,
+        message: `Import complete! Added/Updated ${result.inserted.toLocaleString()} features (${result.skipped.toLocaleString()} skipped).`,
+        processedCount: result.inserted,
+        totalCount: result.inserted,
+        logs: [
+          ...prev.logs,
+          `[${new Date().toLocaleTimeString()}] SUCCESS: ${result.inserted.toLocaleString()} features stored in local IndexedDB. Map updated.`,
+        ],
+      }));
     } catch (err: any) {
-      alert(`Import error: ${err?.message || 'Failed to import features'}`);
+      setImportProgress((prev) => ({
+        ...prev,
+        stage: 'error',
+        message: err?.message || 'Failed to import features',
+        logs: [...prev.logs, `[${new Date().toLocaleTimeString()}] ERROR: ${err?.message || err}`],
+      }));
     }
   };
+
+  // Staged pagination calculations
+  const totalStagePages = Math.ceil(stagedFeatures.length / stagePageSize) || 1;
+  const paginatedStaged = useMemo(() => {
+    const start = (stagePage - 1) * stagePageSize;
+    return stagedFeatures.slice(start, start + stagePageSize);
+  }, [stagedFeatures, stagePage, stagePageSize]);
 
   // Active imported asset operations
   const filteredActiveAssets = useMemo(() => {
@@ -271,6 +408,12 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
       return true;
     });
   }, [activeImported, filterActiveLayer, searchActive]);
+
+  const totalActivePages = Math.ceil(filteredActiveAssets.length / activePageSize) || 1;
+  const paginatedActive = useMemo(() => {
+    const start = (activePage - 1) * activePageSize;
+    return filteredActiveAssets.slice(start, start + activePageSize);
+  }, [filteredActiveAssets, activePage, activePageSize]);
 
   const toggleSelectActive = (id: string) => {
     setSelectedActiveIds((prev) => {
@@ -343,6 +486,84 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
             </div>
           </div>
         </div>
+
+        {/* Real-time Import Engine Progress & Live Log Terminal */}
+        {importProgress.active && (
+          <div className="import-progress-card">
+            <div className="import-progress-header">
+              <div className="import-progress-title-row">
+                <span
+                  className={`import-pulse-dot ${
+                    importProgress.stage === 'error'
+                      ? 'error'
+                      : importProgress.stage === 'complete'
+                      ? 'done'
+                      : 'active'
+                  }`}
+                />
+                <b>{importProgress.title || 'GIS Import Engine'}</b>
+                <span className={`import-stage-pill ${importProgress.stage}`}>{importProgress.stage.toUpperCase()}</span>
+              </div>
+              <span className="import-percent-badge">{importProgress.percent}%</span>
+            </div>
+
+            <div className="import-progress-bar-track">
+              <div
+                className={`import-progress-bar-fill ${importProgress.stage}`}
+                style={{ width: `${Math.max(3, Math.min(100, importProgress.percent))}%` }}
+              />
+            </div>
+
+            <div className="import-progress-sub-row">
+              <span className="import-progress-msg">{importProgress.message}</span>
+              {importProgress.totalCount > 0 && (
+                <span className="import-progress-counter">
+                  {importProgress.processedCount.toLocaleString()} / {importProgress.totalCount.toLocaleString()} records
+                </span>
+              )}
+            </div>
+
+            {/* Live Log Stream Console */}
+            <div className="import-log-box">
+              <div className="import-log-head">
+                <span>Real-time Import Logs</span>
+                <span className="muted">{importProgress.logs.length} events logged</span>
+              </div>
+              <div className="import-log-terminal" ref={logContainerRef}>
+                {importProgress.logs.map((line, idx) => (
+                  <div key={idx} className="import-log-line">
+                    <span className="log-prompt">›</span> {line}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {importProgress.stage === 'complete' && (
+              <div className="import-progress-footer">
+                <span className="import-success-msg">✓ Processed without UI lag. Indexed in local storage & ready on map.</span>
+                <button
+                  type="button"
+                  className="dm-sync-btn"
+                  onClick={() => setImportProgress((prev) => ({ ...prev, active: false }))}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+            {importProgress.stage === 'error' && (
+              <div className="import-progress-footer">
+                <span className="staging-dup-warn">⚠ Import encountered an issue. Review logs above.</span>
+                <button
+                  type="button"
+                  className="dm-sync-btn danger"
+                  onClick={() => setImportProgress((prev) => ({ ...prev, active: false }))}
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="data-grid">
           {/* Card 1: Import GIS Files */}
@@ -584,76 +805,123 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
                   </tr>
                 </thead>
                 <tbody>
-                  {stagedFeatures.map((row, idx) => (
-                    <tr key={row.uid} className={row.selected ? '' : 'row-deselected'}>
-                      <td style={{ textAlign: 'center' }}>
-                        <input
-                          type="checkbox"
-                          checked={row.selected}
-                          onChange={(e) => updateFeatureRow(row.uid, { selected: e.target.checked })}
-                        />
-                      </td>
-                      <td className="muted">{idx + 1}</td>
-                      <td>
-                        <div className="table-input-cell">
+                  {paginatedStaged.map((row, idx) => {
+                    const realIdx = (stagePage - 1) * stagePageSize + idx;
+                    return (
+                      <tr key={row.uid} className={row.selected ? '' : 'row-deselected'}>
+                        <td style={{ textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={row.selected}
+                            onChange={(e) => updateFeatureRow(row.uid, { selected: e.target.checked })}
+                          />
+                        </td>
+                        <td className="muted">{realIdx + 1}</td>
+                        <td>
+                          <div className="table-input-cell">
+                            <input
+                              type="text"
+                              className={`table-edit-input ${row.isDuplicate ? 'input-duplicate-warn' : ''}`}
+                              value={row.assetNo}
+                              onChange={(e) => updateFeatureRow(row.uid, { assetNo: e.target.value })}
+                              placeholder="Asset Number"
+                            />
+                            {row.isDuplicate && (
+                              <span className="duplicate-badge" title="Asset number exists in current GIS data">
+                                Duplicate
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
                           <input
                             type="text"
-                            className={`table-edit-input ${row.isDuplicate ? 'input-duplicate-warn' : ''}`}
-                            value={row.assetNo}
-                            onChange={(e) => updateFeatureRow(row.uid, { assetNo: e.target.value })}
-                            placeholder="Asset Number"
+                            className="table-edit-input"
+                            value={row.assetType}
+                            onChange={(e) => updateFeatureRow(row.uid, { assetType: e.target.value.toUpperCase() })}
+                            placeholder="Layer Type"
                           />
-                          {row.isDuplicate && (
-                            <span className="duplicate-badge" title="Asset number exists in current GIS data">
-                              Duplicate
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className="table-edit-input"
-                          value={row.assetType}
-                          onChange={(e) => updateFeatureRow(row.uid, { assetType: e.target.value.toUpperCase() })}
-                          placeholder="Layer Type"
-                        />
-                      </td>
-                      <td>
-                        <select
-                          className="table-select-input"
-                          value={row.status}
-                          onChange={(e) => updateFeatureRow(row.uid, { status: e.target.value })}
-                        >
-                          <option value="ACTIVE">ACTIVE</option>
-                          <option value="MAINTENANCE">MAINTENANCE</option>
-                          <option value="INACTIVE">INACTIVE</option>
-                        </select>
-                      </td>
-                      <td>
-                        <span className="geom-pill">{row.geometryType}</span>
-                      </td>
-                      <td className="coords-cell" title={row.coordsSummary}>
-                        {row.coordsSummary}
-                      </td>
-                      <td className="muted filename-cell" title={row.fileName}>
-                        {row.fileName}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button
-                          type="button"
-                          className="row-remove-btn"
-                          title="Remove feature"
-                          onClick={() => removeFeatureRow(row.uid)}
-                        >
-                          ×
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td>
+                          <select
+                            className="table-select-input"
+                            value={row.status}
+                            onChange={(e) => updateFeatureRow(row.uid, { status: e.target.value })}
+                          >
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="MAINTENANCE">MAINTENANCE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                          </select>
+                        </td>
+                        <td>
+                          <span className="geom-pill">{row.geometryType}</span>
+                        </td>
+                        <td className="coords-cell" title={row.coordsSummary}>
+                          {row.coordsSummary}
+                        </td>
+                        <td className="muted filename-cell" title={row.fileName}>
+                          {row.fileName}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            className="row-remove-btn"
+                            title="Remove feature"
+                            onClick={() => removeFeatureRow(row.uid)}
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
+
+            {/* Staging Pagination Controls */}
+            {totalStagePages > 1 && (
+              <div className="dm-pagination-bar" style={{ marginTop: 8 }}>
+                <span className="muted">
+                  Showing {(stagePage - 1) * stagePageSize + 1} -{' '}
+                  {Math.min(stagePage * stagePageSize, stagedFeatures.length)} of{' '}
+                  {stagedFeatures.length.toLocaleString()} staged features
+                </span>
+                <div className="dm-page-btns">
+                  <button
+                    type="button"
+                    className="dm-sync-btn"
+                    disabled={stagePage <= 1}
+                    onClick={() => setStagePage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </button>
+                  <span className="pagination-indicator">
+                    Page {stagePage} of {totalStagePages}
+                  </span>
+                  <button
+                    type="button"
+                    className="dm-sync-btn"
+                    disabled={stagePage >= totalStagePages}
+                    onClick={() => setStagePage((p) => Math.min(totalStagePages, p + 1))}
+                  >
+                    Next
+                  </button>
+                  <select
+                    className="dm-pagesize-select"
+                    value={stagePageSize}
+                    onChange={(e) => {
+                      setStagePageSize(Number(e.target.value));
+                      setStagePage(1);
+                    }}
+                  >
+                    <option value={25}>25 / page</option>
+                    <option value={50}>50 / page</option>
+                    <option value={100}>100 / page</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             <div className="staging-bottom-bar">
               <button
@@ -758,72 +1026,118 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
               No imported GIS assets currently loaded. Use the import tool above to upload KML, GeoJSON, CSV, or GPKG data.
             </div>
           ) : (
-            <div className="active-imported-table-wrap">
-              <table className="staging-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 40, textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedActiveIds.size === filteredActiveAssets.length && filteredActiveAssets.length > 0
-                        }
-                        onChange={(e) => {
-                          if (e.target.checked) selectAllActive();
-                          else deselectAllActive();
-                        }}
-                      />
-                    </th>
-                    <th>Asset No</th>
-                    <th>Layer / Type</th>
-                    <th>Status</th>
-                    <th>Geometry</th>
-                    <th>Coordinates</th>
-                    <th style={{ width: 60, textAlign: 'center' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredActiveAssets.map((asset) => (
-                    <tr key={asset.id}>
-                      <td style={{ textAlign: 'center' }}>
+            <>
+              <div className="active-imported-table-wrap">
+                <table className="staging-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40, textAlign: 'center' }}>
                         <input
                           type="checkbox"
-                          checked={selectedActiveIds.has(asset.id)}
-                          onChange={() => toggleSelectActive(asset.id)}
+                          checked={
+                            selectedActiveIds.size === filteredActiveAssets.length && filteredActiveAssets.length > 0
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) selectAllActive();
+                            else deselectAllActive();
+                          }}
                         />
-                      </td>
-                      <td>
-                        <strong>{asset.assetNo}</strong>
-                      </td>
-                      <td>
-                        <span className="layer-type-badge">{asset.assetType}</span>
-                      </td>
-                      <td>
-                        <span className={`status-pill ${asset.status.toLowerCase()}`}>{asset.status}</span>
-                      </td>
-                      <td>
-                        <span className="geom-pill">{asset.geometry?.type || 'Point'}</span>
-                      </td>
-                      <td className="coords-cell">
-                        {asset.latitude !== undefined && asset.longitude !== undefined
-                          ? `${asset.latitude.toFixed(4)}, ${asset.longitude.toFixed(4)}`
-                          : 'Geometry'}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button
-                          type="button"
-                          className="row-remove-btn"
-                          title="Delete asset"
-                          onClick={() => deleteAssets([asset.id])}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </td>
+                      </th>
+                      <th>Asset No</th>
+                      <th>Layer / Type</th>
+                      <th>Status</th>
+                      <th>Geometry</th>
+                      <th>Coordinates</th>
+                      <th style={{ width: 60, textAlign: 'center' }}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedActive.map((asset) => (
+                      <tr key={asset.id}>
+                        <td style={{ textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedActiveIds.has(asset.id)}
+                            onChange={() => toggleSelectActive(asset.id)}
+                          />
+                        </td>
+                        <td>
+                          <strong>{asset.assetNo}</strong>
+                        </td>
+                        <td>
+                          <span className="layer-type-badge">{asset.assetType}</span>
+                        </td>
+                        <td>
+                          <span className={`status-pill ${asset.status.toLowerCase()}`}>{asset.status}</span>
+                        </td>
+                        <td>
+                          <span className="geom-pill">{asset.geometry?.type || 'Point'}</span>
+                        </td>
+                        <td className="coords-cell">
+                          {asset.latitude !== undefined && asset.longitude !== undefined
+                            ? `${asset.latitude.toFixed(4)}, ${asset.longitude.toFixed(4)}`
+                            : 'Geometry'}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            className="row-remove-btn"
+                            title="Delete asset"
+                            onClick={() => deleteAssets([asset.id])}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Active Imported Pagination Controls */}
+              {totalActivePages > 1 && (
+                <div className="dm-pagination-bar" style={{ marginTop: 8 }}>
+                  <span className="muted">
+                    Showing {(activePage - 1) * activePageSize + 1} -{' '}
+                    {Math.min(activePage * activePageSize, filteredActiveAssets.length)} of{' '}
+                    {filteredActiveAssets.length.toLocaleString()} active imported assets
+                  </span>
+                  <div className="dm-page-btns">
+                    <button
+                      type="button"
+                      className="dm-sync-btn"
+                      disabled={activePage <= 1}
+                      onClick={() => setActivePage((p) => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </button>
+                    <span className="pagination-indicator">
+                      Page {activePage} of {totalActivePages}
+                    </span>
+                    <button
+                      type="button"
+                      className="dm-sync-btn"
+                      disabled={activePage >= totalActivePages}
+                      onClick={() => setActivePage((p) => Math.min(totalActivePages, p + 1))}
+                    >
+                      Next
+                    </button>
+                    <select
+                      className="dm-pagesize-select"
+                      value={activePageSize}
+                      onChange={(e) => {
+                        setActivePageSize(Number(e.target.value));
+                        setActivePage(1);
+                      }}
+                    >
+                      <option value={25}>25 / page</option>
+                      <option value={50}>50 / page</option>
+                      <option value={100}>100 / page</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 

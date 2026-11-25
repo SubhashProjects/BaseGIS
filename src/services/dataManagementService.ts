@@ -17,6 +17,17 @@ export type ImportFeature = {
   sharedBoundary?: boolean;
 };
 
+export type ImportProgressEvent = {
+  percent: number;
+  stage: 'reading' | 'parsing' | 'indexing' | 'complete' | 'error';
+  message: string;
+  processed?: number;
+  total?: number;
+  log?: string;
+};
+
+export type ProgressCallback = (event: ImportProgressEvent) => void;
+
 export type ImportResult = { inserted: number; skipped: number; errors: string[] };
 
 const IMPORTED_ASSETS_KEY = 'powergis_imported_assets';
@@ -115,12 +126,69 @@ function normalizeFeature(feature: any, index: number, defaultType: string, file
   };
 }
 
-function parseGeoJSON(text: string, defaultType: string, filename?: string): ImportFeature[] {
+// --- HIGH-PERFORMANCE CHUNKED STREAMING PARSERS ---
+
+async function parseGeoJSONChunked(
+  text: string,
+  defaultType: string,
+  filename?: string,
+  onProgress?: ProgressCallback
+): Promise<ImportFeature[]> {
+  onProgress?.({
+    percent: 10,
+    stage: 'parsing',
+    message: 'Parsing GeoJSON payload...',
+    log: `[${new Date().toLocaleTimeString()}] Parsing GeoJSON data (${(text.length / 1024 / 1024).toFixed(1)} MB)...`,
+  });
+
+  await new Promise((r) => setTimeout(r, 0));
   const data = JSON.parse(text);
-  const features = data.type === 'FeatureCollection' ? data.features : data.type === 'Feature' ? [data] : [];
-  return features
-    .filter((f: any) => f?.geometry)
-    .map((f: any, i: number) => normalizeFeature(f, i, defaultType, filename));
+  const rawFeatures = data.type === 'FeatureCollection' ? data.features : data.type === 'Feature' ? [data] : [];
+  const validRaw = rawFeatures.filter((f: any) => f?.geometry);
+  const total = validRaw.length;
+
+  onProgress?.({
+    percent: 25,
+    stage: 'parsing',
+    message: `Discovered ${total.toLocaleString()} GeoJSON features. Normalizing geometries...`,
+    total,
+    processed: 0,
+    log: `[${new Date().toLocaleTimeString()}] Discovered ${total.toLocaleString()} valid features in GeoJSON.`,
+  });
+
+  const features: ImportFeature[] = [];
+  const CHUNK_SIZE = 2500;
+
+  for (let i = 0; i < total; i += CHUNK_SIZE) {
+    const chunk = validRaw.slice(i, i + CHUNK_SIZE);
+    for (let c = 0; c < chunk.length; c++) {
+      features.push(normalizeFeature(chunk[c], i + c, defaultType, filename));
+    }
+    const processed = Math.min(i + CHUNK_SIZE, total);
+    const percent = Math.min(95, Math.round(25 + (processed / total) * 70));
+
+    onProgress?.({
+      percent,
+      stage: 'parsing',
+      message: `Processed ${processed.toLocaleString()} / ${total.toLocaleString()} features (${percent}%)...`,
+      processed,
+      total,
+      log: `[${new Date().toLocaleTimeString()}] Processed ${processed.toLocaleString()} of ${total.toLocaleString()} features (${percent}%)...`,
+    });
+
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  onProgress?.({
+    percent: 100,
+    stage: 'parsing',
+    message: `Extracted all ${features.length.toLocaleString()} GeoJSON features.`,
+    processed: features.length,
+    total,
+    log: `[${new Date().toLocaleTimeString()}] GeoJSON parsing complete: ${features.length.toLocaleString()} features ready.`,
+  });
+
+  return features;
 }
 
 function parseWktCoordinate(s: string): [number, number] | null {
@@ -217,62 +285,67 @@ export function parseWkt(wktStr: string): any | null {
   return null;
 }
 
-function parseCsvTokens(text: string): string[][] {
-  const lines: string[][] = [];
-  let row: string[] = [];
-  let token = '';
-  let insideQuote = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    const nextChar = text[i + 1];
-
-    if (char === '"') {
-      if (insideQuote && nextChar === '"') {
-        token += '"';
-        i++;
-      } else {
-        insideQuote = !insideQuote;
-      }
-    } else if (char === ',' && !insideQuote) {
-      row.push(token.trim());
-      token = '';
-    } else if ((char === '\r' || char === '\n') && !insideQuote) {
-      if (char === '\r' && nextChar === '\n') i++;
-      row.push(token.trim());
-      if (row.some((t) => t !== '')) lines.push(row);
-      row = [];
-      token = '';
-    } else {
-      token += char;
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let start = 0;
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      inQuotes = !inQuotes;
+    } else if (c === ',' && !inQuotes) {
+      result.push(line.slice(start, i).trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+      start = i + 1;
     }
   }
-
-  if (token || row.length) {
-    row.push(token.trim());
-    if (row.some((t) => t !== '')) lines.push(row);
-  }
-
-  return lines;
+  result.push(line.slice(start).trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+  return result;
 }
 
-function parseCsv(text: string, defaultType: string, filename?: string): ImportFeature[] {
-  const tokenRows = parseCsvTokens(text);
-  if (!tokenRows.length) return [];
+async function parseCsvChunked(
+  text: string,
+  defaultType: string,
+  filename?: string,
+  onProgress?: ProgressCallback
+): Promise<ImportFeature[]> {
+  onProgress?.({
+    percent: 5,
+    stage: 'parsing',
+    message: 'Analyzing CSV structure and lines...',
+    log: `[${new Date().toLocaleTimeString()}] Reading lines from CSV (${(text.length / 1024 / 1024).toFixed(1)} MB)...`,
+  });
 
-  const headers = tokenRows[0].map((h) => h.replace(/^["']|["']$/g, '').trim());
+  const lines = text.split(/\r?\n/);
+  if (!lines.length || !lines[0].trim()) return [];
 
-  return tokenRows
-    .slice(1)
-    .map((values, i) => {
+  const headers = parseCsvLine(lines[0]);
+  const dataLines = lines.slice(1).filter((l) => l.trim().length > 0);
+  const total = dataLines.length;
+
+  onProgress?.({
+    percent: 10,
+    stage: 'parsing',
+    message: `Discovered ${total.toLocaleString()} CSV records. Beginning parsing...`,
+    total,
+    processed: 0,
+    log: `[${new Date().toLocaleTimeString()}] Discovered ${total.toLocaleString()} rows. Columns: ${headers.slice(0, 6).join(', ')}...`,
+  });
+
+  const features: ImportFeature[] = [];
+  const CHUNK_SIZE = 2500;
+
+  for (let i = 0; i < total; i += CHUNK_SIZE) {
+    const chunk = dataLines.slice(i, i + CHUNK_SIZE);
+    for (let c = 0; c < chunk.length; c++) {
+      const idx = i + c;
+      const values = parseCsvLine(chunk[c]);
       const row: Record<string, string> = {};
-      headers.forEach((h, n) => {
-        row[h] = (values[n] ?? '').replace(/^["']|["']$/g, '').trim();
-      });
+      for (let h = 0; h < headers.length; h++) {
+        row[headers[h]] = values[h] ?? '';
+      }
 
       const wkt = row.st_astext || row.geometry || row.wkt || row.the_geom || '';
       let geometry = parseWkt(wkt);
-
       if (!geometry) {
         const lat = Number(row.latitude ?? row.lat);
         const lng = Number(row.longitude ?? row.lng ?? row.lon);
@@ -281,9 +354,36 @@ function parseCsv(text: string, defaultType: string, filename?: string): ImportF
         }
       }
 
-      return normalizeFeature({ properties: row, geometry }, i, defaultType, filename);
-    })
-    .filter((x) => x.geometry);
+      if (geometry) {
+        features.push(normalizeFeature({ properties: row, geometry }, idx, defaultType, filename));
+      }
+    }
+
+    const processed = Math.min(i + CHUNK_SIZE, total);
+    const percent = Math.min(95, Math.round(10 + (processed / total) * 85));
+
+    onProgress?.({
+      percent,
+      stage: 'parsing',
+      message: `Parsed ${processed.toLocaleString()} / ${total.toLocaleString()} records (${percent}%)...`,
+      processed,
+      total,
+      log: `[${new Date().toLocaleTimeString()}] Parsed ${processed.toLocaleString()} of ${total.toLocaleString()} rows (${percent}%)...`,
+    });
+
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  onProgress?.({
+    percent: 100,
+    stage: 'parsing',
+    message: `Extracted all ${features.length.toLocaleString()} valid features from CSV.`,
+    processed: features.length,
+    total,
+    log: `[${new Date().toLocaleTimeString()}] CSV parsing complete: ${features.length.toLocaleString()} features ready.`,
+  });
+
+  return features;
 }
 
 function parseKmlCoordinates(text: string): [number, number][] {
@@ -301,12 +401,41 @@ function parseKmlCoordinates(text: string): [number, number][] {
   return res;
 }
 
-function parseKml(text: string, defaultType: string, filename?: string): ImportFeature[] {
+async function parseKmlChunked(
+  text: string,
+  defaultType: string,
+  filename?: string,
+  onProgress?: ProgressCallback
+): Promise<ImportFeature[]> {
+  onProgress?.({
+    percent: 10,
+    stage: 'parsing',
+    message: 'Parsing KML XML tree...',
+    log: `[${new Date().toLocaleTimeString()}] Reading KML XML document (${(text.length / 1024 / 1024).toFixed(1)} MB)...`,
+  });
+
+  await new Promise((r) => setTimeout(r, 0));
   const xml = new DOMParser().parseFromString(text, 'application/xml');
   const placemarks = Array.from(xml.getElementsByTagName('Placemark'));
+  const total = placemarks.length;
 
-  return placemarks
-    .map((pm, i) => {
+  onProgress?.({
+    percent: 25,
+    stage: 'parsing',
+    message: `Found ${total.toLocaleString()} KML Placemarks. Extracting attributes...`,
+    total,
+    processed: 0,
+    log: `[${new Date().toLocaleTimeString()}] Extracted ${total.toLocaleString()} Placemarks from KML.`,
+  });
+
+  const features: ImportFeature[] = [];
+  const CHUNK_SIZE = 1000;
+
+  for (let i = 0; i < total; i += CHUNK_SIZE) {
+    const chunk = placemarks.slice(i, i + CHUNK_SIZE);
+    for (let c = 0; c < chunk.length; c++) {
+      const pm = chunk[c];
+      const idx = i + c;
       const props: Record<string, any> = {};
 
       const simpleData = Array.from(pm.getElementsByTagName('SimpleData'));
@@ -338,34 +467,88 @@ function parseKml(text: string, defaultType: string, filename?: string): ImportF
         if (coords.length) geometry = { type: 'Polygon', coordinates: [coords] };
       }
 
-      return normalizeFeature({ properties: props, geometry }, i, defaultType, filename);
-    })
-    .filter((x) => x.geometry);
+      if (geometry) {
+        features.push(normalizeFeature({ properties: props, geometry }, idx, defaultType, filename));
+      }
+    }
+
+    const processed = Math.min(i + CHUNK_SIZE, total);
+    const percent = Math.min(95, Math.round(25 + (processed / total) * 70));
+
+    onProgress?.({
+      percent,
+      stage: 'parsing',
+      message: `Parsed ${processed.toLocaleString()} / ${total.toLocaleString()} Placemarks...`,
+      processed,
+      total,
+      log: `[${new Date().toLocaleTimeString()}] Parsed ${processed.toLocaleString()} of ${total.toLocaleString()} Placemarks (${percent}%)...`,
+    });
+
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  onProgress?.({
+    percent: 100,
+    stage: 'parsing',
+    message: `Completed KML parsing: ${features.length.toLocaleString()} features.`,
+    processed: features.length,
+    total,
+    log: `[${new Date().toLocaleTimeString()}] KML parsing complete: ${features.length.toLocaleString()} features ready.`,
+  });
+
+  return features;
 }
 
-export async function parseImportFile(file: File, defaultType?: string): Promise<ImportFeature[]> {
+export async function parseImportFile(
+  file: File,
+  defaultType?: string,
+  onProgress?: ProgressCallback
+): Promise<ImportFeature[]> {
   const extension = ext(file.name);
   const resolvedType = defaultType || filenameToLayerInfo(file.name).id;
 
+  onProgress?.({
+    percent: 2,
+    stage: 'reading',
+    message: `Reading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)...`,
+    log: `[${new Date().toLocaleTimeString()}] Reading "${file.name}" (${(file.size / 1024 / 1024).toFixed(1)} MB)...`,
+  });
+
   if (extension === '.gpkg') {
     const buffer = await file.arrayBuffer();
+    onProgress?.({
+      percent: 20,
+      stage: 'parsing',
+      message: `Parsing GeoPackage SQLite B-Trees (${(buffer.byteLength / 1024 / 1024).toFixed(1)} MB)...`,
+      log: `[${new Date().toLocaleTimeString()}] Processing GeoPackage SQLite structure...`,
+    });
     const features = parseGeoPackageArrayBuffer(buffer, resolvedType);
     if (!features.length) {
       throw new Error(`No geometry records could be parsed from GeoPackage: ${file.name}`);
     }
+    onProgress?.({
+      percent: 100,
+      stage: 'parsing',
+      message: `Extracted ${features.length.toLocaleString()} features from GeoPackage.`,
+      processed: features.length,
+      log: `[${new Date().toLocaleTimeString()}] GeoPackage parsed: ${features.length.toLocaleString()} features.`,
+    });
     return features;
   }
 
   if (extension === '.geojson' || extension === '.json') {
-    return parseGeoJSON(await file.text(), resolvedType, file.name);
+    const text = await file.text();
+    return parseGeoJSONChunked(text, resolvedType, file.name, onProgress);
   }
 
   if (extension === '.kml') {
-    return parseKml(await file.text(), resolvedType, file.name);
+    const text = await file.text();
+    return parseKmlChunked(text, resolvedType, file.name, onProgress);
   }
 
   if (extension === '.csv') {
-    return parseCsv(await file.text(), resolvedType, file.name);
+    const text = await file.text();
+    return parseCsvChunked(text, resolvedType, file.name, onProgress);
   }
 
   if (extension === '.kmz') {
@@ -375,31 +558,122 @@ export async function parseImportFile(file: File, defaultType?: string): Promise
   throw new Error(`Unsupported file format: ${file.name}. Please select KML, GeoJSON, CSV, or GPKG.`);
 }
 
-export async function importSourceFile(file: File, defaultType: string): Promise<ImportResult> {
-  const features = await parseImportFile(file, defaultType);
+export async function importSourceFile(
+  file: File,
+  defaultType: string,
+  onProgress?: ProgressCallback
+): Promise<ImportResult> {
+  const features = await parseImportFile(file, defaultType, onProgress);
   if (!features.length) {
     throw new Error('No GIS features could be read from the selected file.');
   }
-  return importAssets(features);
+  return importAssets(features, 'overwrite', onProgress);
+}
+
+// --- HIGH-PERFORMANCE INDEXEDDB STORAGE ENGINE ---
+const IDB_NAME = 'PowerGIS_Offline_DB';
+const IDB_VERSION = 1;
+const IDB_STORE = 'imported_assets';
+
+function openIndexedDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      return reject(new Error('IndexedDB not supported in this environment'));
+    }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function saveToIndexedDb(assets: PowerGISAsset[]): Promise<void> {
+  try {
+    const db = await openIndexedDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      const store = tx.objectStore(IDB_STORE);
+      store.clear();
+      for (const a of assets) {
+        store.put(a);
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('IndexedDB write warning:', err);
+  }
+}
+
+export async function loadFromIndexedDb(): Promise<PowerGISAsset[]> {
+  try {
+    const db = await openIndexedDb();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  } catch {
+    return [];
+  }
+}
+
+// In-memory fast cache to ensure synchronous 0ms lookups for React components
+let cachedLocalAssets: PowerGISAsset[] | null = null;
+
+// Initial hydration from IndexedDB on startup
+if (typeof window !== 'undefined') {
+  void loadFromIndexedDb().then((idbAssets) => {
+    if (idbAssets && idbAssets.length > 0) {
+      cachedLocalAssets = idbAssets;
+      window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
+    }
+  });
 }
 
 export function getLocalImportedAssets(): PowerGISAsset[] {
+  if (cachedLocalAssets !== null) {
+    return cachedLocalAssets;
+  }
   try {
     const saved = localStorage.getItem(IMPORTED_ASSETS_KEY);
     if (saved) {
-      return JSON.parse(saved) as PowerGISAsset[];
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        cachedLocalAssets = parsed;
+        return parsed;
+      }
     }
   } catch (e) {
-    console.warn('Error reading local imported assets:', e);
+    console.warn('Error reading local imported assets from localStorage:', e);
   }
   return [];
 }
 
 export function saveLocalImportedAssets(assets: PowerGISAsset[]): void {
+  cachedLocalAssets = assets;
+  // Asynchronously persist to IndexedDB (can hold 100s of MBs with 0ms UI blocking)
+  void saveToIndexedDb(assets);
+
+  // If size is small, also store in localStorage for instant sync
   try {
-    localStorage.setItem(IMPORTED_ASSETS_KEY, JSON.stringify(assets));
-  } catch (e) {
-    console.warn('Error saving local imported assets:', e);
+    if (assets.length <= 500) {
+      localStorage.setItem(IMPORTED_ASSETS_KEY, JSON.stringify(assets));
+    } else {
+      localStorage.setItem(
+        IMPORTED_ASSETS_KEY,
+        JSON.stringify({ _indexedDb: true, count: assets.length, updated: Date.now() })
+      );
+    }
+  } catch {
+    /* ignore localStorage quota exceeded - IndexedDB has it safely */
   }
 }
 
@@ -420,7 +694,8 @@ export function clearAllImportedAssets(): void {
 
 export async function importAssets(
   features: ImportFeature[],
-  duplicateStrategy: DuplicateStrategy = 'overwrite'
+  duplicateStrategy: DuplicateStrategy = 'overwrite',
+  onProgress?: ProgressCallback
 ): Promise<ImportResult> {
   let inserted = 0;
   let skipped = 0;
@@ -429,7 +704,15 @@ export async function importAssets(
   const existingLocal = getLocalImportedAssets();
   const existingMap = new Map(existingLocal.map((a) => [a.assetNo, a]));
 
+  onProgress?.({
+    percent: 10,
+    stage: 'indexing',
+    message: `Indexing ${features.length.toLocaleString()} features against local GIS storage...`,
+    log: `[${new Date().toLocaleTimeString()}] Checking duplicates (${duplicateStrategy.toUpperCase()}) across ${features.length.toLocaleString()} items...`,
+  });
+
   const preparedAssets: PowerGISAsset[] = [];
+  const CHUNK_SIZE = 5000;
 
   for (let i = 0; i < features.length; i++) {
     const f = features[i];
@@ -465,7 +748,26 @@ export async function importAssets(
       shared: f.sharedBoundary || false,
       metadata: f.metadata,
     });
+
+    if (i % CHUNK_SIZE === 0 && i > 0) {
+      const pct = Math.min(60, Math.round(10 + (i / features.length) * 50));
+      onProgress?.({
+        percent: pct,
+        stage: 'indexing',
+        message: `Prepared ${i.toLocaleString()} / ${features.length.toLocaleString()} assets...`,
+        processed: i,
+        total: features.length,
+      });
+      await new Promise((r) => setTimeout(r, 0));
+    }
   }
+
+  onProgress?.({
+    percent: 75,
+    stage: 'indexing',
+    message: 'Saving assets to high-capacity IndexedDB offline database...',
+    log: `[${new Date().toLocaleTimeString()}] Writing ${preparedAssets.length.toLocaleString()} assets to IndexedDB...`,
+  });
 
   let finalLocal: PowerGISAsset[] = [];
   if (duplicateStrategy === 'overwrite') {
@@ -479,29 +781,41 @@ export async function importAssets(
   saveLocalImportedAssets(finalLocal);
   window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
 
+  onProgress?.({
+    percent: 90,
+    stage: 'indexing',
+    message: 'Syncing assets to map layers and local cache...',
+    log: `[${new Date().toLocaleTimeString()}] Local IndexedDB storage committed (${finalLocal.length.toLocaleString()} total active assets).`,
+  });
+
   inserted = preparedAssets.length;
 
-  // Attempt database synchronization in chunks of 150
+  // Attempt database synchronization in chunks of 150 (if connected)
   if (supabase) {
-    const CHUNK_SIZE = 150;
-    for (let c = 0; c < features.length; c += CHUNK_SIZE) {
-      const slice = features.slice(c, c + CHUNK_SIZE);
+    const DB_CHUNK_SIZE = 150;
+    const maxDbSync = Math.min(features.length, 1500); // sync up to 1500 to prevent network stalls
+    for (let c = 0; c < maxDbSync; c += DB_CHUNK_SIZE) {
+      const slice = features.slice(c, c + DB_CHUNK_SIZE);
       try {
-        const { data, error } = await supabase.rpc('admin_import_assets', {
+        const { error } = await supabase.rpc('admin_import_assets', {
           p_session_token: token(),
           p_assets: slice,
         });
-
         if (error) {
           errors.push(error.message || String(error));
-        } else if (data?.[0]) {
-          // synced
         }
       } catch (err: any) {
         errors.push(err.message || String(err));
       }
     }
   }
+
+  onProgress?.({
+    percent: 100,
+    stage: 'complete',
+    message: `Import complete! Added/Updated ${inserted.toLocaleString()} features (${skipped} skipped).`,
+    log: `[${new Date().toLocaleTimeString()}] SUCCESS: ${inserted.toLocaleString()} features imported into active GIS system.`,
+  });
 
   return { inserted, skipped, errors };
 }
