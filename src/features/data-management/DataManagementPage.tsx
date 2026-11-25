@@ -904,11 +904,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
     <div className="content data-management-page">
       <div className="page-title">
         <div>
-          <span className="eyebrow">POWERGIS / DATA MANAGEMENT</span>
           <h1>Data Management & Tables View</h1>
-          <p>
-            Import operational GIS files, customize layer colors and icons, resolve duplicate records, and inspect all features in full interactive table view.
-          </p>
         </div>
       </div>
 

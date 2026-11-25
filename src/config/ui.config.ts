@@ -1,5 +1,5 @@
 export const UI = {
-  brand: { name: 'PowerGIS', subtitle: 'Electricity Distribution GIS Portal' },
+  brand: { name: 'PowerGIS', subtitle: '' },
   nav: {
     dashboard: 'Dashboard', gis: 'GIS Master Map', assets: 'Assets', approvals: 'Approvals', admin: 'Administration'
   },
@@ -23,7 +23,7 @@ export const UI = {
     shared: 'Shared boundary', private: 'Private', close: 'Close', baseMap: 'Base map', layers: 'GIS layers',
     zoomIn: 'Zoom in', zoomOut: 'Zoom out', fit: 'Fit authorised area', north: 'Reset north',
     mapHelp: 'Wheel: zoom · Drag: pan · Shift + drag / right-drag: rotate · N: north',
-    navigationTitle: 'Map hierarchy navigation', navigationSubtitle: 'Jump directly to your authorised region', myScope: 'My scope', navigationAll: 'All authorised areas',
+    navigationTitle: 'Map hierarchy navigation', navigationSubtitle: '', myScope: 'My scope', navigationAll: 'All authorised areas',
     zoomReadout: 'Zoom', rotation: 'Rotation'
   },
   assets: { eyebrow: 'POWERGIS / ASSETS', title: 'Asset Inventory', asset: 'Asset', type: 'Type', status: 'Status', jurisdiction: 'Jurisdiction', visibility: 'Visibility' },
@@ -31,7 +31,7 @@ export const UI = {
     eyebrow: 'POWERGIS / WORKFLOW', title: 'Approvals', pending: 'My pending work', workflow: 'Workflow', submission: 'Submission', asset: 'Asset', area: 'Area', stage: 'Stage', action: 'Action', review: 'Review',
     sequence: 'DRAFT → SUBMITTED → JE REVIEW → AE REVIEW → APPROVED → ACTIVE', unavailable: 'Approval data unavailable'
   },
-  admin: { eyebrow: 'POWERGIS / ADMIN', title: 'Administration', subtitle: 'GIS Admin controls users, roles, jurisdictions, imports and backups', users: 'Users', assets: 'GIS Assets', jurisdictions: 'Jurisdictions', security: 'Security', organisation: 'Organisation data', operations: 'Data operations', restricted: 'Access restricted.', securityValue: 'Session RPC', directoryNote: 'Organisation users, jurisdiction boundaries and GIS assets are stored in Supabase/PostGIS. The frontend contains no GIS seed dataset.', importAction: 'Import GIS data', exportAction: 'Export authorised data', backupAction: 'Backup / restore', directoryMetric: 'Database-backed organisation directory', assetsMetric: 'Supabase / PostGIS', jurisdictionMetric: 'Authorised JE boundaries', securityMetric: 'Session-bound visibility RPC', data: { title: 'GIS Data Management', subtitle: 'Import operational GIS files, export authorised data and manage database backups.', importTitle: 'Import layers', importHelp: 'Load the GIS files used by the department into the Supabase/PostGIS asset store.', assetType: 'Default layer type', importButton: 'Choose GIS file', exportTitle: 'Export data', exportHelp: 'Download the GIS inventory visible to the current administrator.', format: 'Export format', exportButton: 'Export now', backupTitle: 'Database backup', backupHelp: 'Create a backup manifest now. The scheduled Edge Function stores the complete database snapshot daily.', backupButton: 'Backup now', dailySchedule: 'Automatic backup: daily · retention: 30 days', history: 'Backup history', refresh: 'Refresh backup history', noBackups: 'No backup runs recorded yet.', operationsNote: 'Import/export and backup operations are restricted to GIS Admin and remain database-backed.' } },
+  admin: { eyebrow: '', title: 'Administration', subtitle: '', users: 'Users', assets: 'GIS Assets', jurisdictions: 'Jurisdictions', security: 'Security', organisation: 'Organisation data', operations: 'Data operations', restricted: 'Access restricted.', securityValue: 'Session RPC', directoryNote: '', importAction: 'Import GIS data', exportAction: 'Export authorised data', backupAction: 'Backup / restore', directoryMetric: '', assetsMetric: '', jurisdictionMetric: '', securityMetric: '', data: { title: 'GIS Data Management', subtitle: '', importTitle: 'Import layers', importHelp: '', assetType: 'Default layer type', importButton: 'Choose GIS file', exportTitle: 'Export data', exportHelp: '', format: 'Export format', exportButton: 'Export now', backupTitle: 'Database backup', backupHelp: '', backupButton: 'Backup now', dailySchedule: '', history: 'Backup history', refresh: 'Refresh backup history', noBackups: 'No backup runs recorded yet.', operationsNote: '' } },
   hierarchy: { subdivision: 'Sub Division', division: 'Division', circle: 'Circle', department: 'Department', region: 'Region', je: 'JE Jurisdiction' },
   common: { loading: 'Loading…', error: 'Data unavailable', active: 'Active', pending: 'Pending', noData: 'No data available', allRegions: 'All Regions', database: 'Supabase / PostGIS' }
 } as const;

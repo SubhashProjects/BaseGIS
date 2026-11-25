@@ -1,4 +1,4 @@
-export const APP = { name: 'PowerGIS', subtitle: 'Electricity Distribution GIS' } as const;
+export const APP = { name: 'PowerGIS', subtitle: '' } as const;
 export const MAP_DEFAULT = { center: { lat: 11.9139, lng: 79.8145 }, zoom: 10 } as const;
 export const ROUTES = {
   dashboard: '/',

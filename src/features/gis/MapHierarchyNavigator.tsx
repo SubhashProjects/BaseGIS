@@ -66,7 +66,7 @@ export function MapHierarchyNavigator({ currentUser, boundaries, onNavigate, onR
   return (
     <div className="map-hierarchy-nav panel">
       <div className="map-hierarchy-nav-head">
-        <div className="map-nav-title"><span className="map-nav-icon"><MapPinned size={15}/></span><div><b>{UI.gis.navigationTitle}</b><small>{UI.gis.navigationSubtitle}</small></div></div>
+        <div className="map-nav-title"><span className="map-nav-icon"><MapPinned size={15}/></span><div><b>{UI.gis.navigationTitle}</b></div></div>
         <button className="map-nav-reset" type="button" onClick={() => { setSelection(initial); onReset(); }} title={UI.gis.myScope}><LocateFixed size={14}/><span>{UI.gis.myScope}</span></button>
       </div>
       <div className="map-hierarchy-selects">

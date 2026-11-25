@@ -461,32 +461,6 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
       </div>
 
       <div className="panel-body">
-        {/* Explanatory Info Card on Duplicate Handling & Storage */}
-        <div className="import-explainer-banner">
-          <div className="explainer-header">
-            <b>GIS Data Import & Storage Guide</b>
-          </div>
-          <div className="explainer-content">
-            <div className="explainer-item">
-              <span className="explainer-bullet">✓</span>
-              <div>
-                <strong>Duplicates & Skipped Data:</strong> When an imported record matches an existing{' '}
-                <code>Asset No</code>, you can now choose to <b>Overwrite existing</b> (default),{' '}
-                <b>Auto-rename duplicates</b> (keep both), or <b>Skip duplicates</b>. You can also edit Asset Numbers
-                directly in the staging table before committing.
-              </div>
-            </div>
-            <div className="explainer-item">
-              <span className="explainer-bullet">✓</span>
-              <div>
-                <strong>Database & Offline Persistence:</strong> All imported layers and assets are safely stored in
-                local browser GIS storage, immediately visible on the live map and inventory, and synced to PostgreSQL /
-                Supabase when online.
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Real-time Import Engine Progress & Live Log Terminal */}
         {importProgress.active && (
           <div className="import-progress-card">
@@ -572,10 +546,6 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
               <FileUp size={20} />
             </div>
             <h3>{UI.admin.data.importTitle}</h3>
-            <p>
-              Select GIS files. Layer names, colors, and <b>icons</b> are automatically inferred with full option to edit
-              and preview features before importing.
-            </p>
 
             <button
               type="button"
@@ -686,7 +656,6 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
               <Download size={20} />
             </div>
             <h3>{UI.admin.data.exportTitle}</h3>
-            <p>{UI.admin.data.exportHelp}</p>
             <div className="field-row">
               <label>{UI.admin.data.format}</label>
               <select value={format} onChange={(e) => setFormat(e.target.value as any)}>
@@ -708,7 +677,6 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
               <DatabaseBackup size={20} />
             </div>
             <h3>{UI.admin.data.backupTitle}</h3>
-            <p>{UI.admin.data.backupHelp}</p>
             <div className="field-row">
               <label>Retention policy</label>
               <div className="field-static-value">Daily snapshot · 30 days retention</div>
@@ -953,7 +921,6 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
           <div className="active-imported-head">
             <div>
               <b>Currently Loaded Imported GIS Assets ({activeImported.length})</b>
-              <div className="muted">Manage, filter, or delete active imported assets on your local map.</div>
             </div>
 
             <div className="active-imported-actions">

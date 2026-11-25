@@ -48,29 +48,29 @@ export function Dashboard({ currentUser }: { currentUser: PowerGISUser }) {
   const pendingCount = assets.filter((asset) => ['DRAFT', 'SUBMITTED', 'JE_REVIEW', 'AE_REVIEW'].includes(asset.status)).length;
   const retiredCount = assets.filter((asset) => asset.status === 'RETIRED').length;
   const metrics = [
-    { label: 'Total assets', value: assets.length, detail: 'Visible in your jurisdiction', color: 'indigo', icon: '◈' },
-    { label: 'Active assets', value: activeCount, detail: 'Operational inventory', color: 'green', icon: '✓' },
-    { label: 'Pending workflow', value: pendingCount, detail: 'Awaiting review or action', color: 'amber', icon: '◷' },
-    { label: 'Retired assets', value: retiredCount, detail: 'Decommissioned inventory', color: 'rose', icon: '↘' },
+    { label: 'Total assets', value: assets.length, color: 'indigo', icon: '◈' },
+    { label: 'Active assets', value: activeCount, color: 'green', icon: '✓' },
+    { label: 'Pending workflow', value: pendingCount, color: 'amber', icon: '◷' },
+    { label: 'Retired assets', value: retiredCount, color: 'rose', icon: '↘' },
   ];
 
   return <div className="content dashboard-content">
     <div className="dashboard-welcome">
-      <div><div className="eyebrow">POWER DISTRIBUTION • GIS OVERVIEW</div><h1>Operations dashboard</h1><p>Live overview of assets and network inventory within your authorised area.</p></div>
-      <div className="dashboard-live"><span /> {loading ? 'Syncing data' : 'Data overview'}</div>
+      <div><h1>Operations dashboard</h1></div>
+      {loading && <div className="dashboard-live"><span /> Syncing data</div>}
     </div>
     {error && <div className="notice error-notice" role="alert"><b>Dashboard data unavailable</b><br />{error}</div>}
     <div className="cards dashboard-metrics">
       {metrics.map((metric) => <article className={`card metric-card metric-${metric.color}`} key={metric.label}>
         <div className="metric-card-top"><span className="metric-label">{metric.label}</span><span className="metric-icon" aria-hidden="true">{metric.icon}</span></div>
-        <div className="metric">{loading ? '—' : metric.value.toLocaleString()}</div><div className="metric-foot">{metric.detail}</div>
+        <div className="metric">{loading ? '—' : metric.value.toLocaleString()}</div>
       </article>)}
     </div>
     <div className="dashboard-charts">
-      <section className="panel chart-panel"><div className="panel-head"><div><b>Asset composition</b><small>Distribution by network layer</small></div><span className="chart-kicker">INVENTORY</span></div><div className="panel-body"><DonutChart values={counts} labels={layers.map((layer) => layer.label)} /></div></section>
-      <section className="panel chart-panel"><div className="panel-head"><div><b>Asset lifecycle</b><small>Current status breakdown</small></div><span className="chart-kicker">STATUS</span></div><div className="panel-body"><BarChart labels={['Active', 'Pending', 'Retired', 'Other']} values={[activeCount, pendingCount, retiredCount, Math.max(0, assets.length - activeCount - pendingCount - retiredCount)]} /></div></section>
+      <section className="panel chart-panel"><div className="panel-head"><div><b>Asset composition</b></div><span className="chart-kicker">INVENTORY</span></div><div className="panel-body"><DonutChart values={counts} labels={layers.map((layer) => layer.label)} /></div></section>
+      <section className="panel chart-panel"><div className="panel-head"><div><b>Asset lifecycle</b></div><span className="chart-kicker">STATUS</span></div><div className="panel-body"><BarChart labels={['Active', 'Pending', 'Retired', 'Other']} values={[activeCount, pendingCount, retiredCount, Math.max(0, assets.length - activeCount - pendingCount - retiredCount)]} /></div></section>
     </div>
-    <section className="panel layer-panel"><div className="panel-head"><div><b>Network layer inventory</b><small>Asset counts by mapped layer</small></div><span className="pill">{loading ? 'Loading' : `${layers.length} layers`}</span></div>
+    <section className="panel layer-panel"><div className="panel-head"><div><b>Network layer inventory</b></div><span className="pill">{loading ? 'Loading' : `${layers.length} layers`}</span></div>
       <div className="layer-grid">{layers.map((layer, index) => <div className="layer-item" key={layer.id}><span className="layer-swatch" style={{ background: layer.color || CHART_COLORS[index % CHART_COLORS.length] }} /><span className="layer-name">{layer.label}</span><b>{loading ? '—' : counts[index].toLocaleString()}</b></div>)}</div>
     </section>
   </div>;

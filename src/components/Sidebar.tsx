@@ -43,7 +43,7 @@ export function Sidebar({ path, onNavigate, user, mobileOpen, onCloseMobile }: P
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="brand-title">{APP.name}</div>
-          <div className="brand-sub">{APP.subtitle}</div>
+          {APP.subtitle ? <div className="brand-sub">{APP.subtitle}</div> : null}
         </div>
         {onCloseMobile && (
           <button
