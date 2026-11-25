@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown } from '../../components/icons';
-import { ASSET_COLORS, ASSET_LABELS, MAP_DEFAULT } from '../../config/constants';
+import { ChevronDown, Plus, Pencil, Trash2, RotateCcw } from '../../components/icons';
+import { MAP_DEFAULT } from '../../config/constants';
+import { useGisLayers, PRESET_LAYER_COLORS } from '../../services/layerService';
 import type { MapNavigationTarget } from './MapHierarchyNavigator';
 import type { PowerGISAsset, PowerGISBoundary, PowerGISUser } from '../../services/powergisData';
 
@@ -64,9 +65,28 @@ export function XyzTileMap({
   const [layer, setLayer] = useState<BaseLayer>('roadmap');
   const [isDragging, setIsDragging] = useState(false);
   const [size, setSize] = useState({ width: 1000, height: 650 });
+  const {
+    layers,
+    layerLabels,
+    layerColors,
+    addLayer,
+    editLayer,
+    deleteLayer,
+    resetLayers,
+  } = useGisLayers();
+
   const [visibleTypes, setVisibleTypes] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(Object.keys(ASSET_LABELS).map((k) => [k, true]))
+    Object.fromEntries(layers.map((l) => [l.id, true]))
   );
+
+  const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState<string>('');
+  const [editColor, setEditColor] = useState<string>('');
+  const [showAddBox, setShowAddBox] = useState<boolean>(false);
+  const [newLabel, setNewLabel] = useState<string>('');
+  const [newColor, setNewColor] = useState<string>(PRESET_LAYER_COLORS[0]);
+
+  const activeLayerIds = useMemo(() => new Set(layers.map((l) => l.id)), [layers]);
   const [selectedAsset, setSelectedAsset] = useState<PowerGISAsset | null>(null);
   const [hover, setHover] = useState<{ asset: PowerGISAsset; x: number; y: number } | null>(null);
   const baseMapSelectRef = useRef<HTMLSelectElement>(null);
@@ -419,7 +439,7 @@ export function XyzTileMap({
             return <polygon key={b.id} points={pts.map((p) => `${p.left},${p.top}`).join(' ')} className="je-polygon" />;
           })}
           {assets
-            .filter((a) => a.geometry.type !== 'Point' && visibleTypes[a.assetType])
+            .filter((a) => a.geometry.type !== 'Point' && activeLayerIds.has(a.assetType) && visibleTypes[a.assetType] !== false)
             .map((a) => {
               const pts = geometryPoints(a.geometry).map((p) => pos(p, center, zoom, size.width, size.height));
               return (
@@ -427,7 +447,7 @@ export function XyzTileMap({
                   key={a.id}
                   points={pts.map((p) => `${p.left},${p.top}`).join(' ')}
                   fill="none"
-                  stroke={ASSET_COLORS[a.assetType]}
+                  stroke={layerColors[a.assetType] || '#2563EB'}
                   strokeWidth={a.assetType === 'EHV_LINE' ? 5 : a.assetType === 'HV_LINE' ? 4 : 3}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -453,7 +473,7 @@ export function XyzTileMap({
             );
           })}
           {assets
-            .filter((a) => a.geometry.type === 'Point' && visibleTypes[a.assetType])
+            .filter((a) => a.geometry.type === 'Point' && activeLayerIds.has(a.assetType) && visibleTypes[a.assetType] !== false)
             .map((a) => {
               const p = pos({ lat: a.lat!, lng: a.lng! }, center, zoom, size.width, size.height);
               return (
@@ -461,7 +481,7 @@ export function XyzTileMap({
                   key={a.id}
                   aria-label={a.assetNo}
                   className={`asset-marker ${a.assetType.toLowerCase()} ${selectedAsset?.id === a.id ? 'selected' : ''}`}
-                  style={{ left: p.left - 7, top: p.top - 7, background: ASSET_COLORS[a.assetType] }}
+                  style={{ left: p.left - 7, top: p.top - 7, background: layerColors[a.assetType] || '#2563EB' }}
                   onMouseEnter={(e) => setHover({ asset: a, x: e.clientX, y: e.clientY })}
                   onMouseMove={(e) => setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h))}
                   onMouseLeave={() => setHover(null)}
@@ -536,28 +556,214 @@ export function XyzTileMap({
           onDoubleClick={(e) => e.stopPropagation()}
           onWheel={(e) => e.stopPropagation()}
         >
-          <b>GIS layers</b>
-          {Object.entries(ASSET_LABELS).map(([k, v]) => (
-            <label
-              key={k}
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-              onDoubleClick={(e) => e.stopPropagation()}
-            >
+          <div className="xyz-layer-header">
+            <b>GIS layers</b>
+            <div className="xyz-layer-header-actions">
+              <button
+                type="button"
+                className="layer-tool-btn"
+                title="Add new GIS layer"
+                onClick={() => {
+                  setShowAddBox((prev) => !prev);
+                  setEditingLayerId(null);
+                  setNewLabel('');
+                  setNewColor(PRESET_LAYER_COLORS[layers.length % PRESET_LAYER_COLORS.length]);
+                }}
+              >
+                <Plus size={11} />
+                <span>Add</span>
+              </button>
+              <button
+                type="button"
+                className="layer-reset-icon-btn"
+                title="Reset to default layers"
+                onClick={() => {
+                  if (window.confirm('Reset all layers to default configuration?')) {
+                    resetLayers();
+                  }
+                }}
+              >
+                <RotateCcw size={11} />
+              </button>
+            </div>
+          </div>
+
+          {showAddBox && (
+            <div className="layer-edit-box">
+              <div className="layer-edit-title">New Layer</div>
               <input
-                type="checkbox"
-                checked={visibleTypes[k] !== false}
-                onChange={(e) => {
-                  const nextChecked = e.target.checked;
-                  setVisibleTypes((prev) => ({ ...prev, [k]: nextChecked }));
+                type="text"
+                className="layer-edit-input"
+                placeholder="Layer name (e.g. Solar Panels)"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newLabel.trim()) {
+                    addLayer(newLabel.trim(), newColor);
+                    setNewLabel('');
+                    setShowAddBox(false);
+                  } else if (e.key === 'Escape') {
+                    setShowAddBox(false);
+                  }
                 }}
               />
-              <i style={{ background: ASSET_COLORS[k] }} />
-              <span>{v}</span>
-            </label>
-          ))}
+              <div className="layer-color-palette">
+                {PRESET_LAYER_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={`layer-color-swatch ${newColor === c ? 'active' : ''}`}
+                    style={{ background: c }}
+                    onClick={() => setNewColor(c)}
+                    title={c}
+                  />
+                ))}
+              </div>
+              <div className="layer-edit-actions">
+                <button
+                  type="button"
+                  className="layer-save-btn"
+                  disabled={!newLabel.trim()}
+                  onClick={() => {
+                    if (newLabel.trim()) {
+                      addLayer(newLabel.trim(), newColor);
+                      setNewLabel('');
+                      setShowAddBox(false);
+                    }
+                  }}
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  className="layer-cancel-btn"
+                  onClick={() => setShowAddBox(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {layers.map((l) => {
+            const isEditing = editingLayerId === l.id;
+            return (
+              <div key={l.id}>
+                <div className="layer-item-row">
+                  <label
+                    className="layer-item-main"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleTypes[l.id] !== false}
+                      onChange={(e) => {
+                        const nextChecked = e.target.checked;
+                        setVisibleTypes((prev) => ({ ...prev, [l.id]: nextChecked }));
+                      }}
+                    />
+                    <i style={{ background: l.color }} />
+                    <span className="layer-name-text" title={l.label}>
+                      {l.label}
+                    </span>
+                  </label>
+                  <div className="layer-item-btns">
+                    <button
+                      type="button"
+                      className="layer-icon-btn"
+                      title="Edit layer name & color"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isEditing) {
+                          setEditingLayerId(null);
+                        } else {
+                          setEditingLayerId(l.id);
+                          setEditLabel(l.label);
+                          setEditColor(l.color);
+                          setShowAddBox(false);
+                        }
+                      }}
+                    >
+                      <Pencil size={11} />
+                    </button>
+                    <button
+                      type="button"
+                      className="layer-icon-btn delete"
+                      title="Delete layer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete "${l.label}" layer?`)) {
+                          deleteLayer(l.id);
+                          if (editingLayerId === l.id) {
+                            setEditingLayerId(null);
+                          }
+                        }
+                      }}
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                </div>
+
+                {isEditing && (
+                  <div className="layer-edit-box">
+                    <div className="layer-edit-title">Edit Layer</div>
+                    <input
+                      type="text"
+                      className="layer-edit-input"
+                      value={editLabel}
+                      onChange={(e) => setEditLabel(e.target.value)}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && editLabel.trim()) {
+                          editLayer(l.id, editLabel.trim(), editColor);
+                          setEditingLayerId(null);
+                        } else if (e.key === 'Escape') {
+                          setEditingLayerId(null);
+                        }
+                      }}
+                    />
+                    <div className="layer-color-palette">
+                      {PRESET_LAYER_COLORS.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          className={`layer-color-swatch ${editColor === c ? 'active' : ''}`}
+                          style={{ background: c }}
+                          onClick={() => setEditColor(c)}
+                          title={c}
+                        />
+                      ))}
+                    </div>
+                    <div className="layer-edit-actions">
+                      <button
+                        type="button"
+                        className="layer-save-btn"
+                        disabled={!editLabel.trim()}
+                        onClick={() => {
+                          if (editLabel.trim()) {
+                            editLayer(l.id, editLabel.trim(), editColor);
+                            setEditingLayerId(null);
+                          }
+                        }}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="layer-cancel-btn"
+                        onClick={() => setEditingLayerId(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       {hover && (
@@ -569,7 +775,7 @@ export function XyzTileMap({
           }}
         >
           <b>{hover.asset.assetNo}</b>
-          <span>{ASSET_LABELS[hover.asset.assetType] ?? hover.asset.assetType}</span>
+          <span>{layerLabels[hover.asset.assetType] ?? hover.asset.assetType}</span>
           <span>Status: {hover.asset.status}</span>
         </div>
       )}
@@ -577,7 +783,7 @@ export function XyzTileMap({
         <div className="asset-detail" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
           <div className="asset-detail-head">
             <div>
-              <span className="asset-kicker">{ASSET_LABELS[selectedAsset.assetType] ?? selectedAsset.assetType}</span>
+              <span className="asset-kicker">{layerLabels[selectedAsset.assetType] ?? selectedAsset.assetType}</span>
               <b>{selectedAsset.assetNo}</b>
             </div>
             <button title="Close" onClick={() => setSelectedAsset(null)}>
@@ -599,10 +805,10 @@ export function XyzTileMap({
         </div>
       )}
       <div className="xyz-legend">
-        {Object.entries(ASSET_LABELS).map(([k, v]) => (
-          <span key={k}>
-            <i style={{ background: ASSET_COLORS[k] }} />
-            {v}
+        {layers.map((l) => (
+          <span key={l.id}>
+            <i style={{ background: l.color }} />
+            {l.label}
           </span>
         ))}
       </div>

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { DatabaseBackup, Download, FileUp, RefreshCw, ShieldCheck } from '../../components/icons';
-import { ASSET_LABELS, ASSET_TYPES } from '../../config/constants';
+import { useGisLayers } from '../../services/layerService';
 import { UI } from '../../config/ui.config';
 import { supportedImportAccept } from '../../services/dataManagementService';
 import { useDataManagementViewModel } from '../../viewmodels/useDataManagementViewModel';
@@ -8,8 +8,9 @@ import type { PowerGISUser } from '../../services/powergisData';
 
 export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser }) {
   const vm = useDataManagementViewModel(currentUser);
+  const { layers } = useGisLayers();
   const input = useRef<HTMLInputElement>(null);
-  const [assetType, setAssetType] = useState<string>(ASSET_TYPES[0]);
+  const [assetType, setAssetType] = useState<string>(() => layers[0]?.id || 'SUBSTATION');
   const [format, setFormat] = useState<'geojson' | 'csv' | 'json'>('geojson');
 
   if (currentUser.role !== 'GIS_ADMIN') return null;
@@ -34,9 +35,9 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
             <div className="field-row">
               <label>{UI.admin.data.assetType}</label>
               <select value={assetType} onChange={(e) => setAssetType(e.target.value)}>
-                {ASSET_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {ASSET_LABELS[t] ?? t}
+                {layers.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.label}
                   </option>
                 ))}
               </select>

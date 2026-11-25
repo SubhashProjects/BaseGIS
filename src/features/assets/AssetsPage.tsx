@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown } from '../../components/icons';
-import { ASSET_COLORS, ASSET_LABELS } from '../../config/constants';
+import { useGisLayers } from '../../services/layerService';
 import { usePowerGISData } from '../../viewmodels/usePowerGISData';
 import type { PowerGISUser } from '../../services/powergisData';
 
@@ -9,6 +9,7 @@ type SortDirection = 'asc' | 'desc';
 
 export function AssetsPage({ currentUser }: { currentUser: PowerGISUser }) {
   const { assets, loading } = usePowerGISData(currentUser);
+  const { layerLabels, layerColors } = useGisLayers();
   const [sortField, setSortField] = useState<SortField>('assetNo');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -33,8 +34,8 @@ export function AssetsPage({ currentUser }: { currentUser: PowerGISUser }) {
           valB = b.assetNo || '';
           break;
         case 'assetType':
-          valA = ASSET_LABELS[a.assetType] ?? a.assetType ?? '';
-          valB = ASSET_LABELS[b.assetType] ?? b.assetType ?? '';
+          valA = layerLabels[a.assetType] ?? a.assetType ?? '';
+          valB = layerLabels[b.assetType] ?? b.assetType ?? '';
           break;
         case 'status':
           valA = a.status || '';
@@ -54,7 +55,7 @@ export function AssetsPage({ currentUser }: { currentUser: PowerGISUser }) {
       return sortDirection === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [assets, sortField, sortDirection]);
+  }, [assets, sortField, sortDirection, layerLabels]);
 
   const renderSortHeader = (label: string, field: SortField) => {
     const isActive = sortField === field;
@@ -108,8 +109,8 @@ export function AssetsPage({ currentUser }: { currentUser: PowerGISUser }) {
                 </td>
                 <td>
                   <span className="type-chip">
-                    <i style={{ background: ASSET_COLORS[a.assetType] }} />
-                    {ASSET_LABELS[a.assetType] ?? a.assetType}
+                    <i style={{ background: layerColors[a.assetType] || '#2563EB' }} />
+                    {layerLabels[a.assetType] ?? a.assetType}
                   </span>
                 </td>
                 <td>

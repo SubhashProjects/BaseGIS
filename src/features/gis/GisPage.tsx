@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react';
 import { GisMap } from './GisMap';
 import { MapHierarchyNavigator, type MapNavigationTarget } from './MapHierarchyNavigator';
-import { ASSET_COLORS, ASSET_LABELS } from '../../config/constants';
+import { useGisLayers } from '../../services/layerService';
 import { usePowerGISData } from '../../viewmodels/usePowerGISData';
 import type { PowerGISUser } from '../../services/powergisData';
 
 export function GisPage({ currentUser }: { currentUser: PowerGISUser }) {
   const { assets, boundaries, loading, error } = usePowerGISData(currentUser);
+  const { layers } = useGisLayers();
   const [navigationTarget, setNavigationTarget] = useState<MapNavigationTarget | null>(null);
 
   const counts = useMemo(
-    () => Object.keys(ASSET_LABELS).map((k) => [k, assets.filter((a) => a.assetType === k).length] as const),
-    [assets]
+    () => layers.map((l) => ({ id: l.id, label: l.label, color: l.color, count: assets.filter((a) => a.assetType === l.id).length })),
+    [assets, layers]
   );
 
   const hierarchyItems = useMemo(
@@ -93,13 +94,13 @@ export function GisPage({ currentUser }: { currentUser: PowerGISUser }) {
           <div className="panel">
             <div className="panel-head">Visible inventory</div>
             <div className="inventory">
-              {counts.map(([k, v]) => (
-                <div key={k}>
+              {counts.map((item) => (
+                <div key={item.id}>
                   <span>
-                    <i className="layer-dot" style={{ background: ASSET_COLORS[k] }} />
-                    {ASSET_LABELS[k]}
+                    <i className="layer-dot" style={{ background: item.color }} />
+                    {item.label}
                   </span>
-                  <b>{v}</b>
+                  <b>{item.count}</b>
                 </div>
               ))}
             </div>

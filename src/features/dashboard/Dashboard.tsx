@@ -1,9 +1,10 @@
 import { usePowerGISData } from '../../viewmodels/usePowerGISData';
-import { ASSET_LABELS, ASSET_COLORS } from '../../config/constants';
+import { useGisLayers } from '../../services/layerService';
 import type { PowerGISUser } from '../../services/powergisData';
 
 export function Dashboard({ currentUser }: { currentUser: PowerGISUser }) {
   const { assets, loading, error } = usePowerGISData(currentUser);
+  const { layers } = useGisLayers();
   const counts = (t: string) => assets.filter((a) => a.assetType === t).length;
   const metrics = [
     ['Visible Assets', String(assets.length), 'Operational assets'],
@@ -39,13 +40,13 @@ export function Dashboard({ currentUser }: { currentUser: PowerGISUser }) {
         <section className="panel">
           <div className="panel-head">Visible layer inventory</div>
           <div className="inventory">
-            {Object.entries(ASSET_LABELS).map(([k, v]) => (
-              <div key={k}>
+            {layers.map((l) => (
+              <div key={l.id}>
                 <span>
-                  <i className="layer-dot" style={{ background: ASSET_COLORS[k] }} />
-                  {v}
+                  <i className="layer-dot" style={{ background: l.color }} />
+                  {l.label}
                 </span>
-                <b>{counts(k)}</b>
+                <b>{counts(l.id)}</b>
               </div>
             ))}
           </div>
