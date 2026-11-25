@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   DatabaseBackup,
   FileUp,
@@ -14,9 +14,9 @@ import {
   Save,
   Plus,
   RotateCcw,
+  Users,
 } from '../../components/icons';
 import { useGisLayers } from '../../services/layerService';
-import { usePowerGISData } from '../../viewmodels/usePowerGISData';
 import { DataManagementPanel } from '../admin/DataManagementPanel';
 import {
   getLocalImportedAssets,
@@ -27,6 +27,13 @@ import {
   updateAsset,
   getDeletedAssetIds,
   restoreAllDeletedAssets,
+  getLiveGridAssets,
+  listLoginUsers,
+  addCustomUser,
+  updateCustomUser,
+  deleteCustomUser,
+  exportUsersToCsv,
+  exportUsersToExcelXml,
   type PowerGISAsset,
   type PowerGISUser,
 } from '../../services/powergisData';
@@ -228,16 +235,43 @@ const NEW_FOLDER_SCHEMAS: FileSchemaInfo[] = [
   },
 ];
 
-type TabMode = 'tables' | 'import' | 'schemas';
+type TabMode = 'tables' | 'users' | 'import' | 'schemas';
 type SortKey = 'assetNo' | 'assetType' | 'status' | 'geometry' | 'jurisdiction';
 
 export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser }) {
-  const { assets: liveAssets } = usePowerGISData(currentUser);
   const { layers, layerLabels, layerColors, layerIcons } = useGisLayers();
 
   const [activeTab, setActiveTab] = useState<TabMode>('tables');
+  const [liveGridAssets, setLiveGridAssets] = useState<PowerGISAsset[]>([]);
   const [localAssets, setLocalAssets] = useState<PowerGISAsset[]>(getLocalImportedAssets);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(getDeletedAssetIds);
+
+  // User Roles & Hierarchy state
+  const [usersList, setUsersList] = useState<PowerGISUser[]>([]);
+  const [userSearchTerm, setUserSearchTerm] = useState<string>('');
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('ALL');
+  const [userRegionFilter, setUserRegionFilter] = useState<string>('ALL');
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [userPage, setUserPage] = useState<number>(1);
+  const [userPageSize, setUserPageSize] = useState<number>(25);
+
+  // User Add/Edit modal state
+  const [isUserModalOpen, setIsUserModalOpen] = useState<boolean>(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userFormUsername, setUserFormUsername] = useState<string>('');
+  const [userFormDisplayName, setUserFormDisplayName] = useState<string>('');
+  const [userFormRole, setUserFormRole] = useState<string>('JE');
+  const [userFormRegion, setUserFormRegion] = useState<string>('Pondicherry');
+  const [userFormDepartment, setUserFormDepartment] = useState<string>('SE - 1 cum HOD');
+  const [userFormCircle, setUserFormCircle] = useState<string>('SE - 3 O&M');
+  const [userFormDivision, setUserFormDivision] = useState<string>('EE - Urban');
+  const [userFormSubdivision, setUserFormSubdivision] = useState<string>('AEE- Town I');
+  const [userFormScopeField, setUserFormScopeField] = useState<string>('');
+  const [userFormScopeValue, setUserFormScopeValue] = useState<string>('');
+  const [userFormJurisdictions, setUserFormJurisdictions] = useState<string>('PONDICHERRY');
+  const [userFormAdmin, setUserFormAdmin] = useState<string>('GIS Admin');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Table View state
   const [dataSource, setDataSource] = useState<'ALL' | 'LIVE' | 'IMPORTED'>('ALL');
@@ -328,35 +362,320 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
     }
   };
 
-  // Listen to asset changes
+  // Initial data and asset sync
   useEffect(() => {
-    const handleAssetsChanged = () => {
+    const refreshData = () => {
       setLocalAssets(getLocalImportedAssets());
       setDeletedIds(getDeletedAssetIds());
+      void getLiveGridAssets(currentUser.id).then(setLiveGridAssets);
     };
-    window.addEventListener('powergis:assets-changed', handleAssetsChanged);
+    refreshData();
+    window.addEventListener('powergis:assets-changed', refreshData);
     return () => {
-      window.removeEventListener('powergis:assets-changed', handleAssetsChanged);
+      window.removeEventListener('powergis:assets-changed', refreshData);
+    };
+  }, [currentUser.id]);
+
+  // Initial users sync
+  useEffect(() => {
+    const refreshUsers = () => {
+      listLoginUsers().then(setUsersList).catch(() => setUsersList([]));
+    };
+    refreshUsers();
+    window.addEventListener('powergis:users-changed', refreshUsers);
+    return () => {
+      window.removeEventListener('powergis:users-changed', refreshUsers);
     };
   }, []);
 
-  // Combine live and local imported assets based on source selection
+  // Pure Live Grid and Imported count helpers
+  const liveOnlyAssets = useMemo(
+    () =>
+      liveGridAssets.filter(
+        (a) =>
+          !deletedIds.has(a.id) &&
+          !deletedIds.has(a.assetNo) &&
+          !deletedIds.has(String(a.id).trim()) &&
+          !deletedIds.has(String(a.assetNo).trim())
+      ),
+    [liveGridAssets, deletedIds]
+  );
+  const importedOnlyAssets = useMemo(
+    () =>
+      localAssets.filter(
+        (a) =>
+          !deletedIds.has(a.id) &&
+          !deletedIds.has(a.assetNo) &&
+          !deletedIds.has(String(a.id).trim()) &&
+          !deletedIds.has(String(a.assetNo).trim())
+      ),
+    [localAssets, deletedIds]
+  );
+
+  // Combine live grid and local imported assets with strict zero-duplication deduplication
   const combinedAssets = useMemo(() => {
-    const notDeleted = (a: PowerGISAsset) =>
-      !deletedIds.has(a.id) &&
-      !deletedIds.has(a.assetNo) &&
-      !deletedIds.has(String(a.id).trim()) &&
-      !deletedIds.has(String(a.assetNo).trim());
+    if (dataSource === 'LIVE') return liveOnlyAssets;
+    if (dataSource === 'IMPORTED') return importedOnlyAssets;
 
-    if (dataSource === 'LIVE') return liveAssets.filter(notDeleted);
-    if (dataSource === 'IMPORTED') return localAssets.filter(notDeleted);
-
-    // 'ALL': Merge local and live without duplicate assetNo
+    // 'ALL': Deduplicate strictly by normalized assetNo or id
     const map = new Map<string, PowerGISAsset>();
-    liveAssets.filter(notDeleted).forEach((a) => map.set(a.id, a));
-    localAssets.filter(notDeleted).forEach((a) => map.set(a.id, a));
+    liveOnlyAssets.forEach((a) => {
+      const key = (a.assetNo || a.id).trim().toLowerCase();
+      map.set(key, a);
+    });
+    importedOnlyAssets.forEach((a) => {
+      const key = (a.assetNo || a.id).trim().toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, a);
+      }
+    });
     return Array.from(map.values());
-  }, [liveAssets, localAssets, dataSource, deletedIds]);
+  }, [liveOnlyAssets, importedOnlyAssets, dataSource]);
+
+  // --- USER ROLES & HIERARCHY MODAL HANDLERS ---
+  const openAddUserModal = () => {
+    setEditingUserId(null);
+    setUserFormUsername('');
+    setUserFormDisplayName('');
+    setUserFormRole('JE');
+    setUserFormRegion('Pondicherry');
+    setUserFormDepartment('SE - 1 cum HOD');
+    setUserFormCircle('SE - 3 O&M');
+    setUserFormDivision('EE - Urban');
+    setUserFormSubdivision('AEE- Town I');
+    setUserFormScopeField('');
+    setUserFormScopeValue('');
+    setUserFormJurisdictions('PONDICHERRY');
+    setUserFormAdmin('GIS Admin');
+    setIsUserModalOpen(true);
+  };
+
+  const openEditUserModal = (u: PowerGISUser) => {
+    setEditingUserId(u.id);
+    setUserFormUsername(u.username);
+    setUserFormDisplayName(u.displayName);
+    setUserFormRole(u.role);
+    setUserFormRegion(u.region || 'Pondicherry');
+    setUserFormDepartment(u.department || '');
+    setUserFormCircle(u.circle || '');
+    setUserFormDivision(u.division || '');
+    setUserFormSubdivision(u.subdivision || '');
+    setUserFormScopeField(u.scopeField || '');
+    setUserFormScopeValue(u.scopeValue || '');
+    setUserFormJurisdictions((u.jurisdictions || []).join(', '));
+    setUserFormAdmin(u.admin || 'GIS Admin');
+    setIsUserModalOpen(true);
+  };
+
+  const handleSaveUserForm = async () => {
+    if (!userFormUsername.trim() || !userFormDisplayName.trim()) {
+      alert('Username and Officer Display Name are required.');
+      return;
+    }
+
+    const jurs = userFormJurisdictions
+      .split(',')
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    const userObj: PowerGISUser = {
+      id: editingUserId || `custom-user-${Date.now()}`,
+      username: userFormUsername.trim(),
+      displayName: userFormDisplayName.trim(),
+      role: userFormRole as any,
+      region: userFormRegion,
+      department: userFormDepartment.trim() || null,
+      circle: userFormCircle.trim() || null,
+      division: userFormDivision.trim() || null,
+      subdivision: userFormSubdivision.trim() || null,
+      scopeField: (userFormScopeField as any) || null,
+      scopeValue: userFormScopeValue.trim() || null,
+      admin: userFormAdmin.trim() || 'GIS Admin',
+      jurisdictions: jurs.length > 0 ? jurs : ['PONDICHERRY'],
+    };
+
+    if (editingUserId) {
+      await updateCustomUser(editingUserId, userObj);
+    } else {
+      await addCustomUser(userObj);
+    }
+
+    setIsUserModalOpen(false);
+    const refreshed = await listLoginUsers();
+    setUsersList(refreshed);
+  };
+
+  const handleDeleteUserSingle = async (u: PowerGISUser) => {
+    if (window.confirm(`Delete officer account "${u.displayName}" (${u.username})?`)) {
+      await deleteCustomUser(u.id);
+      setSelectedUserIds((prev) => {
+        const next = new Set(prev);
+        next.delete(u.id);
+        return next;
+      });
+      const refreshed = await listLoginUsers();
+      setUsersList(refreshed);
+    }
+  };
+
+  const handleDeleteSelectedUsers = async () => {
+    if (selectedUserIds.size === 0) return;
+    if (window.confirm(`Delete ${selectedUserIds.size} selected user account(s)?`)) {
+      for (const id of Array.from(selectedUserIds)) {
+        await deleteCustomUser(id);
+      }
+      setSelectedUserIds(new Set());
+      const refreshed = await listLoginUsers();
+      setUsersList(refreshed);
+    }
+  };
+
+  const handleResetUsersToSeed = async () => {
+    if (
+      window.confirm(
+        'Reset all user roles and hierarchy to default database seed? This will clear all custom modifications.'
+      )
+    ) {
+      localStorage.removeItem('powergis_custom_users');
+      localStorage.removeItem('powergis_deleted_user_ids');
+      setSelectedUserIds(new Set());
+      const refreshed = await listLoginUsers();
+      setUsersList(refreshed);
+      window.dispatchEvent(new CustomEvent('powergis:users-changed'));
+    }
+  };
+
+  const handleExportUsersCsv = () => {
+    const csv = exportUsersToCsv(filteredUsers);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `PowerGIS_Users_Hierarchy_${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
+  const handleExportUsersExcel = () => {
+    const xml = exportUsersToExcelXml(filteredUsers);
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    downloadBlob(blob, `PowerGIS_Users_Hierarchy_${new Date().toISOString().slice(0, 10)}.xls`);
+  };
+
+  const handleDownloadTemplate = () => {
+    const link = document.createElement('a');
+    link.href = `${import.meta.env.BASE_URL}templates/PowerGIS_Users_Hierarchy_and_Roles.csv`;
+    link.download = 'PowerGIS_Users_Hierarchy_Template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportUsersFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length < 2) {
+        alert('File is empty or does not contain a header line.');
+        return;
+      }
+      const parseLine = (line: string) => {
+        const parts: string[] = [];
+        let cur = '';
+        let inQ = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (c === '"') {
+            inQ = !inQ;
+          } else if (c === ',' && !inQ) {
+            parts.push(cur.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+            cur = '';
+          } else {
+            cur += c;
+          }
+        }
+        parts.push(cur.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+        return parts;
+      };
+
+      const headers = parseLine(lines[0]).map((h) => h.toLowerCase());
+      const usernameIdx = headers.findIndex((h) => h.includes('username') || h === 'user');
+      const nameIdx = headers.findIndex((h) => h.includes('display') || h.includes('name'));
+      const roleIdx = headers.findIndex((h) => h.includes('role') || h.includes('designation'));
+      const deptIdx = headers.findIndex((h) => h.includes('department') || h.includes('dept'));
+      const circleIdx = headers.findIndex((h) => h.includes('circle'));
+      const divIdx = headers.findIndex((h) => h.includes('division') && !h.includes('sub'));
+      const subIdx = headers.findIndex((h) => h.includes('sub') || h.includes('subdivision'));
+      const regIdx = headers.findIndex((h) => h.includes('region'));
+      const jurIdx = headers.findIndex((h) => h.includes('jurisdiction'));
+
+      let importedCount = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseLine(lines[i]);
+        const uname = usernameIdx !== -1 ? cols[usernameIdx] : '';
+        const dname = nameIdx !== -1 ? cols[nameIdx] : uname;
+        if (!uname && !dname) continue;
+
+        const roleVal = (roleIdx !== -1 ? cols[roleIdx] : 'JE').toUpperCase();
+        const validRole = ['GIS_ADMIN', 'SE', 'EE', 'AEE', 'AE', 'JE', 'CONTRACTOR'].includes(roleVal)
+          ? roleVal
+          : 'JE';
+
+        const jurs = jurIdx !== -1 && cols[jurIdx]
+          ? cols[jurIdx].split(/[,;]/).map((s) => s.trim().toUpperCase()).filter(Boolean)
+          : ['PONDICHERRY'];
+
+        const userObj: PowerGISUser = {
+          id: `imp-user-${Date.now()}-${i}`,
+          username: uname || dname,
+          displayName: dname || uname,
+          role: validRole as any,
+          region: regIdx !== -1 && cols[regIdx] ? cols[regIdx] : 'Pondicherry',
+          department: deptIdx !== -1 && cols[deptIdx] ? cols[deptIdx] : null,
+          circle: circleIdx !== -1 && cols[circleIdx] ? cols[circleIdx] : null,
+          division: divIdx !== -1 && cols[divIdx] ? cols[divIdx] : null,
+          subdivision: subIdx !== -1 && cols[subIdx] ? cols[subIdx] : null,
+          admin: 'GIS Admin',
+          jurisdictions: jurs,
+        };
+
+        await addCustomUser(userObj);
+        importedCount++;
+      }
+
+      alert(`Successfully imported and updated ${importedCount} officer profile(s).`);
+      const refreshed = await listLoginUsers();
+      setUsersList(refreshed);
+    } catch (err: any) {
+      alert(`Import error: ${err?.message || 'Unable to parse file.'}`);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Filtered users list
+  const filteredUsers = useMemo(() => {
+    return usersList.filter((u) => {
+      if (userRoleFilter !== 'ALL' && u.role !== userRoleFilter) return false;
+      if (userRegionFilter !== 'ALL' && u.region !== userRegionFilter) return false;
+      if (userSearchTerm.trim()) {
+        const q = userSearchTerm.toLowerCase();
+        const inU = u.username.toLowerCase().includes(q);
+        const inD = u.displayName.toLowerCase().includes(q);
+        const inR = u.role.toLowerCase().includes(q);
+        const inDep = (u.department || '').toLowerCase().includes(q);
+        const inCir = (u.circle || '').toLowerCase().includes(q);
+        const inDiv = (u.division || '').toLowerCase().includes(q);
+        const inSub = (u.subdivision || '').toLowerCase().includes(q);
+        const inReg = (u.region || '').toLowerCase().includes(q);
+        return inU || inD || inR || inDep || inCir || inDiv || inSub || inReg;
+      }
+      return true;
+    });
+  }, [usersList, userRoleFilter, userRegionFilter, userSearchTerm]);
+
+  const totalUserPages = Math.ceil(filteredUsers.length / userPageSize) || 1;
+  const paginatedUsers = useMemo(() => {
+    const start = (userPage - 1) * userPageSize;
+    return filteredUsers.slice(start, start + userPageSize);
+  }, [filteredUsers, userPage, userPageSize]);
 
   // Filtered assets
   const filteredAssets = useMemo(() => {
@@ -606,6 +925,15 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
 
         <button
           type="button"
+          className={`dm-tab-btn ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          <Users size={16} />
+          <span>User Roles & Hierarchy ({usersList.length})</span>
+        </button>
+
+        <button
+          type="button"
           className={`dm-tab-btn ${activeTab === 'import' ? 'active' : ''}`}
           onClick={() => setActiveTab('import')}
         >
@@ -657,9 +985,9 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                     setPage(1);
                   }}
                 >
-                  <option value="ALL">All Assets ({liveAssets.length + localAssets.length})</option>
-                  <option value="IMPORTED">Imported Data Only ({localAssets.length})</option>
-                  <option value="LIVE">Live Grid Assets ({liveAssets.length})</option>
+                  <option value="ALL">All Assets ({combinedAssets.length})</option>
+                  <option value="LIVE">Live Grid Assets ({liveOnlyAssets.length})</option>
+                  <option value="IMPORTED">Imported Data Only ({importedOnlyAssets.length})</option>
                 </select>
               </div>
 
@@ -1026,6 +1354,569 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: USER ROLES & HIERARCHY MANAGEMENT (VISUAL TABLE FORMAT) */}
+      {activeTab === 'users' && (
+        <div className="dm-users-tab-wrap">
+          {/* Hidden File Input for Users Import */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportUsersFile}
+            accept=".csv,.txt"
+            style={{ display: 'none' }}
+          />
+
+          {/* Statistics Summary Cards */}
+          <div className="dm-users-stat-cards">
+            <div className="dm-users-stat-card">
+              <div className="stat-label">Total Officers & Staff</div>
+              <div className="stat-value">{usersList.length}</div>
+              <div className="stat-sub">Registered organizational profiles</div>
+            </div>
+            <div className="dm-users-stat-card">
+              <div className="stat-label">Administrative Hierarchy</div>
+              <div className="stat-value">
+                {usersList.filter((u) => u.role === 'SE' || u.role === 'EE').length}
+              </div>
+              <div className="stat-sub">
+                {usersList.filter((u) => u.role === 'SE').length} SEs · {usersList.filter((u) => u.role === 'EE').length} EEs
+              </div>
+            </div>
+            <div className="dm-users-stat-card">
+              <div className="stat-label">Field Junior Engineers</div>
+              <div className="stat-value">{usersList.filter((u) => u.role === 'JE').length}</div>
+              <div className="stat-sub">Jurisdictional operational engineers</div>
+            </div>
+            <div className="dm-users-stat-card">
+              <div className="stat-label">Covered Regions</div>
+              <div className="stat-value">4</div>
+              <div className="stat-sub">Pondicherry · Karaikal · Mahe · Yanam</div>
+            </div>
+          </div>
+
+          {/* Filter & Action Toolbar */}
+          <div className="dm-table-filters-card">
+            <div className="dm-search-wrap">
+              <Search size={15} className="dm-search-icon" />
+              <input
+                type="text"
+                className="dm-search-input"
+                placeholder="Search by Officer Name, Username, Division, Circle, Role, or Jurisdiction…"
+                value={userSearchTerm}
+                onChange={(e) => {
+                  setUserSearchTerm(e.target.value);
+                  setUserPage(1);
+                }}
+              />
+              {userSearchTerm && (
+                <button type="button" className="dm-search-clear" onClick={() => setUserSearchTerm('')}>
+                  ×
+                </button>
+              )}
+            </div>
+
+            <div className="dm-filters-row">
+              <div className="dm-filter-item">
+                <label>Designation Role:</label>
+                <select
+                  value={userRoleFilter}
+                  onChange={(e) => {
+                    setUserRoleFilter(e.target.value);
+                    setUserPage(1);
+                  }}
+                >
+                  <option value="ALL">All Roles ({usersList.length})</option>
+                  <option value="GIS_ADMIN">GIS Admin ({usersList.filter((u) => u.role === 'GIS_ADMIN').length})</option>
+                  <option value="SE">Superintending Engineer - SE ({usersList.filter((u) => u.role === 'SE').length})</option>
+                  <option value="EE">Executive Engineer - EE ({usersList.filter((u) => u.role === 'EE').length})</option>
+                  <option value="AEE">Assistant Executive Engineer - AEE ({usersList.filter((u) => u.role === 'AEE').length})</option>
+                  <option value="AE">Assistant Engineer - AE ({usersList.filter((u) => u.role === 'AE').length})</option>
+                  <option value="JE">Junior Engineer - JE ({usersList.filter((u) => u.role === 'JE').length})</option>
+                  <option value="CONTRACTOR">Contractor ({usersList.filter((u) => u.role === 'CONTRACTOR').length})</option>
+                </select>
+              </div>
+
+              <div className="dm-filter-item">
+                <label>Region:</label>
+                <select
+                  value={userRegionFilter}
+                  onChange={(e) => {
+                    setUserRegionFilter(e.target.value);
+                    setUserPage(1);
+                  }}
+                >
+                  <option value="ALL">All Regions</option>
+                  <option value="Pondicherry">Pondicherry</option>
+                  <option value="Karaikal">Karaikal</option>
+                  <option value="Mahe">Mahe</option>
+                  <option value="Yanam">Yanam</option>
+                  <option value="All Regions">All Regions (Headquarters)</option>
+                </select>
+              </div>
+
+              <div className="dm-actions-col">
+                <button type="button" className="dm-action-btn primary" onClick={openAddUserModal}>
+                  <Plus size={14} />
+                  <span>Add New User / Role</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="dm-action-btn secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Import officers directory from CSV or Excel file"
+                >
+                  <FileUp size={14} />
+                  <span>Import Users (CSV/Excel)</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="dm-action-btn secondary"
+                  onClick={handleExportUsersExcel}
+                  title="Download complete organizational hierarchy as formatted Excel file (.xls)"
+                >
+                  <Download size={14} />
+                  <span>Export Excel (.xls)</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="dm-action-btn secondary"
+                  onClick={handleExportUsersCsv}
+                  title="Download user roles and mapping as CSV"
+                >
+                  <Download size={14} />
+                  <span>Export CSV</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="dm-action-btn secondary"
+                  onClick={handleDownloadTemplate}
+                  title="Download sample Excel/CSV template for importing users"
+                >
+                  <Download size={14} />
+                  <span>Hierarchy Template</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Synchronized Action Button Group */}
+          <div className="dm-table-header-bar">
+            <div className="dm-synced-btn-group">
+              <button
+                type="button"
+                className="dm-sync-btn"
+                onClick={() => {
+                  setSelectedUserIds(new Set(paginatedUsers.map((u) => u.id)));
+                }}
+              >
+                Select Page ({paginatedUsers.length})
+              </button>
+              <button
+                type="button"
+                className="dm-sync-btn"
+                onClick={() => {
+                  setSelectedUserIds(new Set(filteredUsers.map((u) => u.id)));
+                }}
+              >
+                Select All ({filteredUsers.length})
+              </button>
+              <button
+                type="button"
+                className="dm-sync-btn"
+                onClick={() => setSelectedUserIds(new Set())}
+                disabled={selectedUserIds.size === 0}
+              >
+                Deselect All
+              </button>
+              <button
+                type="button"
+                className="dm-sync-btn danger"
+                onClick={handleDeleteSelectedUsers}
+                disabled={selectedUserIds.size === 0}
+              >
+                <Trash2 size={13} />
+                <span>Delete Selected ({selectedUserIds.size})</span>
+              </button>
+              <button
+                type="button"
+                className="dm-sync-btn reset"
+                onClick={handleResetUsersToSeed}
+                title="Restore default organizational directory seed"
+              >
+                <RotateCcw size={13} />
+                <span>Reset to Seed Users</span>
+              </button>
+            </div>
+
+            <div className="dm-table-stats">
+              <span>
+                Showing <b>{paginatedUsers.length}</b> of <b>{filteredUsers.length}</b> users
+                {selectedUserIds.size > 0 && ` (${selectedUserIds.size} selected)`}
+              </span>
+            </div>
+          </div>
+
+          {/* Visual Table Container */}
+          <div className="dm-table-scroll-card">
+            <table className="dm-interactive-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 36, textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={paginatedUsers.length > 0 && paginatedUsers.every((u) => selectedUserIds.has(u.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUserIds((prev) => {
+                            const next = new Set(prev);
+                            paginatedUsers.forEach((u) => next.add(u.id));
+                            return next;
+                          });
+                        } else {
+                          setSelectedUserIds((prev) => {
+                            const next = new Set(prev);
+                            paginatedUsers.forEach((u) => next.delete(u.id));
+                            return next;
+                          });
+                        }
+                      }}
+                    />
+                  </th>
+                  <th>Username</th>
+                  <th>Officer Display Name</th>
+                  <th>Role Designation</th>
+                  <th>Department / Circle</th>
+                  <th>Division / Sub Division</th>
+                  <th>Region</th>
+                  <th>Authorized Jurisdictions</th>
+                  <th style={{ textAlign: 'center', width: 90 }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="dm-table-empty">
+                      No officers or user roles found matching current filter criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedUsers.map((u) => {
+                    const isSelected = selectedUserIds.has(u.id);
+                    const roleLower = u.role.toLowerCase();
+                    return (
+                      <tr key={u.id} className={isSelected ? 'selected-row' : ''}>
+                        <td style={{ textAlign: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              setSelectedUserIds((prev) => {
+                                const next = new Set(prev);
+                                if (e.target.checked) next.add(u.id);
+                                else next.delete(u.id);
+                                return next;
+                              });
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <span className="dm-code-pill">{u.username}</span>
+                        </td>
+                        <td>
+                          <strong>{u.displayName}</strong>
+                        </td>
+                        <td>
+                          <span className={`dm-user-role-badge role-${roleLower}`}>{u.role}</span>
+                        </td>
+                        <td>
+                          <div className="dm-user-hierarchy-cell">
+                            <strong>{u.department || '—'}</strong>
+                            <span>{u.circle || '—'}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="dm-user-hierarchy-cell">
+                            <strong>{u.division || '—'}</strong>
+                            <span>{u.subdivision || '—'}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="dm-user-region-badge">{u.region}</span>
+                        </td>
+                        <td>
+                          <div>
+                            {(u.jurisdictions || []).map((jur) => (
+                              <span key={jur} className="dm-user-jur-badge">
+                                {jur}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div className="dm-row-actions">
+                            <button
+                              type="button"
+                              className="dm-icon-btn edit"
+                              onClick={() => openEditUserModal(u)}
+                              title="Edit Officer Profile & Role Mapping"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              className="dm-icon-btn delete"
+                              onClick={() => handleDeleteUserSingle(u)}
+                              title="Delete Officer Profile"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* User Table Pagination Bar */}
+          <div className="dm-pagination-bar">
+            <div className="dm-page-size-selector">
+              <span>Show:</span>
+              <select
+                value={userPageSize}
+                onChange={(e) => {
+                  setUserPageSize(Number(e.target.value));
+                  setUserPage(1);
+                }}
+              >
+                <option value={10}>10 per page</option>
+                <option value={25}>25 per page</option>
+                <option value={50}>50 per page</option>
+                <option value={100}>100 per page</option>
+              </select>
+            </div>
+
+            <div className="dm-page-controls">
+              <button
+                type="button"
+                className="dm-sync-btn"
+                disabled={userPage <= 1}
+                onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </button>
+
+              <span className="pagination-indicator">
+                Page {userPage} of {totalUserPages}
+              </span>
+
+              <button
+                type="button"
+                className="dm-sync-btn"
+                disabled={userPage >= totalUserPages}
+                onClick={() => setUserPage((p) => Math.min(totalUserPages, p + 1))}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT USER ROLES MODAL */}
+      {isUserModalOpen && (
+        <div className="dm-modal-overlay" onClick={() => setIsUserModalOpen(false)}>
+          <div className="dm-modal-box dm-edit-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="dm-modal-header">
+              <div>
+                <span className="asset-kicker">GIS ADMIN / USER ROLES & HIERARCHY</span>
+                <h3>{editingUserId ? `Edit User Profile: ${userFormUsername}` : 'Add New Officer / Role'}</h3>
+              </div>
+              <button type="button" className="dm-modal-close" onClick={() => setIsUserModalOpen(false)}>
+                ×
+              </button>
+            </div>
+
+            <div className="dm-modal-body">
+              <div className="dm-edit-form-grid">
+                <div className="dm-edit-field">
+                  <label>
+                    Username: <span className="req">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormUsername}
+                    onChange={(e) => setUserFormUsername(e.target.value)}
+                    placeholder="e.g. JE-TownCentral"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>
+                    Officer Display Name: <span className="req">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormDisplayName}
+                    onChange={(e) => setUserFormDisplayName(e.target.value)}
+                    placeholder="e.g. JE - Town Central Division"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Designation Role:</label>
+                  <select
+                    className="dm-edit-select"
+                    value={userFormRole}
+                    onChange={(e) => setUserFormRole(e.target.value)}
+                  >
+                    <option value="GIS_ADMIN">GIS Admin (System Administrator)</option>
+                    <option value="SE">Superintending Engineer (SE)</option>
+                    <option value="EE">Executive Engineer (EE)</option>
+                    <option value="AEE">Assistant Executive Engineer (AEE)</option>
+                    <option value="AE">Assistant Engineer (AE)</option>
+                    <option value="JE">Junior Engineer (JE - Field)</option>
+                    <option value="CONTRACTOR">Contractor</option>
+                  </select>
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Region:</label>
+                  <select
+                    className="dm-edit-select"
+                    value={userFormRegion}
+                    onChange={(e) => setUserFormRegion(e.target.value)}
+                  >
+                    <option value="Pondicherry">Pondicherry</option>
+                    <option value="Karaikal">Karaikal</option>
+                    <option value="Mahe">Mahe</option>
+                    <option value="Yanam">Yanam</option>
+                    <option value="All Regions">All Regions</option>
+                  </select>
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Department:</label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormDepartment}
+                    onChange={(e) => setUserFormDepartment(e.target.value)}
+                    placeholder="e.g. SE - 1 cum HOD"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Circle:</label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormCircle}
+                    onChange={(e) => setUserFormCircle(e.target.value)}
+                    placeholder="e.g. SE - 3 O&M"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Division:</label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormDivision}
+                    onChange={(e) => setUserFormDivision(e.target.value)}
+                    placeholder="e.g. EE - Urban"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Sub Division:</label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormSubdivision}
+                    onChange={(e) => setUserFormSubdivision(e.target.value)}
+                    placeholder="e.g. AEE- Town I"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Authorized Jurisdictions (comma-separated):</label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormJurisdictions}
+                    onChange={(e) => setUserFormJurisdictions(e.target.value)}
+                    placeholder="e.g. PONDICHERRY, KARAIKAL"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Scope Field (Visibility Filter):</label>
+                  <select
+                    className="dm-edit-select"
+                    value={userFormScopeField}
+                    onChange={(e) => setUserFormScopeField(e.target.value)}
+                  >
+                    <option value="">None (Region/Jurisdiction Bound)</option>
+                    <option value="subdivision">Subdivision</option>
+                    <option value="division">Division</option>
+                    <option value="circle">Circle</option>
+                    <option value="department">Department</option>
+                  </select>
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Scope Value:</label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormScopeValue}
+                    onChange={(e) => setUserFormScopeValue(e.target.value)}
+                    placeholder="e.g. EE - Urban"
+                  />
+                </div>
+
+                <div className="dm-edit-field">
+                  <label>Reporting Admin:</label>
+                  <input
+                    type="text"
+                    className="dm-edit-input"
+                    value={userFormAdmin}
+                    onChange={(e) => setUserFormAdmin(e.target.value)}
+                    placeholder="GIS Admin"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="dm-modal-footer dm-edit-footer">
+              <div className="dm-footer-right" style={{ marginLeft: 'auto' }}>
+                <button type="button" className="btn secondary" onClick={() => setIsUserModalOpen(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={!userFormUsername.trim() || !userFormDisplayName.trim()}
+                  onClick={handleSaveUserForm}
+                >
+                  <Save size={14} />
+                  <span>{editingUserId ? 'Save Officer Profile' : 'Create Officer Profile'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

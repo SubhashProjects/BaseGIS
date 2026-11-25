@@ -1,0 +1,71 @@
+﻿User ID,Username,Officer Display Name,Designation Role,Department,Circle,Division,Sub Division,Region,Scope Field,Scope Value,Reporting Admin,Authorized Jurisdictions,Hierarchy Level
+org-admin-001,GIS Admin,GIS Admin,GIS_ADMIN,SE - 1 HOD,—,—,—,All Regions,All,All,GIS Admin,PONDICHERRY; KARAIKAL; MAHE; YANAM,System Administrator (Level 0)
+org-je-001,JE-TownSouth,JE-TownSouth,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AEE- Town I,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-002,JE-TownSouthCentral,JE-TownSouthCentral,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AEE- Town I,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-003,JE-TownCentral,JE-TownCentral,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AEE- Town I,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-004,JE-TownNorth,JE-TownNorth,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AEE- Town I,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-005,JE-VenkataNagar,JE-VenkataNagar,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AE- Town II,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-006,JE-Muthialpet,JE-Muthialpet,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AE- Town II,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-007,JE-Saram,JE-Saram,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AE- Town II,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-008,JE-Townwest,JE-Townwest,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AE-Marapalam,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-009,JE-Mudialierpet,JE-Mudialierpet,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AE-Marapalam,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-010,JE-Murungapakkam,JE-Murungapakkam,JE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AE-Marapalam,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-011,JE-Gorimedu,JE-Gorimedu,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Lawspet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-012,JE-Ashoknagar,JE-Ashoknagar,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Lawspet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-013,JE-Lawspet,JE-Lawspet,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Lawspet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-014,JE-Kalapet,JE-Kalapet,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Kalapet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-015,JE-Muthirapalayam,JE-Muthirapalayam,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-kirumbapet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-016,JE-Boomianpet,JE-Boomianpet,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Boomianpet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-017,JE-Villianur,JE-Villianur,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Boomianpet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-018,JE-Sedharapet,JE-Sedharapet,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Sederapet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-019,JE-Ramanathapuram,JE-Ramanathapuram,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Sederapet,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-020,JE-Thirukkanur,JE-Thirukkanur,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Thethampakkam,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-021,JE-Katterikuppam,JE-Katterikuppam,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Thethampakkam,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-022,JE-Thavalakuppam,JE-Thavalakuppam,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Bahour,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-023,JE-kirumambakkam,JE-kirumambakkam,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Bahour,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-024,JE-Bahour,JE-Bahour,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Bahour,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-025,JE-Ariyankuppam,JE-Ariyankuppam,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Rural south,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-026,JE-Karikalambakkam,JE-Karikalambakkam,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Rural south,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-027,JE-Vadamangalam,JE-Vadamangalam,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Rural south,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-028,JE-ThiruvandarkoIl,JE-ThiruvandarkoIl,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Thirubhuvanai,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-029,JE-Vadhanur,JE-Vadhanur,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Thirubhuvanai,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-030,JE-Kariamanchikam,JE-Kariamanchikam,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Eripakkam,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-031,JE-Karaiyambutthur,JE-Karaiyambutthur,JE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Eripakkam,Pondicherry,All,All,GIS Admin,PONDICHERRY,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-032,JE-TRPattinam,JE-TRPattinam,JE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town I KKL,Karaikal,All,All,GIS Admin,KARAIKAL,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-033,JE-TownKKL,JE-TownKKL,JE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town I KKL,Karaikal,All,All,GIS Admin,KARAIKAL,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-034,JE-Neravy,JE-Neravy,JE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town I KKL,Karaikal,All,All,GIS Admin,KARAIKAL,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-035,JE-Kottucherry,JE-Kottucherry,JE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town II KKL,Karaikal,All,All,GIS Admin,KARAIKAL,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-036,JE-TownNorthKKL,JE-TownNorthKKL,JE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town II KKL,Karaikal,All,All,GIS Admin,KARAIKAL,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-037,JE-Thirunallar,JE-Thirunallar,JE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Rural,Karaikal,All,All,GIS Admin,KARAIKAL,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-038,JE-Nedungadu,JE-Nedungadu,JE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Rural,Karaikal,All,All,GIS Admin,KARAIKAL,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-039,JE-Ambakarathur,JE-Ambakarathur,JE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Rural,Karaikal,All,All,GIS Admin,KARAIKAL,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-040,JE-Mahe,JE-Mahe,JE,SE - 1 HOD,SE - 2 MP & OR,EE-SPM & Blds,AE-Mahe,Mahe,All,All,GIS Admin,MAHE,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-je-041,JE-Yanam,JE-Yanam,JE,SE - 1 HOD,SE - 2 MP & OR,EE-C & T,AE-Yanam,Yanam,All,All,GIS Admin,YANAM,Level 5 - Junior Engineer (Field / Jurisdictional)
+org-aee-001,AEE- Town I,AEE- Town I,AEE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AEE- Town I,Pondicherry,subdivision,AEE- Town I,GIS Admin,PONDICHERRY,Level 3 - Assistant Executive Engineer
+org-ae-001,AE- Town II,AE- Town II,AE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AE- Town II,Pondicherry,subdivision,AE- Town II,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-002,AE-Marapalam,AE-Marapalam,AE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AE-Marapalam,Pondicherry,subdivision,AE-Marapalam,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-003,AE-Lawspet,AE-Lawspet,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Lawspet,Pondicherry,subdivision,AE-Lawspet,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-004,AE-Kalapet,AE-Kalapet,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Kalapet,Pondicherry,subdivision,AE-Kalapet,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-005,AE-kirumbapet,AE-kirumbapet,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-kirumbapet,Pondicherry,subdivision,AE-kirumbapet,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-006,AE-Boomianpet,AE-Boomianpet,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Boomianpet,Pondicherry,subdivision,AE-Boomianpet,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-007,AE-Sederapet,AE-Sederapet,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Sederapet,Pondicherry,subdivision,AE-Sederapet,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-008,AE-Thethampakkam,AE-Thethampakkam,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Thethampakkam,Pondicherry,subdivision,AE-Thethampakkam,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-009,AE-Bahour,AE-Bahour,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Bahour,Pondicherry,subdivision,AE-Bahour,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-010,AE-Rural south,AE-Rural south,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Rural south,Pondicherry,subdivision,AE-Rural south,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-011,AE-Thirubhuvanai,AE-Thirubhuvanai,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Thirubhuvanai,Pondicherry,subdivision,AE-Thirubhuvanai,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-012,AE-Eripakkam,AE-Eripakkam,AE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Eripakkam,Pondicherry,subdivision,AE-Eripakkam,GIS Admin,PONDICHERRY,Level 4 - Assistant Engineer
+org-ae-013,AE-Town I KKL,AE-Town I KKL,AE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town I KKL,Karaikal,subdivision,AE-Town I KKL,GIS Admin,KARAIKAL,Level 4 - Assistant Engineer
+org-ae-014,AE-Town II KKL,AE-Town II KKL,AE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town II KKL,Karaikal,subdivision,AE-Town II KKL,GIS Admin,KARAIKAL,Level 4 - Assistant Engineer
+org-ae-015,AE-Rural,AE-Rural,AE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Rural,Karaikal,subdivision,AE-Rural,GIS Admin,KARAIKAL,Level 4 - Assistant Engineer
+org-ae-016,AE-Mahe,AE-Mahe,AE,SE - 1 HOD,SE - 2 MP & OR,EE-SPM & Blds,AE-Mahe,Mahe,subdivision,AE-Mahe,GIS Admin,MAHE,Level 4 - Assistant Engineer
+org-ae-017,AE-Yanam,AE-Yanam,AE,SE - 1 HOD,SE - 2 MP & OR,EE-C & T,AE-Yanam,Yanam,subdivision,AE-Yanam,GIS Admin,YANAM,Level 4 - Assistant Engineer
+org-ee-001,EE - Urban,EE - Urban,EE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AEE- Town I,Pondicherry,division,EE - Urban,GIS Admin,PONDICHERRY,Level 2 - Executive Engineer
+org-ee-002,EE - Rural North,EE - Rural North,EE,SE - 1 HOD,SE - 3 O&M,EE - Rural North,AE-Lawspet,Pondicherry,division,EE - Rural North,GIS Admin,PONDICHERRY,Level 2 - Executive Engineer
+org-ee-003,EE - Rural South,EE - Rural South,EE,SE - 1 HOD,SE - 3 O&M,EE - Rural South,AE-Bahour,Pondicherry,division,EE - Rural South,GIS Admin,PONDICHERRY,Level 2 - Executive Engineer
+org-ee-004,Karaikal,Karaikal,EE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town I KKL,Karaikal,division,Karaikal,GIS Admin,KARAIKAL,Level 2 - Executive Engineer
+org-ee-005,EE-SPM & Blds,EE-SPM & Blds,EE,SE - 1 HOD,SE - 2 MP & OR,EE-SPM & Blds,AE-Mahe,Mahe,division,EE-SPM & Blds,GIS Admin,MAHE,Level 2 - Executive Engineer
+org-ee-006,EE-C & T,EE-C & T,EE,SE - 1 HOD,SE - 2 MP & OR,EE-C & T,AE-Yanam,Yanam,division,EE-C & T,GIS Admin,YANAM,Level 2 - Executive Engineer
+org-se-000,SE - 1 cum HOD,SE - 1 cum HOD,SE,SE - 1 cum HOD,—,—,—,All Regions,department,SE - 1 cum HOD,GIS Admin,PONDICHERRY; KARAIKAL; MAHE; YANAM,Level 1 - Superintending Engineer / HOD
+org-se-001,SE - 3 O&M,SE - 3 O&M,SE,SE - 1 HOD,SE - 3 O&M,EE - Urban,AEE- Town I,Pondicherry,circle,SE - 3 O&M,GIS Admin,PONDICHERRY,Level 1 - Superintending Engineer / HOD
+org-se-002,SE - 2 MP & OR,SE - 2 MP & OR,SE,SE - 1 HOD,SE - 2 MP & OR,Karaikal,AE-Town I KKL,Karaikal,circle,SE - 2 MP & OR,GIS Admin,KARAIKAL; MAHE; YANAM,Level 1 - Superintending Engineer / HOD
+org-contractor-001,Contractor-Pondy,Contractor - Pondy Power Works,CONTRACTOR,SE - 1 cum HOD,SE - 3 O&M,EE - Urban,AEE- Town I,Pondicherry,division,EE - Urban,GIS Admin,PONDICHERRY,Level 6 - External Contractor / Field Surveyor

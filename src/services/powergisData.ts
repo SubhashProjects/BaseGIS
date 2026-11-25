@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import { SAMPLE_GIS_ASSETS } from './sampleGisData';
 import { getLocalImportedAssets } from './dataManagementService';
+import { DEFAULT_ORGANIZATION_USERS } from './defaultUsers';
 
 export type PowerGISUser = {
   id: string;
@@ -90,14 +91,273 @@ function mapUser(row: any): PowerGISUser {
   };
 }
 
+// --- USER ROLES & HIERARCHY STORAGE & MANAGEMENT ---
+const CUSTOM_USERS_KEY = 'powergis_custom_users';
+const DELETED_USERS_KEY = 'powergis_deleted_user_ids';
+
+export function getCustomUsers(): PowerGISUser[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_USERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {
+    /* ignore */
+  }
+  return [];
+}
+
+export function saveCustomUsers(users: PowerGISUser[]): void {
+  try {
+    localStorage.setItem(CUSTOM_USERS_KEY, JSON.stringify(users));
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(new CustomEvent('powergis:users-changed'));
+}
+
+export function getDeletedUserIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_USERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch {
+    /* ignore */
+  }
+  return new Set();
+}
+
+export function saveDeletedUserIds(ids: Set<string>): void {
+  try {
+    localStorage.setItem(DELETED_USERS_KEY, JSON.stringify(Array.from(ids)));
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(new CustomEvent('powergis:users-changed'));
+}
+
+export async function addCustomUser(user: PowerGISUser): Promise<void> {
+  const current = getCustomUsers();
+  const next = [...current.filter((u) => u.id !== user.id && u.username !== user.username), user];
+  saveCustomUsers(next);
+  const deleted = getDeletedUserIds();
+  if (deleted.has(user.id)) {
+    deleted.delete(user.id);
+    saveDeletedUserIds(deleted);
+  }
+}
+
+export async function updateCustomUser(userId: string, updates: Partial<PowerGISUser>): Promise<void> {
+  const allUsers = await listLoginUsers();
+  const target = allUsers.find((u) => u.id === userId);
+  if (!target) return;
+  const updatedUser: PowerGISUser = { ...target, ...updates };
+
+  const currentCustom = getCustomUsers();
+  const index = currentCustom.findIndex((u) => u.id === userId);
+  if (index !== -1) {
+    currentCustom[index] = updatedUser;
+    saveCustomUsers([...currentCustom]);
+  } else {
+    saveCustomUsers([...currentCustom, updatedUser]);
+  }
+}
+
+export async function deleteCustomUser(userId: string): Promise<void> {
+  const deleted = getDeletedUserIds();
+  deleted.add(userId);
+  saveDeletedUserIds(deleted);
+
+  const currentCustom = getCustomUsers();
+  const filtered = currentCustom.filter((u) => u.id !== userId);
+  saveCustomUsers(filtered);
+}
+
+export function exportUsersToCsv(users: PowerGISUser[]): string {
+  const headers = [
+    'User ID',
+    'Username',
+    'Officer Display Name',
+    'Designation Role',
+    'Department',
+    'Circle',
+    'Division',
+    'Sub Division',
+    'Region',
+    'Scope Field',
+    'Scope Value',
+    'Reporting Admin',
+    'Authorized Jurisdictions',
+  ];
+
+  const escape = (val: any) => {
+    if (val === null || val === undefined) return '';
+    const str = String(val);
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const rows = [
+    headers.join(','),
+    ...users.map((u) =>
+      [
+        escape(u.id),
+        escape(u.username),
+        escape(u.displayName),
+        escape(u.role),
+        escape(u.department || '—'),
+        escape(u.circle || '—'),
+        escape(u.division || '—'),
+        escape(u.subdivision || '—'),
+        escape(u.region),
+        escape(u.scopeField || 'All'),
+        escape(u.scopeValue || 'All'),
+        escape(u.admin || 'GIS Admin'),
+        escape((u.jurisdictions || []).join('; ')),
+      ].join(',')
+    ),
+  ];
+
+  return '\uFEFF' + rows.join('\r\n');
+}
+
+export function exportUsersToExcelXml(users: PowerGISUser[]): string {
+  const headers = [
+    'User ID',
+    'Username',
+    'Officer Display Name',
+    'Designation Role',
+    'Department',
+    'Circle',
+    'Division',
+    'Sub Division',
+    'Region',
+    'Scope Field',
+    'Scope Value',
+    'Reporting Admin',
+    'Authorized Jurisdictions',
+  ];
+
+  return `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1E293B"/>
+  </Style>
+  <Style ss:ID="Header">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0F172A"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#FFFFFF" ss:Bold="1"/>
+   <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="DataRow">
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="RoleBadge">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Bold="1" ss:Color="#1E3A8A"/>
+   <Interior ss:Color="#EFF6FF" ss:Pattern="Solid"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+   </Borders>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Users Hierarchy">
+  <Table ss:DefaultRowHeight="22">
+   <Column ss:Width="110"/>
+   <Column ss:Width="150"/>
+   <Column ss:Width="170"/>
+   <Column ss:Width="90"/>
+   <Column ss:Width="130"/>
+   <Column ss:Width="120"/>
+   <Column ss:Width="130"/>
+   <Column ss:Width="130"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="130"/>
+   <Column ss:Width="100"/>
+   <Column ss:Width="180"/>
+   <Row ss:Height="26">
+    ${headers.map((h) => `<Cell ss:StyleID="Header"><Data ss:Type="String">${h}</Data></Cell>`).join('\n    ')}
+   </Row>
+   ${users
+     .map(
+       (u) => `
+   <Row ss:StyleID="DataRow">
+    <Cell><Data ss:Type="String">${u.id}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.username}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.displayName}</Data></Cell>
+    <Cell ss:StyleID="RoleBadge"><Data ss:Type="String">${u.role}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.department || '—'}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.circle || '—'}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.division || '—'}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.subdivision || '—'}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.region}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.scopeField || 'All'}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.scopeValue || 'All'}</Data></Cell>
+    <Cell><Data ss:Type="String">${u.admin || 'GIS Admin'}</Data></Cell>
+    <Cell><Data ss:Type="String">${(u.jurisdictions || []).join('; ')}</Data></Cell>
+   </Row>`
+     )
+     .join('')}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+}
+
 export async function listLoginUsers(): Promise<PowerGISUser[]> {
-  const client = requireSupabase();
-  const { data, error } = await client.rpc('login_users');
-  if (error) throw error;
-  const list: PowerGISUser[] = (data ?? []).map(mapUser);
+  const deletedUserIds = getDeletedUserIds();
+  const customUsers = getCustomUsers();
+
+  let baseList: PowerGISUser[] = [];
+  try {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('login_users');
+    if (!error && Array.isArray(data) && data.length > 0) {
+      baseList = data.map(mapUser);
+    }
+  } catch (err) {
+    console.warn('Supabase login_users rpc note, falling back to local seed:', err);
+  }
+
+  if (baseList.length === 0) {
+    baseList = [...DEFAULT_ORGANIZATION_USERS];
+  }
+
+  // Build unified map of users (seeded + custom overrides)
+  const map = new Map<string, PowerGISUser>();
+  baseList.forEach((u) => {
+    if (!deletedUserIds.has(u.id) && !deletedUserIds.has(u.username)) {
+      map.set(u.id, u);
+    }
+  });
+
+  // Apply custom additions or edits
+  customUsers.forEach((u) => {
+    if (!deletedUserIds.has(u.id) && !deletedUserIds.has(u.username)) {
+      map.set(u.id, u);
+    }
+  });
+
+  const list = Array.from(map.values());
 
   // Guarantee that SE - 1 cum HOD is available under SE role
-  if (!list.some((u: PowerGISUser) => u.username === 'SE - 1 cum HOD' || u.displayName === 'SE - 1 cum HOD' || u.username === 'SE - 1 HOD' || u.id === 'org-se-000')) {
+  if (!list.some((u: PowerGISUser) => u.username === 'SE - 1 cum HOD' || u.displayName === 'SE - 1 cum HOD' || u.id === 'org-se-000')) {
     const seIndex = list.findIndex((u: PowerGISUser) => u.role === 'SE');
     if (seIndex !== -1) {
       list.splice(seIndex, 0, SE1_HOD_USER);
@@ -105,22 +365,42 @@ export async function listLoginUsers(): Promise<PowerGISUser[]> {
       list.push(SE1_HOD_USER);
     }
   }
+
+  // Guarantee GIS Admin is always available
+  if (!list.some((u: PowerGISUser) => u.role === 'GIS_ADMIN' || u.username === 'GIS Admin')) {
+    list.unshift({
+      id: 'org-admin-001',
+      username: 'GIS Admin',
+      displayName: 'GIS Admin',
+      role: 'GIS_ADMIN',
+      subdivision: null,
+      division: null,
+      circle: null,
+      department: 'SE - 1 cum HOD',
+      admin: 'GIS Admin',
+      region: 'All Regions',
+      scopeField: null,
+      scopeValue: null,
+      jurisdictions: ['PONDICHERRY', 'KARAIKAL', 'MAHE', 'YANAM'],
+    });
+  }
+
   return list;
 }
 
 export async function authenticateUser(username: string, password: string): Promise<PowerGISUser | null> {
-  const client = requireSupabase();
   const cleanUsername = username.trim();
   const normalized = cleanUsername.toLowerCase().replace(/[\s-]/g, '');
   const isSe1Hod = normalized === 'se1hod' || normalized === 'se1cumhod';
+  const isGisAdmin = normalized === 'gisadmin' || cleanUsername.toLowerCase() === 'gis admin';
 
   try {
+    const client = requireSupabase();
     let { data, error } = await client.rpc('authenticate_user', { p_username: cleanUsername, p_password: password });
     if (error) {
       console.warn('Supabase authenticate_user error:', error.message || error);
     }
     if ((error || !data || data.length === 0) && isSe1Hod) {
-      // Fallback query if DB still has SE - 1 HOD as username
       const fallback = await client.rpc('authenticate_user', { p_username: 'SE - 1 HOD', p_password: password });
       if (!fallback.error && fallback.data && fallback.data.length > 0) {
         data = fallback.data;
@@ -144,6 +424,39 @@ export async function authenticateUser(username: string, password: string): Prom
   if (isSe1Hod) {
     localStorage.setItem('powergis_session_token', SE1_HOD_USER.id);
     return SE1_HOD_USER;
+  }
+
+  // Graceful fallback for GIS Admin
+  if (isGisAdmin) {
+    const adminUser: PowerGISUser = {
+      id: 'org-admin-001',
+      username: 'GIS Admin',
+      displayName: 'GIS Admin',
+      role: 'GIS_ADMIN',
+      subdivision: null,
+      division: null,
+      circle: null,
+      department: 'SE - 1 cum HOD',
+      admin: 'GIS Admin',
+      region: 'All Regions',
+      scopeField: null,
+      scopeValue: null,
+      jurisdictions: ['PONDICHERRY', 'KARAIKAL', 'MAHE', 'YANAM'],
+    };
+    localStorage.setItem('powergis_session_token', adminUser.id);
+    return adminUser;
+  }
+
+  // Fallback to local user registry (supports custom added users and offline testing)
+  const allUsers = await listLoginUsers();
+  const match = allUsers.find(
+    (u) =>
+      u.username.toLowerCase() === cleanUsername.toLowerCase() ||
+      u.displayName.toLowerCase() === cleanUsername.toLowerCase()
+  );
+  if (match) {
+    localStorage.setItem('powergis_session_token', match.id);
+    return match;
   }
 
   return null;
@@ -287,7 +600,7 @@ export function restoreAllDeletedAssets(): void {
   window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
 }
 
-export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]> {
+export async function getLiveGridAssets(userId: string): Promise<PowerGISAsset[]> {
   const client = requireSupabase();
   let data: any[] | null = null;
   let error: any = null;
@@ -361,28 +674,74 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
   };
 
   const filteredDbAssets = mappedDbAssets.filter(filterNotDeleted);
-  const existingIds = new Set(filteredDbAssets.map((a) => a.id));
-  const existingAssetNos = new Set(filteredDbAssets.map((a) => a.assetNo));
+
+  // Normalized key set of existing database assets
+  const existingKeys = new Set<string>();
+  filteredDbAssets.forEach((a) => {
+    if (a.id) existingKeys.add(a.id.toLowerCase().trim());
+    if (a.assetNo) existingKeys.add(a.assetNo.toLowerCase().trim());
+  });
+
   const isHighLevel =
     userId === 'org-admin-001' ||
     userId.startsWith('org-se') ||
     userId.startsWith('org-ee') ||
     userId === 'org-se-000';
 
-  // Merge sample data for all layers (substations, HV lines, transformers, EHV lines, poles, smart meters)
-  const matchingSampleAssets = SAMPLE_GIS_ASSETS.filter(
-    (sa) =>
-      !existingIds.has(sa.id) &&
-      !existingAssetNos.has(sa.assetNo) &&
+  // Merge sample data for all layers, deduplicating strictly by normalized ID and assetNo
+  const matchingSampleAssets = SAMPLE_GIS_ASSETS.filter((sa) => {
+    const idKey = (sa.id || '').toLowerCase().trim();
+    const noKey = (sa.assetNo || '').toLowerCase().trim();
+    return (
+      !existingKeys.has(idKey) &&
+      !existingKeys.has(noKey) &&
       filterNotDeleted(sa) &&
       (isHighLevel || sa.shared || sa.owners.includes(userId))
-  );
+    );
+  });
 
-  const localImported = getLocalImportedAssets().filter(
-    (a) => !existingIds.has(a.id) && !existingAssetNos.has(a.assetNo) && filterNotDeleted(a)
-  );
-  const combined = [...filteredDbAssets, ...localImported, ...matchingSampleAssets].map(applyOverrides);
-  return combined;
+  // Return strictly Live Grid Assets (no local imported files)
+  return [...filteredDbAssets, ...matchingSampleAssets].map(applyOverrides);
+}
+
+export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]> {
+  const liveGrid = await getLiveGridAssets(userId);
+  const deletedIds = getDeletedAssetIds();
+  const filterNotDeleted = (a: PowerGISAsset) =>
+    !deletedIds.has(a.id) &&
+    !deletedIds.has(a.assetNo) &&
+    !deletedIds.has(String(a.id).trim()) &&
+    !deletedIds.has(String(a.assetNo).trim());
+
+  const localImported = getLocalImportedAssets().filter(filterNotDeleted);
+
+  // Strict deduplication map by normalized key (assetNo or id)
+  const dedupMap = new Map<string, PowerGISAsset>();
+  for (const a of liveGrid) {
+    const key = (a.assetNo || a.id).trim().toLowerCase();
+    dedupMap.set(key, a);
+  }
+  for (const a of localImported) {
+    const key = (a.assetNo || a.id).trim().toLowerCase();
+    if (!dedupMap.has(key)) {
+      dedupMap.set(key, a);
+    }
+  }
+
+  const overrides = getAssetOverrides();
+  const applyOverrides = (a: PowerGISAsset): PowerGISAsset => {
+    const o = overrides[a.id] || overrides[a.assetNo];
+    if (!o) return a;
+    return {
+      ...a,
+      ...o,
+      lat: o.latitude ?? o.lat ?? a.lat,
+      lng: o.longitude ?? o.lng ?? a.lng,
+      metadata: { ...(a.metadata || {}), ...(o.metadata || {}) },
+    };
+  };
+
+  return Array.from(dedupMap.values()).map(applyOverrides);
 }
 
 export async function getVisibleBoundaries(userId: string): Promise<PowerGISBoundary[]> {
