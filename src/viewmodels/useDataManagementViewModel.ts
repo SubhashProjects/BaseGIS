@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createDatabaseBackup, downloadBlob, exportVisibleAssets, importAssets, importSourceFile, listBackupRuns, parseImportFile } from '../services/dataManagementService';
+import { createDatabaseBackup, downloadBlob, exportVisibleAssets, importAssets, listBackupRuns, parseImportFile } from '../services/dataManagementService';
 import type { PowerGISUser } from '../services/powergisData';
 
 export function useDataManagementViewModel(user: PowerGISUser) {
@@ -18,11 +18,10 @@ export function useDataManagementViewModel(user: PowerGISUser) {
   const importFile = useCallback(async (file: File, defaultType: string) => {
     setBusy(true); setMessage(''); setError('');
     try {
-      const extension = file.name.toLowerCase();
-      const result = (extension.endsWith('.xlsx') || extension.endsWith('.xls') || extension.endsWith('.gpkg'))
-        ? await importSourceFile(file, defaultType)
-        : await (async () => { const features = await parseImportFile(file, defaultType); if (!features.length) throw new Error('No GIS features could be read from the selected file.'); return importAssets(features); })();
-      setMessage(`Imported ${result.inserted} feature(s); skipped ${result.skipped}.`);
+      const features = await parseImportFile(file, defaultType);
+      if (!features.length) throw new Error('No GIS features could be read from the selected file.');
+      const result = await importAssets(features);
+      setMessage(`Imported ${result.inserted} feature(s); skipped ${result.skipped}.${result.errors.length ? ` (${result.errors[0]})` : ''}`);
       await refreshBackups();
       return result;
     } catch (e: any) { setError(e?.message ?? 'Import failed.'); throw e; }

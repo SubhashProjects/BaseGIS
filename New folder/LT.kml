@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="LT" id="LT">
+	<SimpleField name="OBJECTID" type="int"></SimpleField>
+	<SimpleField name="LTC_CIN" type="string"></SimpleField>
+	<SimpleField name="LTC_TOWN_N" type="string"></SimpleField>
+	<SimpleField name="LTC_DIV_NA" type="string"></SimpleField>
+	<SimpleField name="LTC_SDIV_N" type="string"></SimpleField>
+	<SimpleField name="LTC_SEC_NA" type="string"></SimpleField>
+	<SimpleField name="LTC_LTP_ID" type="string"></SimpleField>
+	<SimpleField name="LTC_PILLAR" type="string"></SimpleField>
+	<SimpleField name="LTC_JOINT_" type="string"></SimpleField>
+	<SimpleField name="LTC_ID" type="string"></SimpleField>
+	<SimpleField name="LTC_CTYPE" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_LOC" type="string"></SimpleField>
+	<SimpleField name="LTC_NO_OF_" type="int"></SimpleField>
+	<SimpleField name="LTC_CON_PH" type="string"></SimpleField>
+	<SimpleField name="LTC_SINGLE" type="string"></SimpleField>
+	<SimpleField name="LTC_OWNERS" type="string"></SimpleField>
+	<SimpleField name="LTC_WELDIN" type="string"></SimpleField>
+	<SimpleField name="LTC_CON_NA" type="string"></SimpleField>
+	<SimpleField name="LTC_FATHER" type="string"></SimpleField>
+	<SimpleField name="LTC_EMP_ST" type="string"></SimpleField>
+	<SimpleField name="LTC_POLICY" type="string"></SimpleField>
+	<SimpleField name="LTC_CON_CA" type="string"></SimpleField>
+	<SimpleField name="LTC_DOOR_N" type="string"></SimpleField>
+	<SimpleField name="LTC_FLAT_N" type="string"></SimpleField>
+	<SimpleField name="LTC_FLOOR_" type="string"></SimpleField>
+	<SimpleField name="LTC_BUILDI" type="string"></SimpleField>
+	<SimpleField name="LTC_STREET" type="string"></SimpleField>
+	<SimpleField name="LTC_COLONY" type="string"></SimpleField>
+	<SimpleField name="LTC_AREA" type="string"></SimpleField>
+	<SimpleField name="LTC_TOWN_C" type="string"></SimpleField>
+	<SimpleField name="LTC_PINCOD" type="string"></SimpleField>
+	<SimpleField name="LTC_TARIFF" type="string"></SimpleField>
+	<SimpleField name="LTC_LL" type="string"></SimpleField>
+	<SimpleField name="LTC_PANNO" type="string"></SimpleField>
+	<SimpleField name="LTC_UIDNO" type="string"></SimpleField>
+	<SimpleField name="LTC_EMAILI" type="string"></SimpleField>
+	<SimpleField name="LTC_RCARDN" type="string"></SimpleField>
+	<SimpleField name="LTC_RCARD_" type="string"></SimpleField>
+	<SimpleField name="LTC_BPL_Y_" type="string"></SimpleField>
+	<SimpleField name="LTC_DLC_EN" type="string"></SimpleField>
+	<SimpleField name="LTC_DEMAND" type="string"></SimpleField>
+	<SimpleField name="LTC_DG_LOC" type="string"></SimpleField>
+	<SimpleField name="LTC_DG_L_1" type="string"></SimpleField>
+	<SimpleField name="LTC_DG_L_2" type="float"></SimpleField>
+	<SimpleField name="LTC_SERVIC" type="string"></SimpleField>
+	<SimpleField name="LTC_AGMT_D" type="string"></SimpleField>
+	<SimpleField name="LTC_AGMT_P" type="string"></SimpleField>
+	<SimpleField name="LTC_SLOAD_" type="float"></SimpleField>
+	<SimpleField name="LTC_CLOAD_" type="float"></SimpleField>
+	<SimpleField name="LTC_REVENU" type="string"></SimpleField>
+	<SimpleField name="LTC_DISTR_" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR_MO" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR_PS" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR_EL" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR_SE" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR_TE" type="string"></SimpleField>
+	<SimpleField name="LTC_FUSE_C" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR_GL" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_MAK" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_MOD" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_SNO" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_DEP" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_DOM" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_CON" type="int"></SimpleField>
+	<SimpleField name="LTC_MT_DIG" type="int"></SimpleField>
+	<SimpleField name="LTC_MT_D_1" type="int"></SimpleField>
+	<SimpleField name="LTC_MT_DEC" type="int"></SimpleField>
+	<SimpleField name="LTC_ACLASS" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_PUL" type="string"></SimpleField>
+	<SimpleField name="LTC_KW_1" type="float"></SimpleField>
+	<SimpleField name="LTC_KVA_1" type="float"></SimpleField>
+	<SimpleField name="LTC_KWH_1" type="float"></SimpleField>
+	<SimpleField name="LTC_VOLT_K" type="float"></SimpleField>
+	<SimpleField name="LTC_CURREN" type="string"></SimpleField>
+	<SimpleField name="LTC_COMMSY" type="string"></SimpleField>
+	<SimpleField name="LTC_PO_NO_" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_IDA" type="string"></SimpleField>
+	<SimpleField name="LTC_OTR_NO" type="string"></SimpleField>
+	<SimpleField name="LTC_OTR_DA" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__1" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__2" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__3" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__4" type="string"></SimpleField>
+	<SimpleField name="LTC_FUSE_1" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__5" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_M_1" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_M_2" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_S_1" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_D_2" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_D_3" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_C_1" type="int"></SimpleField>
+	<SimpleField name="LTC_MT_D_4" type="int"></SimpleField>
+	<SimpleField name="LTC_MT_D_5" type="int"></SimpleField>
+	<SimpleField name="LTC_MT_D_6" type="int"></SimpleField>
+	<SimpleField name="LTC_ACLA_1" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_P_1" type="string"></SimpleField>
+	<SimpleField name="LTC_KW_2" type="float"></SimpleField>
+	<SimpleField name="LTC_KVA_2" type="float"></SimpleField>
+	<SimpleField name="LTC_KWH_2" type="float"></SimpleField>
+	<SimpleField name="LTC_VOLT_1" type="float"></SimpleField>
+	<SimpleField name="LTC_CURR_1" type="string"></SimpleField>
+	<SimpleField name="LTC_COMM_1" type="string"></SimpleField>
+	<SimpleField name="LTC_PO_NO1" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_I_1" type="string"></SimpleField>
+	<SimpleField name="LTC_OTR__1" type="string"></SimpleField>
+	<SimpleField name="LTC_OTR__2" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__6" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__7" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__8" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR__9" type="string"></SimpleField>
+	<SimpleField name="LTC_FUSE_2" type="string"></SimpleField>
+	<SimpleField name="LTC_MTR_10" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_M_3" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_M_4" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_S_2" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_D_7" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_D_8" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_C_2" type="int"></SimpleField>
+	<SimpleField name="LTC_MT_D_9" type="int"></SimpleField>
+	<SimpleField name="LTC_MT__10" type="int"></SimpleField>
+	<SimpleField name="LTC_MT__11" type="int"></SimpleField>
+	<SimpleField name="LTC_ACLA_2" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_P_2" type="string"></SimpleField>
+	<SimpleField name="LTC_KW_3" type="float"></SimpleField>
+	<SimpleField name="LTC_KVA_3" type="float"></SimpleField>
+	<SimpleField name="LTC_KWH_3" type="float"></SimpleField>
+	<SimpleField name="LTC_VOLT_2" type="float"></SimpleField>
+	<SimpleField name="LTC_CURR_2" type="string"></SimpleField>
+	<SimpleField name="LTC_COMM_2" type="string"></SimpleField>
+	<SimpleField name="LTC_PO_N_1" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_I_2" type="string"></SimpleField>
+	<SimpleField name="LTC_OTR__3" type="string"></SimpleField>
+	<SimpleField name="LTC_OTR__4" type="string"></SimpleField>
+	<SimpleField name="LTC_TUBELI" type="int"></SimpleField>
+	<SimpleField name="LTC_FAN" type="int"></SimpleField>
+	<SimpleField name="LTC_BULB" type="int"></SimpleField>
+	<SimpleField name="LTC_TELEVI" type="int"></SimpleField>
+	<SimpleField name="LTC_REFRIG" type="int"></SimpleField>
+	<SimpleField name="LTC_MOTOR_" type="int"></SimpleField>
+	<SimpleField name="LTC_GEYSER" type="int"></SimpleField>
+	<SimpleField name="LTC_AC" type="int"></SimpleField>
+	<SimpleField name="LTC_WASHIN" type="int"></SimpleField>
+	<SimpleField name="LTC_GRINDE" type="int"></SimpleField>
+	<SimpleField name="LTC_OTHER_" type="int"></SimpleField>
+	<SimpleField name="LTC_REMARK" type="string"></SimpleField>
+	<SimpleField name="LTC_DT_ID" type="string"></SimpleField>
+	<SimpleField name="LTC_FDR_ID" type="string"></SimpleField>
+	<SimpleField name="LTC_SS_ID" type="string"></SimpleField>
+	<SimpleField name="LTC_TOWN_I" type="string"></SimpleField>
+	<SimpleField name="LTC_PHASE" type="string"></SimpleField>
+	<SimpleField name="LTC_PF" type="float"></SimpleField>
+	<SimpleField name="LTC_SERV_1" type="string"></SimpleField>
+	<SimpleField name="LTC_DT_SEC" type="string"></SimpleField>
+	<SimpleField name="LTC_Buil_1" type="string"></SimpleField>
+	<SimpleField name="LTC_DT_NAM" type="string"></SimpleField>
+	<SimpleField name="LTC_FDR_NA" type="string"></SimpleField>
+	<SimpleField name="LTC_SS_NAM" type="string"></SimpleField>
+	<SimpleField name="LTC_WTRCOO" type="int"></SimpleField>
+	<SimpleField name="LTC_CMPTRP" type="int"></SimpleField>
+	<SimpleField name="LTC_MICROW" type="int"></SimpleField>
+	<SimpleField name="LTC_MUSICS" type="int"></SimpleField>
+	<SimpleField name="LTC_SPR15A" type="int"></SimpleField>
+	<SimpleField name="LTC_SPR5AM" type="int"></SimpleField>
+	<SimpleField name="LTC_MT_TYP" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_T_1" type="string"></SimpleField>
+	<SimpleField name="LTC_MT_T_2" type="string"></SimpleField>
+	<SimpleField name="LTC_UID" type="string"></SimpleField>
+	<SimpleField name="LTC_PUID" type="string"></SimpleField>
+	<SimpleField name="LTC_PHNO" type="string"></SimpleField>
+	<SimpleField name="Enabled" type="int"></SimpleField>
+	<SimpleField name="AncillaryR" type="int"></SimpleField>
+	<SimpleField name="POINT_X" type="float"></SimpleField>
+	<SimpleField name="POINT_Y" type="float"></SimpleField>
+</Schema>
+<Folder><name>LT</name>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#LT">
+		<SimpleData name="OBJECTID">75285</SimpleData>
+		<SimpleData name="LTC_CIN">PY_VLR_DT001_P039_B2</SimpleData>
+		<SimpleData name="LTC_TOWN_N">PUDUCHERRY</SimpleData>
+		<SimpleData name="LTC_DIV_NA">EE-IV</SimpleData>
+		<SimpleData name="LTC_SDIV_N">BOOMIANPET</SimpleData>
+		<SimpleData name="LTC_SEC_NA">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="LTC_LTP_ID">PY_VLR_DT001_P039</SimpleData>
+		<SimpleData name="LTC_PILLAR">&lt;Null&gt;</SimpleData>
+		<SimpleData name="LTC_ID">PY_VLR_DT001_P039_B2</SimpleData>
+		<SimpleData name="LTC_CTYPE">OH</SimpleData>
+		<SimpleData name="LTC_MT_LOC">INSIDE</SimpleData>
+		<SimpleData name="LTC_NO_OF_">1</SimpleData>
+		<SimpleData name="LTC_CON_PH">R</SimpleData>
+		<SimpleData name="LTC_SINGLE">BUILDING SIDE</SimpleData>
+		<SimpleData name="LTC_OWNERS">RENTED</SimpleData>
+		<SimpleData name="LTC_WELDIN">NO</SimpleData>
+		<SimpleData name="LTC_CON_NA">V.KAMATCHI</SimpleData>
+		<SimpleData name="LTC_FATHER">NA</SimpleData>
+		<SimpleData name="LTC_EMP_ST">OTHERS</SimpleData>
+		<SimpleData name="LTC_POLICY">135370</SimpleData>
+		<SimpleData name="LTC_CON_CA">PRIVATE</SimpleData>
+		<SimpleData name="LTC_DOOR_N">5</SimpleData>
+		<SimpleData name="LTC_FLAT_N">NA</SimpleData>
+		<SimpleData name="LTC_FLOOR_">NA</SimpleData>
+		<SimpleData name="LTC_BUILDI">NA</SimpleData>
+		<SimpleData name="LTC_STREET">2ND MAIN ROAD</SimpleData>
+		<SimpleData name="LTC_COLONY">NA</SimpleData>
+		<SimpleData name="LTC_AREA">VTHATTANCHAVADY</SimpleData>
+		<SimpleData name="LTC_TOWN_C">PUDUCHERRY</SimpleData>
+		<SimpleData name="LTC_PINCOD">605001</SimpleData>
+		<SimpleData name="LTC_TARIFF">DOMESTIC</SimpleData>
+		<SimpleData name="LTC_LL">NA</SimpleData>
+		<SimpleData name="LTC_PANNO">NA</SimpleData>
+		<SimpleData name="LTC_UIDNO">NA</SimpleData>
+		<SimpleData name="LTC_EMAILI">NA</SimpleData>
+		<SimpleData name="LTC_RCARDN">NA</SimpleData>
+		<SimpleData name="LTC_RCARD_">NO CARD</SimpleData>
+		<SimpleData name="LTC_BPL_Y_">NO</SimpleData>
+		<SimpleData name="LTC_DLC_EN">NO</SimpleData>
+		<SimpleData name="LTC_DEMAND">NO</SimpleData>
+		<SimpleData name="LTC_DG_LOC">NO</SimpleData>
+		<SimpleData name="LTC_DG_L_1">NA</SimpleData>
+		<SimpleData name="LTC_DG_L_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_SERVIC">1899/12/30</SimpleData>
+		<SimpleData name="LTC_AGMT_D">1899/12/30</SimpleData>
+		<SimpleData name="LTC_SLOAD_">1.57000000000</SimpleData>
+		<SimpleData name="LTC_CLOAD_">1.57000000000</SimpleData>
+		<SimpleData name="LTC_DISTR_">72</SimpleData>
+		<SimpleData name="LTC_MTR_MO">WOOD</SimpleData>
+		<SimpleData name="LTC_MTR_PS">NORMAL</SimpleData>
+		<SimpleData name="LTC_MTR_EL">NO</SimpleData>
+		<SimpleData name="LTC_MTR_SE">INTACT</SimpleData>
+		<SimpleData name="LTC_MTR_TE">INTACT</SimpleData>
+		<SimpleData name="LTC_FUSE_C">INTACT</SimpleData>
+		<SimpleData name="LTC_MTR_GL">OK</SimpleData>
+		<SimpleData name="LTC_MT_MAK">MAXWELL</SimpleData>
+		<SimpleData name="LTC_MT_MOD">RS14</SimpleData>
+		<SimpleData name="LTC_MT_SNO">273873</SimpleData>
+		<SimpleData name="LTC_MT_DEP">526392</SimpleData>
+		<SimpleData name="LTC_MT_DOM">2005/01/01</SimpleData>
+		<SimpleData name="LTC_MT_CON">1</SimpleData>
+		<SimpleData name="LTC_MT_DIG">6</SimpleData>
+		<SimpleData name="LTC_MT_D_1">5</SimpleData>
+		<SimpleData name="LTC_MT_DEC">1</SimpleData>
+		<SimpleData name="LTC_ACLASS">1</SimpleData>
+		<SimpleData name="LTC_MT_PUL">6400</SimpleData>
+		<SimpleData name="LTC_KW_1">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KVA_1">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KWH_1">1704.00000000000</SimpleData>
+		<SimpleData name="LTC_VOLT_K">240.00000000000</SimpleData>
+		<SimpleData name="LTC_CURREN">5-20</SimpleData>
+		<SimpleData name="LTC_COMMSY">OTHERS</SimpleData>
+		<SimpleData name="LTC_MT_IDA">2005/05/05</SimpleData>
+		<SimpleData name="LTC_MT_C_1">0</SimpleData>
+		<SimpleData name="LTC_MT_D_4">0</SimpleData>
+		<SimpleData name="LTC_MT_D_5">0</SimpleData>
+		<SimpleData name="LTC_MT_D_6">0</SimpleData>
+		<SimpleData name="LTC_KW_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KVA_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KWH_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_VOLT_1">0.00000000000</SimpleData>
+		<SimpleData name="LTC_MT_C_2">0</SimpleData>
+		<SimpleData name="LTC_MT_D_9">0</SimpleData>
+		<SimpleData name="LTC_MT__10">0</SimpleData>
+		<SimpleData name="LTC_MT__11">0</SimpleData>
+		<SimpleData name="LTC_KW_3">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KVA_3">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KWH_3">0.00000000000</SimpleData>
+		<SimpleData name="LTC_VOLT_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_TUBELI">3</SimpleData>
+		<SimpleData name="LTC_FAN">3</SimpleData>
+		<SimpleData name="LTC_BULB">3</SimpleData>
+		<SimpleData name="LTC_TELEVI">1</SimpleData>
+		<SimpleData name="LTC_REFRIG">0</SimpleData>
+		<SimpleData name="LTC_MOTOR_">1</SimpleData>
+		<SimpleData name="LTC_GEYSER">0</SimpleData>
+		<SimpleData name="LTC_AC">0</SimpleData>
+		<SimpleData name="LTC_WASHIN">0</SimpleData>
+		<SimpleData name="LTC_GRINDE">1</SimpleData>
+		<SimpleData name="LTC_OTHER_">0</SimpleData>
+		<SimpleData name="LTC_DT_ID">PY_VLR_DT001</SimpleData>
+		<SimpleData name="LTC_FDR_ID">VLR</SimpleData>
+		<SimpleData name="LTC_SS_ID">VLR</SimpleData>
+		<SimpleData name="LTC_TOWN_I">003</SimpleData>
+		<SimpleData name="LTC_PHASE">SINGLE PHASE</SimpleData>
+		<SimpleData name="LTC_PF">0.90000000000</SimpleData>
+		<SimpleData name="LTC_SERV_1">32-72-06-0605C</SimpleData>
+		<SimpleData name="LTC_DT_SEC">32</SimpleData>
+		<SimpleData name="LTC_Buil_1">B2</SimpleData>
+		<SimpleData name="LTC_DT_NAM">THATTANCHAVADY SS I</SimpleData>
+		<SimpleData name="LTC_FDR_NA">VILLIANUR</SimpleData>
+		<SimpleData name="LTC_SS_NAM">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="LTC_WTRCOO">0</SimpleData>
+		<SimpleData name="LTC_CMPTRP">0</SimpleData>
+		<SimpleData name="LTC_MICROW">0</SimpleData>
+		<SimpleData name="LTC_MUSICS">0</SimpleData>
+		<SimpleData name="LTC_SPR15A">6</SimpleData>
+		<SimpleData name="LTC_SPR5AM">8</SimpleData>
+		<SimpleData name="LTC_MT_TYP">STATIC</SimpleData>
+		<SimpleData name="LTC_PHNO">NA</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+		<SimpleData name="AncillaryR">0</SimpleData>
+		<SimpleData name="POINT_X">365786.13470000000</SimpleData>
+		<SimpleData name="POINT_Y">1317620.96240000008</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7675517680866,11.9165223450657</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#LT">
+		<SimpleData name="OBJECTID">75303</SimpleData>
+		<SimpleData name="LTC_CIN">PY_VLR_DT001_P045_B4</SimpleData>
+		<SimpleData name="LTC_TOWN_N">PUDUCHERRY</SimpleData>
+		<SimpleData name="LTC_DIV_NA">EE-IV</SimpleData>
+		<SimpleData name="LTC_SDIV_N">BOOMIANPET</SimpleData>
+		<SimpleData name="LTC_SEC_NA">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="LTC_LTP_ID">PY_VLR_DT001_P045</SimpleData>
+		<SimpleData name="LTC_PILLAR">&lt;Null&gt;</SimpleData>
+		<SimpleData name="LTC_ID">PY_VLR_DT001_P045_B4</SimpleData>
+		<SimpleData name="LTC_CTYPE">OH</SimpleData>
+		<SimpleData name="LTC_MT_LOC">INSIDE</SimpleData>
+		<SimpleData name="LTC_NO_OF_">1</SimpleData>
+		<SimpleData name="LTC_CON_PH">Y</SimpleData>
+		<SimpleData name="LTC_SINGLE">MIDDLE</SimpleData>
+		<SimpleData name="LTC_OWNERS">OWNED</SimpleData>
+		<SimpleData name="LTC_WELDIN">NO</SimpleData>
+		<SimpleData name="LTC_CON_NA">JAMES AROKKIYANATHAN</SimpleData>
+		<SimpleData name="LTC_FATHER">NA</SimpleData>
+		<SimpleData name="LTC_EMP_ST">OTHERS</SimpleData>
+		<SimpleData name="LTC_POLICY">138280</SimpleData>
+		<SimpleData name="LTC_CON_CA">PRIVATE</SimpleData>
+		<SimpleData name="LTC_DOOR_N">41</SimpleData>
+		<SimpleData name="LTC_FLAT_N">NA</SimpleData>
+		<SimpleData name="LTC_FLOOR_">NA</SimpleData>
+		<SimpleData name="LTC_BUILDI">NA</SimpleData>
+		<SimpleData name="LTC_STREET">2ND MAIN ROAD</SimpleData>
+		<SimpleData name="LTC_COLONY">NA</SimpleData>
+		<SimpleData name="LTC_AREA">SENTHAMARAI NAGAR</SimpleData>
+		<SimpleData name="LTC_TOWN_C">PUDUCHERRY</SimpleData>
+		<SimpleData name="LTC_PINCOD">605001</SimpleData>
+		<SimpleData name="LTC_TARIFF">DOMESTIC</SimpleData>
+		<SimpleData name="LTC_LL">NA</SimpleData>
+		<SimpleData name="LTC_PANNO">NA</SimpleData>
+		<SimpleData name="LTC_UIDNO">NA</SimpleData>
+		<SimpleData name="LTC_EMAILI">NA</SimpleData>
+		<SimpleData name="LTC_RCARDN">NA</SimpleData>
+		<SimpleData name="LTC_RCARD_">NO CARD</SimpleData>
+		<SimpleData name="LTC_BPL_Y_">NO</SimpleData>
+		<SimpleData name="LTC_DLC_EN">NO</SimpleData>
+		<SimpleData name="LTC_DEMAND">NO</SimpleData>
+		<SimpleData name="LTC_DG_LOC">NO</SimpleData>
+		<SimpleData name="LTC_DG_L_1">NA</SimpleData>
+		<SimpleData name="LTC_DG_L_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_SERVIC">1899/12/30</SimpleData>
+		<SimpleData name="LTC_AGMT_D">1899/12/30</SimpleData>
+		<SimpleData name="LTC_SLOAD_">3.98000000000</SimpleData>
+		<SimpleData name="LTC_CLOAD_">3.98000000000</SimpleData>
+		<SimpleData name="LTC_DISTR_">72</SimpleData>
+		<SimpleData name="LTC_MTR_MO">WOOD</SimpleData>
+		<SimpleData name="LTC_MTR_PS">STRUCK</SimpleData>
+		<SimpleData name="LTC_MTR_EL">NO</SimpleData>
+		<SimpleData name="LTC_MTR_SE">INTACT</SimpleData>
+		<SimpleData name="LTC_MTR_TE">INTACT</SimpleData>
+		<SimpleData name="LTC_FUSE_C">NO SEAL</SimpleData>
+		<SimpleData name="LTC_MTR_GL">OK</SimpleData>
+		<SimpleData name="LTC_MT_MAK">RC</SimpleData>
+		<SimpleData name="LTC_MT_MOD">RCE124</SimpleData>
+		<SimpleData name="LTC_MT_SNO">145504</SimpleData>
+		<SimpleData name="LTC_MT_DEP">372768</SimpleData>
+		<SimpleData name="LTC_MT_DOM">2011/01/01</SimpleData>
+		<SimpleData name="LTC_MT_CON">1</SimpleData>
+		<SimpleData name="LTC_MT_DIG">6</SimpleData>
+		<SimpleData name="LTC_MT_D_1">5</SimpleData>
+		<SimpleData name="LTC_MT_DEC">1</SimpleData>
+		<SimpleData name="LTC_ACLASS">1</SimpleData>
+		<SimpleData name="LTC_MT_PUL">3200</SimpleData>
+		<SimpleData name="LTC_KW_1">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KVA_1">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KWH_1">4094.00000000000</SimpleData>
+		<SimpleData name="LTC_VOLT_K">240.00000000000</SimpleData>
+		<SimpleData name="LTC_CURREN">2.5-10</SimpleData>
+		<SimpleData name="LTC_COMMSY">OTHERS</SimpleData>
+		<SimpleData name="LTC_MT_IDA">2006/06/23</SimpleData>
+		<SimpleData name="LTC_MT_C_1">0</SimpleData>
+		<SimpleData name="LTC_MT_D_4">0</SimpleData>
+		<SimpleData name="LTC_MT_D_5">0</SimpleData>
+		<SimpleData name="LTC_MT_D_6">0</SimpleData>
+		<SimpleData name="LTC_KW_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KVA_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KWH_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_VOLT_1">0.00000000000</SimpleData>
+		<SimpleData name="LTC_MT_C_2">0</SimpleData>
+		<SimpleData name="LTC_MT_D_9">0</SimpleData>
+		<SimpleData name="LTC_MT__10">0</SimpleData>
+		<SimpleData name="LTC_MT__11">0</SimpleData>
+		<SimpleData name="LTC_KW_3">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KVA_3">0.00000000000</SimpleData>
+		<SimpleData name="LTC_KWH_3">0.00000000000</SimpleData>
+		<SimpleData name="LTC_VOLT_2">0.00000000000</SimpleData>
+		<SimpleData name="LTC_TUBELI">2</SimpleData>
+		<SimpleData name="LTC_FAN">3</SimpleData>
+		<SimpleData name="LTC_BULB">3</SimpleData>
+		<SimpleData name="LTC_TELEVI">1</SimpleData>
+		<SimpleData name="LTC_REFRIG">1</SimpleData>
+		<SimpleData name="LTC_MOTOR_">1</SimpleData>
+		<SimpleData name="LTC_GEYSER">0</SimpleData>
+		<SimpleData name="LTC_AC">1</SimpleData>
+		<SimpleData name="LTC_WASHIN">1</SimpleData>
+		<SimpleData name="LTC_GRINDE">1</SimpleData>
+		<SimpleData name="LTC_OTHER_">0</SimpleData>
+		<SimpleData name="LTC_DT_ID">PY_VLR_DT001</SimpleData>
+		<SimpleData name="LTC_FDR_ID">VLR</SimpleData>
+		<SimpleData name="LTC_SS_ID">VLR</SimpleData>
+		<SimpleData name="LTC_TOWN_I">003</SimpleData>
+		<SimpleData name="LTC_PHASE">SINGLE PHASE</SimpleData>
+		<SimpleData name="LTC_PF">0.90000000000</SimpleData>
+		<SimpleData name="LTC_SERV_1">32-72-06-0598</SimpleData>
+		<SimpleData name="LTC_DT_SEC">32</SimpleData>
+		<SimpleData name="LTC_Buil_1">B4</SimpleData>
+		<SimpleData name="LTC_DT_NAM">THATTANCHAVADY SS I</SimpleData>
+		<SimpleData name="LTC_FDR_NA">VILLIANUR</SimpleData>
+		<SimpleData name="LTC_SS_NAM">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="LTC_WTRCOO">0</SimpleData>
+		<SimpleData name="LTC_CMPTRP">0</SimpleData>
+		<SimpleData name="LTC_MICROW">0</SimpleData>
+		<SimpleData name="LTC_MUSICS">0</SimpleData>
+		<SimpleData name="LTC_SPR15A">2</SimpleData>
+		<SimpleData name="LTC_SPR5AM">10</SimpleData>
+		<SimpleData name="LTC_MT_TYP">STATIC</SimpleData>
+		<SimpleData name="LTC_PHNO">9994191988</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+		<SimpleData name="AncillaryR">0</SimpleData>
+		<SimpleData name="POINT_X">365794.00219999999</SimpleData>
+		<SimpleData name="POINT_Y">1317565.06679999991</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7676262809935,11.9160172901542</coordinates></Point>
+  </Placemark>
+</Folder>
+</Document></kml>

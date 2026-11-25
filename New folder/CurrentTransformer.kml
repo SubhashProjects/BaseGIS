@@ -1,0 +1,3193 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="CurrentTransformer" id="CurrentTransformer">
+	<SimpleField name="OBJECTID" type="int"></SimpleField>
+	<SimpleField name="CT_AIN" type="string"></SimpleField>
+	<SimpleField name="CT_ACODE" type="string"></SimpleField>
+	<SimpleField name="CT_TOWN_NA" type="string"></SimpleField>
+	<SimpleField name="CT_DIV_NAM" type="string"></SimpleField>
+	<SimpleField name="CT_SDIV_NA" type="string"></SimpleField>
+	<SimpleField name="CT_SEC_NAM" type="string"></SimpleField>
+	<SimpleField name="CT_SS_NAME" type="string"></SimpleField>
+	<SimpleField name="CT_FDR_NAM" type="string"></SimpleField>
+	<SimpleField name="CT_ID" type="string"></SimpleField>
+	<SimpleField name="CT_FDR_COD" type="string"></SimpleField>
+	<SimpleField name="CT_NAME" type="string"></SimpleField>
+	<SimpleField name="CT_TYPE" type="string"></SimpleField>
+	<SimpleField name="CT_STATUS" type="string"></SimpleField>
+	<SimpleField name="CT_PH_REF" type="string"></SimpleField>
+	<SimpleField name="CT_RT_AV" type="string"></SimpleField>
+	<SimpleField name="CT_RT_AD" type="string"></SimpleField>
+	<SimpleField name="CT_CLASSIF" type="string"></SimpleField>
+	<SimpleField name="CT_CLASS" type="string"></SimpleField>
+	<SimpleField name="CT_ACCURAC" type="string"></SimpleField>
+	<SimpleField name="CT_CORE_NO" type="int"></SimpleField>
+	<SimpleField name="CT_VA_BURD" type="string"></SimpleField>
+	<SimpleField name="CT_VA_BU_1" type="string"></SimpleField>
+	<SimpleField name="CT_VA_BU_2" type="string"></SimpleField>
+	<SimpleField name="CT_VA_BU_3" type="string"></SimpleField>
+	<SimpleField name="CT_VA_BU_4" type="string"></SimpleField>
+	<SimpleField name="CT_KP_VOLT" type="string"></SimpleField>
+	<SimpleField name="CT_R_MAKE" type="string"></SimpleField>
+	<SimpleField name="CT_Y_MAKE" type="string"></SimpleField>
+	<SimpleField name="CT_B_MAKE" type="string"></SimpleField>
+	<SimpleField name="CT_R_SERIA" type="string"></SimpleField>
+	<SimpleField name="CT_Y_SERIA" type="string"></SimpleField>
+	<SimpleField name="CT_B_SERIA" type="string"></SimpleField>
+	<SimpleField name="CT_R_PO_RE" type="string"></SimpleField>
+	<SimpleField name="CT_Y_PO_RE" type="string"></SimpleField>
+	<SimpleField name="CT_B_PO_RE" type="string"></SimpleField>
+	<SimpleField name="CT_R_DOC" type="string"></SimpleField>
+	<SimpleField name="CT_Y_DOC" type="string"></SimpleField>
+	<SimpleField name="CT_B_DOC" type="string"></SimpleField>
+	<SimpleField name="CT_REMARKS" type="string"></SimpleField>
+	<SimpleField name="CT_SS_ID" type="string"></SimpleField>
+	<SimpleField name="CT_TOWN_ID" type="string"></SimpleField>
+	<SimpleField name="CT_SS_SEC_" type="string"></SimpleField>
+	<SimpleField name="CT_FDR_ID" type="string"></SimpleField>
+	<SimpleField name="CT_UID" type="string"></SimpleField>
+	<SimpleField name="CT_PUID" type="string"></SimpleField>
+	<SimpleField name="Enabled" type="int"></SimpleField>
+</Schema>
+<Folder><name>CurrentTransformer</name>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">1</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_001</SimpleData>
+		<SimpleData name="CT_ACODE">CT_001</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR</SimpleData>
+		<SimpleData name="CT_ID">CT_001</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR</SimpleData>
+		<SimpleData name="CT_NAME">110KV  VIL-KAL LINE I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">1.0</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_KP_VOLT">123</SimpleData>
+		<SimpleData name="CT_R_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_B_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_R_SERIA">OCA010023</SimpleData>
+		<SimpleData name="CT_Y_SERIA">OCA010018</SimpleData>
+		<SimpleData name="CT_B_SERIA">OCA010019</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">NA</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8448072600599,12.0322525786782</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">2</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_002</SimpleData>
+		<SimpleData name="CT_ACODE">CT_002</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_ID">CT_002</SimpleData>
+		<SimpleData name="CT_FDR_COD">KMT</SimpleData>
+		<SimpleData name="CT_NAME">110KV KUR-KAL LINE II</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">1.0</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_KP_VOLT">123</SimpleData>
+		<SimpleData name="CT_R_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_B_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_R_SERIA">OCA8408</SimpleData>
+		<SimpleData name="CT_Y_SERIA">OCA8412</SimpleData>
+		<SimpleData name="CT_B_SERIA">OCA8413</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">NA</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8449812376371,12.0322133731638</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">3</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_003</SimpleData>
+		<SimpleData name="CT_ACODE">CT_003</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">CHEMFAB</SimpleData>
+		<SimpleData name="CT_ID">CT_003</SimpleData>
+		<SimpleData name="CT_FDR_COD">CMF</SimpleData>
+		<SimpleData name="CT_NAME">110KV M/s CHEMFAB FEEDER(PROT)</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">150/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_KP_VOLT">123</SimpleData>
+		<SimpleData name="CT_R_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_B_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_R_SERIA">20050820</SimpleData>
+		<SimpleData name="CT_Y_SERIA">20050807</SimpleData>
+		<SimpleData name="CT_B_SERIA">20050818</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2005/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">NA</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8450566278266,12.0321960230379</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">4</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_004</SimpleData>
+		<SimpleData name="CT_ACODE">CT_004</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">CHEMFAB</SimpleData>
+		<SimpleData name="CT_ID">CT_004</SimpleData>
+		<SimpleData name="CT_FDR_COD">CMF</SimpleData>
+		<SimpleData name="CT_NAME">110KV M/s CHEMFAB FEEDER(METR)</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">200-150-100-75/5A</SimpleData>
+		<SimpleData name="CT_RT_AD">150/5A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV 100/5A</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">1.0</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_KP_VOLT">123</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">NA</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">521483</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">521464</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1992/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2006/06/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">2006/06/20</SimpleData>
+		<SimpleData name="CT_B_DOC">2006/06/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">NA</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.845066078656,12.0322352252547</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">5</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_005</SimpleData>
+		<SimpleData name="CT_ACODE">CT_005</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING110</SimpleData>
+		<SimpleData name="CT_ID">CT_005</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC110</SimpleData>
+		<SimpleData name="CT_NAME">110KV HV-I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">150/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">1.0</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_KP_VOLT">123</SimpleData>
+		<SimpleData name="CT_R_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_B_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_R_SERIA">OCA3949</SimpleData>
+		<SimpleData name="CT_Y_SERIA">OCA3948</SimpleData>
+		<SimpleData name="CT_B_SERIA">OCA3947</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC110</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8447707429333,12.0320953284512</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">6</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_006</SimpleData>
+		<SimpleData name="CT_ACODE">CT_006</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING110</SimpleData>
+		<SimpleData name="CT_ID">CT_006</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC110</SimpleData>
+		<SimpleData name="CT_NAME">110KV HV-II</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">150/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">1.0</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_KP_VOLT">123</SimpleData>
+		<SimpleData name="CT_R_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_B_MAKE">AEL</SimpleData>
+		<SimpleData name="CT_R_SERIA">OCA3193</SimpleData>
+		<SimpleData name="CT_Y_SERIA">OCA3192</SimpleData>
+		<SimpleData name="CT_B_SERIA">OCA3191</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC110</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8449450972727,12.0320571389856</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">7</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_007</SimpleData>
+		<SimpleData name="CT_ACODE">CT_007</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING22</SimpleData>
+		<SimpleData name="CT_ID">CT_007</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC22</SimpleData>
+		<SimpleData name="CT_NAME">22KV LV-I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">33 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_KP_VOLT">33</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">5077A89</SimpleData>
+		<SimpleData name="CT_Y_SERIA">13124</SimpleData>
+		<SimpleData name="CT_B_SERIA">13117</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC22</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8447151437033,12.0318518456479</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">8</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_008</SimpleData>
+		<SimpleData name="CT_ACODE">CT_008</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING22</SimpleData>
+		<SimpleData name="CT_ID">CT_008</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC22</SimpleData>
+		<SimpleData name="CT_NAME">22KV LV-II</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">33 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_KP_VOLT">33</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">14323</SimpleData>
+		<SimpleData name="CT_Y_SERIA">13033</SimpleData>
+		<SimpleData name="CT_B_SERIA">5152A95</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC22</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.84489028318,12.0318134578223</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">9</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_009</SimpleData>
+		<SimpleData name="CT_ACODE">CT_009</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">KAZUPERUMPAKKAM</SimpleData>
+		<SimpleData name="CT_ID">CT_009</SimpleData>
+		<SimpleData name="CT_FDR_COD">KPM</SimpleData>
+		<SimpleData name="CT_NAME">22KV KAZUPERUMBAKKAM</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">33 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_KP_VOLT">36</SimpleData>
+		<SimpleData name="CT_R_MAKE">NA</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">NA</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">18814</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2006/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2006/06/27</SimpleData>
+		<SimpleData name="CT_Y_DOC">2006/06/27</SimpleData>
+		<SimpleData name="CT_B_DOC">2006/06/27</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">KPM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8446537876383,12.031781792726</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">10</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_010</SimpleData>
+		<SimpleData name="CT_ACODE">CT_010</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">KALAPET I/L</SimpleData>
+		<SimpleData name="CT_ID">CT_010</SimpleData>
+		<SimpleData name="CT_FDR_COD">ILK</SimpleData>
+		<SimpleData name="CT_NAME">22KV KURUMBAPET I/L</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">33 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_KP_VOLT">36</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">5152A64</SimpleData>
+		<SimpleData name="CT_Y_SERIA">5152A86</SimpleData>
+		<SimpleData name="CT_B_SERIA">13029</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">ILK</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8447879353397,12.0317520817059</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">11</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_011</SimpleData>
+		<SimpleData name="CT_ACODE">CT_011</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">ALANKUPPAM</SimpleData>
+		<SimpleData name="CT_ID">CT_011</SimpleData>
+		<SimpleData name="CT_FDR_COD">ALK</SimpleData>
+		<SimpleData name="CT_NAME">22KV ALANKUPPAM</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">33 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_KP_VOLT">36</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">9055</SimpleData>
+		<SimpleData name="CT_Y_SERIA">9052</SimpleData>
+		<SimpleData name="CT_B_SERIA">9057</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">ALK</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8448302061045,12.031743095577</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">12</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_012</SimpleData>
+		<SimpleData name="CT_ACODE">CT_012</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">PILLAICHAVADY</SimpleData>
+		<SimpleData name="CT_ID">CT_012</SimpleData>
+		<SimpleData name="CT_FDR_COD">PLI</SimpleData>
+		<SimpleData name="CT_NAME">22KV PILLAICHAVADY</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">33 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_KP_VOLT">36</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">5152A89</SimpleData>
+		<SimpleData name="CT_Y_SERIA">5213A90</SimpleData>
+		<SimpleData name="CT_B_SERIA">5213A95</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">PLI</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.844871471411,12.0317340248105</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">13</SimpleData>
+		<SimpleData name="CT_AIN">KAL_SS_CT_013</SimpleData>
+		<SimpleData name="CT_ACODE">CT_013</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KALAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">KALAPET O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KALAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">KC KULAM</SimpleData>
+		<SimpleData name="CT_ID">CT_013</SimpleData>
+		<SimpleData name="CT_FDR_COD">KCK</SimpleData>
+		<SimpleData name="CT_NAME">22KV KANAGACHETTYKULAM</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">33 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_KP_VOLT">36</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">5213A209</SimpleData>
+		<SimpleData name="CT_Y_SERIA">13120</SimpleData>
+		<SimpleData name="CT_B_SERIA">5125A72</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/08/20</SimpleData>
+		<SimpleData name="CT_SS_ID">KAL</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">003</SimpleData>
+		<SimpleData name="CT_FDR_ID">KCK</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8449167014685,12.0317238149143</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">14</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT001</SimpleData>
+		<SimpleData name="CT_ACODE">CT001</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR 110KV</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT001</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR110</SimpleData>
+		<SimpleData name="CT_NAME">110KV GROUP CONTROL</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">ASEA</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ASEA</SimpleData>
+		<SimpleData name="CT_B_MAKE">ASEA</SimpleData>
+		<SimpleData name="CT_R_SERIA">5943298</SimpleData>
+		<SimpleData name="CT_Y_SERIA">5943299</SimpleData>
+		<SimpleData name="CT_B_SERIA">5943300</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1952/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1952/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1952/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">VLR110</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7653034075199,11.9193256664808</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">15</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT004</SimpleData>
+		<SimpleData name="CT_ACODE">CT004</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR 22KV</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT004</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR22</SimpleData>
+		<SimpleData name="CT_NAME">22 KV LV - I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-300-150-100-50/5</SimpleData>
+		<SimpleData name="CT_RT_AD">300/5A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(400-300-150-100-50/5)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">5</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">50</SimpleData>
+		<SimpleData name="CT_VA_BU_3">50</SimpleData>
+		<SimpleData name="CT_VA_BU_4">50</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">NISSIN</SimpleData>
+		<SimpleData name="CT_Y_MAKE">NISSIN</SimpleData>
+		<SimpleData name="CT_B_MAKE">NISSIN</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1967/08/27</SimpleData>
+		<SimpleData name="CT_Y_DOC">1967/08/27</SimpleData>
+		<SimpleData name="CT_B_DOC">1967/08/27</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">VLR22</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7651851749858,11.919557506712</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">16</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT002</SimpleData>
+		<SimpleData name="CT_ACODE">CT002</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR 22KV</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT002</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR22</SimpleData>
+		<SimpleData name="CT_NAME">22 KV LV-III</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(600-300-150/1A</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">5</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">50</SimpleData>
+		<SimpleData name="CT_VA_BU_3">50</SimpleData>
+		<SimpleData name="CT_VA_BU_4">50</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">5258A 211</SimpleData>
+		<SimpleData name="CT_Y_SERIA">5258A 212</SimpleData>
+		<SimpleData name="CT_B_SERIA">5258A 213</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1994/05/09</SimpleData>
+		<SimpleData name="CT_Y_DOC">1994/05/09</SimpleData>
+		<SimpleData name="CT_B_DOC">1994/05/09</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">VLR22</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.765366913954,11.9195785952547</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">17</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT003</SimpleData>
+		<SimpleData name="CT_ACODE">CT003</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR 22KV</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT003</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR22</SimpleData>
+		<SimpleData name="CT_NAME">22 KV LV-IV</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(600-300-150/1A</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">5</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">50</SimpleData>
+		<SimpleData name="CT_VA_BU_3">50</SimpleData>
+		<SimpleData name="CT_VA_BU_4">50</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">NA</SimpleData>
+		<SimpleData name="CT_Y_MAKE">NA</SimpleData>
+		<SimpleData name="CT_B_MAKE">NA</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">VLR22</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7654985431461,11.9195933592342</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">18</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT007</SimpleData>
+		<SimpleData name="CT_ACODE">CT007</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT007</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR</SimpleData>
+		<SimpleData name="CT_NAME">VILLIANUR CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(600-300-150/1A</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">GYRO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">GYRO</SimpleData>
+		<SimpleData name="CT_B_MAKE">GYRO</SimpleData>
+		<SimpleData name="CT_R_SERIA">84628</SimpleData>
+		<SimpleData name="CT_Y_SERIA">84629</SimpleData>
+		<SimpleData name="CT_B_SERIA">84626</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2002/06/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2002/06/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2002/06/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">VLR</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7655799672753,11.9197232356701</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">19</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT010</SimpleData>
+		<SimpleData name="CT_ACODE">CT010</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">ARIYUR</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT010</SimpleData>
+		<SimpleData name="CT_FDR_COD">AYR</SimpleData>
+		<SimpleData name="CT_NAME">ARIYUR</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(600-300-150/1A</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">NA</SimpleData>
+		<SimpleData name="CT_Y_MAKE">NA</SimpleData>
+		<SimpleData name="CT_B_MAKE">NA</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">AYR</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7652243184273,11.9198211450493</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">20</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT005</SimpleData>
+		<SimpleData name="CT_ACODE">CT005</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR-SEDARAPET INTERLINK</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT005</SimpleData>
+		<SimpleData name="CT_FDR_COD">SIL</SimpleData>
+		<SimpleData name="CT_NAME">SEDARAPET CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(600-300-150/1A</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">GYRO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">GYRO</SimpleData>
+		<SimpleData name="CT_B_MAKE">GYRO</SimpleData>
+		<SimpleData name="CT_R_SERIA">84630</SimpleData>
+		<SimpleData name="CT_Y_SERIA">84632</SimpleData>
+		<SimpleData name="CT_B_SERIA">84627</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">SIL</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7652834358929,11.9198283634599</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">21</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT006</SimpleData>
+		<SimpleData name="CT_ACODE">CT006</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR-MARAPALAM INTERLINK</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT006</SimpleData>
+		<SimpleData name="CT_FDR_COD">MIL</SimpleData>
+		<SimpleData name="CT_NAME">MARAPALAM CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(600-300-150/1A</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">5</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">50</SimpleData>
+		<SimpleData name="CT_VA_BU_3">50</SimpleData>
+		<SimpleData name="CT_VA_BU_4">50</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">52582 219</SimpleData>
+		<SimpleData name="CT_Y_SERIA">52582 218</SimpleData>
+		<SimpleData name="CT_B_SERIA">52582 217</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">MIL</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7653411248469,11.919834131668</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">22</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT009</SimpleData>
+		<SimpleData name="CT_ACODE">CT009</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">CAPACITOR BANK</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT009</SimpleData>
+		<SimpleData name="CT_FDR_COD">CB</SimpleData>
+		<SimpleData name="CT_NAME">CAPACITOR BANK-II CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">100-50/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">100/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(100-50/1-1A</SimpleData>
+		<SimpleData name="CT_CLASS">5P20</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">INDIA Tr CO.(P)LTD</SimpleData>
+		<SimpleData name="CT_Y_MAKE">INDIA Tr CO.(P)LTD</SimpleData>
+		<SimpleData name="CT_B_MAKE">INDIA Tr CO.(P)LTD</SimpleData>
+		<SimpleData name="CT_R_SERIA">6693  17</SimpleData>
+		<SimpleData name="CT_Y_SERIA">6693  07</SimpleData>
+		<SimpleData name="CT_B_SERIA">6693  05</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2003/03/31</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2003/03/31</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2003/03/31</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">CB</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.765078481879,11.9197253103802</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">23</SimpleData>
+		<SimpleData name="CT_AIN">VIL_SS_CT008</SimpleData>
+		<SimpleData name="CT_ACODE">CT008</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">BOOMIANPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">VILLIANUR O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">VILLIANUR 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">CAPACITOR BANK</SimpleData>
+		<SimpleData name="CT_ID">VIL_SS_CT008</SimpleData>
+		<SimpleData name="CT_FDR_COD">CB</SimpleData>
+		<SimpleData name="CT_NAME">CAPACITOR BANK-I CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV(600-300-150/1A</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">5</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">50</SimpleData>
+		<SimpleData name="CT_VA_BU_2">50</SimpleData>
+		<SimpleData name="CT_VA_BU_3">50</SimpleData>
+		<SimpleData name="CT_VA_BU_4">50</SimpleData>
+		<SimpleData name="CT_KP_VOLT">NA</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">5258A 209</SimpleData>
+		<SimpleData name="CT_Y_SERIA">5258A 208</SimpleData>
+		<SimpleData name="CT_B_SERIA">5258A 202</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1993/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">VLR</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_SS_SEC_">VILLIANUR O&amp;M</SimpleData>
+		<SimpleData name="CT_FDR_ID">CB</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7650865311604,11.9196745758174</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">24</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_001</SimpleData>
+		<SimpleData name="CT_ACODE">CT_001</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_001</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR</SimpleData>
+		<SimpleData name="CT_NAME">110KV  VILLIYANUR LINE</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_B_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_R_SERIA">200508-09</SimpleData>
+		<SimpleData name="CT_Y_SERIA">200508-15</SimpleData>
+		<SimpleData name="CT_B_SERIA">200508-06</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2004/11/26</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2004/11/26</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2004/11/26</SimpleData>
+		<SimpleData name="CT_R_DOC">2005/01/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2005/01/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2005/01/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">VLR</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7860778335356,11.9488141237899</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">25</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_002</SimpleData>
+		<SimpleData name="CT_ACODE">CT_002</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">SEDARAPET</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_002</SimpleData>
+		<SimpleData name="CT_FDR_COD">SPT</SimpleData>
+		<SimpleData name="CT_NAME">110KV SEDERAPET LINE</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">300/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_B_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_R_SERIA">200508-16</SimpleData>
+		<SimpleData name="CT_Y_SERIA">200508-13</SimpleData>
+		<SimpleData name="CT_B_SERIA">200508-19</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2004/11/26</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2004/11/26</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2004/11/26</SimpleData>
+		<SimpleData name="CT_R_DOC">2005/01/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2005/01/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2005/01/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">SPT</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7860274143525,11.948082002324</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">26</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_003</SimpleData>
+		<SimpleData name="CT_ACODE">CT_003</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">SUMANGALA STEELS</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_003</SimpleData>
+		<SimpleData name="CT_FDR_COD">SGS</SimpleData>
+		<SimpleData name="CT_NAME">110KV SUMANGALA STEELS (PROT)</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">150/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_B_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_R_SERIA">IBB145</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/01/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/01/01</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/01/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">SGS</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7860722999549,11.9482012345748</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">27</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_004</SimpleData>
+		<SimpleData name="CT_ACODE">CT_004</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">SUMANGALA STEELS</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_004</SimpleData>
+		<SimpleData name="CT_FDR_COD">SGS</SimpleData>
+		<SimpleData name="CT_NAME">110KV SUMANGALA STEELS (METR)</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/5A</SimpleData>
+		<SimpleData name="CT_RT_AD">100/5A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (400-200-100/5A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">AE</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AE</SimpleData>
+		<SimpleData name="CT_B_MAKE">AE</SimpleData>
+		<SimpleData name="CT_R_SERIA">OCA-3233</SimpleData>
+		<SimpleData name="CT_Y_SERIA">OCA-3234</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1991/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1992/01/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">1992/01/01</SimpleData>
+		<SimpleData name="CT_B_DOC">1992/01/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">SGS</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7860892447208,11.9481982987405</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">28</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_005</SimpleData>
+		<SimpleData name="CT_ACODE">CT_005</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING110</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_005</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC110</SimpleData>
+		<SimpleData name="CT_NAME">110KV HV-I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">150/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AE</SimpleData>
+		<SimpleData name="CT_B_MAKE">WS</SimpleData>
+		<SimpleData name="CT_R_SERIA">1107367</SimpleData>
+		<SimpleData name="CT_Y_SERIA">OCB143</SimpleData>
+		<SimpleData name="CT_B_SERIA">991286</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC110</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7861334177953,11.9485413641849</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">29</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_006</SimpleData>
+		<SimpleData name="CT_ACODE">CT_006</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING110</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_006</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC110</SimpleData>
+		<SimpleData name="CT_NAME">110KV HV-II</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">150/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_B_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_R_SERIA">1107153</SimpleData>
+		<SimpleData name="CT_Y_SERIA">1107151</SimpleData>
+		<SimpleData name="CT_B_SERIA">1107154</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC110</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7861602655668,11.9486935111364</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">30</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_007</SimpleData>
+		<SimpleData name="CT_ACODE">CT_007</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING110</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_007</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC110</SimpleData>
+		<SimpleData name="CT_NAME">110KV HV-III</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">150/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">15</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">WS</SimpleData>
+		<SimpleData name="CT_Y_MAKE">WS</SimpleData>
+		<SimpleData name="CT_B_MAKE">WS</SimpleData>
+		<SimpleData name="CT_R_SERIA">911285</SimpleData>
+		<SimpleData name="CT_Y_SERIA">911284</SimpleData>
+		<SimpleData name="CT_B_SERIA">911283</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_R_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC110</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7861056403228,11.9483891119507</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">31</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_008</SimpleData>
+		<SimpleData name="CT_ACODE">CT_008</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING22</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_008</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC22</SimpleData>
+		<SimpleData name="CT_NAME">22KV LV-I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">800-400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">800/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (800-400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL/1238/06</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL/1238/02</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL/1238/04</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2006/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2006/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2006/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC22</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7863630108995,11.9485015974043</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">32</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_009</SimpleData>
+		<SimpleData name="CT_ACODE">CT_009</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING22</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_009</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC22</SimpleData>
+		<SimpleData name="CT_NAME">22KV LV-II</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">800-400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">800/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (800-400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL/1238</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL/1238</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL/1238</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2006/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2006/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2006/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC22</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7863904432621,11.9486536428926</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">33</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_010</SimpleData>
+		<SimpleData name="CT_ACODE">CT_010</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">INCOMING22</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_010</SimpleData>
+		<SimpleData name="CT_FDR_COD">INC22</SimpleData>
+		<SimpleData name="CT_NAME">22KV LV-III</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">800-400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">800/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (800-400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">1.0</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">WS</SimpleData>
+		<SimpleData name="CT_Y_MAKE">WS</SimpleData>
+		<SimpleData name="CT_B_MAKE">WS</SimpleData>
+		<SimpleData name="CT_R_SERIA">991254</SimpleData>
+		<SimpleData name="CT_Y_SERIA">991258</SimpleData>
+		<SimpleData name="CT_B_SERIA">991255</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_R_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">INC22</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7863358967928,11.9483492296015</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">34</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_011</SimpleData>
+		<SimpleData name="CT_ACODE">CT_011</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">JIPMER SPL</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_011</SimpleData>
+		<SimpleData name="CT_FDR_COD">NJPR</SimpleData>
+		<SimpleData name="CT_NAME">22KV NEW JIPMER</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL/1508/1</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL/1508/2</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL/1508/3</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">NJPR</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864148995464,11.948245783699</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">35</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_012</SimpleData>
+		<SimpleData name="CT_ACODE">CT_012</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_012</SimpleData>
+		<SimpleData name="CT_FDR_COD">KMT</SimpleData>
+		<SimpleData name="CT_NAME">22KV KURUMBAPET</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">1.0</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">WS</SimpleData>
+		<SimpleData name="CT_Y_MAKE">WS</SimpleData>
+		<SimpleData name="CT_B_MAKE">WS</SimpleData>
+		<SimpleData name="CT_R_SERIA">991261</SimpleData>
+		<SimpleData name="CT_Y_SERIA">991262</SimpleData>
+		<SimpleData name="CT_B_SERIA">991263</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_R_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">KMT</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864230752178,11.9482889752412</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">36</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_013</SimpleData>
+		<SimpleData name="CT_ACODE">CT_013</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MOOLAKULAM</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_013</SimpleData>
+		<SimpleData name="CT_FDR_COD">MLKM</SimpleData>
+		<SimpleData name="CT_NAME">22KV MOOLAKULAM</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">1.0</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">WS</SimpleData>
+		<SimpleData name="CT_Y_MAKE">WS</SimpleData>
+		<SimpleData name="CT_B_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_R_SERIA">991257</SimpleData>
+		<SimpleData name="CT_Y_SERIA">991258</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_B_PO_RE">1999/04/22</SimpleData>
+		<SimpleData name="CT_R_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2000/01/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">MLKM</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864305408445,11.948332838217</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">37</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_014</SimpleData>
+		<SimpleData name="CT_ACODE">CT_014</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">PIPDIC-I</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_014</SimpleData>
+		<SimpleData name="CT_FDR_COD">PIP1</SimpleData>
+		<SimpleData name="CT_NAME">22KV PIPDIC-I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL123836</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL123837</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL123838</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">PIP1</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864439954813,11.9484069728583</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">38</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_015</SimpleData>
+		<SimpleData name="CT_ACODE">CT_015</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">ECR</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_015</SimpleData>
+		<SimpleData name="CT_FDR_COD">ECR</SimpleData>
+		<SimpleData name="CT_NAME">22KV ECR</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL123834</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL123829</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL123835</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">ECR</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864512870176,11.948448896573</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">39</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_016</SimpleData>
+		<SimpleData name="CT_ACODE">CT_016</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">JIPMER</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_016</SimpleData>
+		<SimpleData name="CT_FDR_COD">JPR</SimpleData>
+		<SimpleData name="CT_NAME">22KV JIPMER</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL123831</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL123832</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL123833</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">JPR</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864579058805,11.9484851627956</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">40</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_017</SimpleData>
+		<SimpleData name="CT_ACODE">CT_017</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">LAWSPET</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_017</SimpleData>
+		<SimpleData name="CT_FDR_COD">LPT</SimpleData>
+		<SimpleData name="CT_NAME">22KV LAWSPET</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL123825</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL123827</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL123826</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">LPT</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864710174654,11.948558184748</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">41</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_018</SimpleData>
+		<SimpleData name="CT_ACODE">CT_018</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">KALAPET I/L</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_018</SimpleData>
+		<SimpleData name="CT_FDR_COD">ILK</SimpleData>
+		<SimpleData name="CT_NAME">22KV KALAPET I/L</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL123821</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL123823</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL123818</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">ILK</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864779608334,11.9485970509139</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">42</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_019</SimpleData>
+		<SimpleData name="CT_ACODE">CT_019</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">PIPDIC-II</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_019</SimpleData>
+		<SimpleData name="CT_FDR_COD">PIP2</SimpleData>
+		<SimpleData name="CT_NAME">22KV PIPDIC-II</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL123814</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL123816</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL123817</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">PIP2</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.786491599343,11.9486734078576</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">43</SimpleData>
+		<SimpleData name="CT_AIN">KUR_SS_CT_020</SimpleData>
+		<SimpleData name="CT_ACODE">CT_020</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - IV</SimpleData>
+		<SimpleData name="CT_SDIV_NA">KURUMBAPET</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MUTHIRAPALAYAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">KURUMBAPET 110/22 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">22KV SEDERAPET-I/L</SimpleData>
+		<SimpleData name="CT_ID">KUR_SS_CT_020</SimpleData>
+		<SimpleData name="CT_FDR_COD">SPT</SimpleData>
+		<SimpleData name="CT_NAME">22KV SEDERAPET-I/L</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">5P10</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">2</SimpleData>
+		<SimpleData name="CT_VA_BURD">50</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_3">NA</SimpleData>
+		<SimpleData name="CT_VA_BU_4">NA</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL123824</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL123819</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL123815</SimpleData>
+		<SimpleData name="CT_R_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_Y_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_B_PO_RE">2007/01/01</SimpleData>
+		<SimpleData name="CT_R_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_Y_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_B_DOC">2008/07/01</SimpleData>
+		<SimpleData name="CT_SS_ID">KMT</SimpleData>
+		<SimpleData name="CT_TOWN_ID">PUD</SimpleData>
+		<SimpleData name="CT_FDR_ID">SPT</SimpleData>
+		<SimpleData name="Enabled">0</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.7864986467222,11.948713250056</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">44</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT001</SimpleData>
+		<SimpleData name="CT_ACODE">CT001</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR AUTO SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT001</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR</SimpleData>
+		<SimpleData name="CT_NAME">110 KV LINE- II BREAKER  CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_B_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_R_SERIA">20050827</SimpleData>
+		<SimpleData name="CT_Y_SERIA">20050824</SimpleData>
+		<SimpleData name="CT_B_SERIA">20050823</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">VLR</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8111170043357,11.9133952412911</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">45</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT002</SimpleData>
+		<SimpleData name="CT_ACODE">CT002</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">VILLIANUR AUTO SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT002</SimpleData>
+		<SimpleData name="CT_FDR_COD">VLR</SimpleData>
+		<SimpleData name="CT_NAME">110 KV LINE- I BREAKER  CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_B_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_R_SERIA">20050827</SimpleData>
+		<SimpleData name="CT_Y_SERIA">20050821</SimpleData>
+		<SimpleData name="CT_B_SERIA">20050825</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">VLR</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8111266769732,11.9132052953388</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">46</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT003</SimpleData>
+		<SimpleData name="CT_ACODE">CT003</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT003</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">GC- II CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600-300/1</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">1,5P,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">1</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_B_MAKE">ABB</SimpleData>
+		<SimpleData name="CT_R_SERIA">1101251A</SimpleData>
+		<SimpleData name="CT_Y_SERIA">IB010328</SimpleData>
+		<SimpleData name="CT_B_SERIA">IB010329</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8113233279354,11.9134057997951</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">47</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT004</SimpleData>
+		<SimpleData name="CT_ACODE">CT004</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT004</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">GC- I CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150-75/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV(1200-600-300-150-75/1A</SimpleData>
+		<SimpleData name="CT_CLASS">1,5P,5P</SimpleData>
+		<SimpleData name="CT_ACCURAC">1</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">TELK</SimpleData>
+		<SimpleData name="CT_Y_MAKE">TELK</SimpleData>
+		<SimpleData name="CT_B_MAKE">TELK</SimpleData>
+		<SimpleData name="CT_R_SERIA">220350-55</SimpleData>
+		<SimpleData name="CT_Y_SERIA">220350-57</SimpleData>
+		<SimpleData name="CT_B_SERIA">220350-52</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8113333623268,11.9132158200863</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">48</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT005</SimpleData>
+		<SimpleData name="CT_ACODE">CT005</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT005</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">GC-III CT</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">110 KV (600-300-150/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_B_MAKE">ALSTOM</SimpleData>
+		<SimpleData name="CT_R_SERIA">20050822/2005</SimpleData>
+		<SimpleData name="CT_Y_SERIA">20050829/2005</SimpleData>
+		<SimpleData name="CT_B_SERIA">20050826/2005</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8113496791788,11.9129068642845</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">49</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT010</SimpleData>
+		<SimpleData name="CT_ACODE">CT010</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT010</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">22 KV LV-V</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">1000-800-400/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">1000/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (1000-500-250-125/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">EMMESS</SimpleData>
+		<SimpleData name="CT_Y_MAKE">EMMESS</SimpleData>
+		<SimpleData name="CT_B_MAKE">EMMESS</SimpleData>
+		<SimpleData name="CT_R_SERIA">041003</SimpleData>
+		<SimpleData name="CT_Y_SERIA">041002</SimpleData>
+		<SimpleData name="CT_B_SERIA">041001</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8115022579275,11.9129146977224</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">50</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT009</SimpleData>
+		<SimpleData name="CT_ACODE">CT009</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT009</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">22 KV LV-I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (600-300-150-/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">14331</SimpleData>
+		<SimpleData name="CT_Y_SERIA">14335</SimpleData>
+		<SimpleData name="CT_B_SERIA">14337</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8115158701425,11.9130874416224</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">51</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT008</SimpleData>
+		<SimpleData name="CT_ACODE">CT008</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT008</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">22 KV LV-II</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">1200-600-300/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">1200/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (1200-600-300/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_B_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_R_SERIA">8871</SimpleData>
+		<SimpleData name="CT_Y_SERIA">8872</SimpleData>
+		<SimpleData name="CT_B_SERIA">8873</SimpleData>
+		<SimpleData name="CT_R_DOC">2007/08/08</SimpleData>
+		<SimpleData name="CT_Y_DOC">2007/08/08</SimpleData>
+		<SimpleData name="CT_B_DOC">2007/08/08</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8115084433853,11.9132257041602</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">52</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT007</SimpleData>
+		<SimpleData name="CT_ACODE">CT007</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT007</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">11 KV LV-III</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">1200-600-300/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">1200/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">11 KV(1200-600-300/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_B_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8114985130492,11.9134154302546</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">53</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT006</SimpleData>
+		<SimpleData name="CT_ACODE">CT006</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT006</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">11 KV LV-IV</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">1200-600-300/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">1200/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">11 KV(1200-600-300/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_Y_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_B_MAKE">BRAHM</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.811489074005,11.91359415292</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">54</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT022</SimpleData>
+		<SimpleData name="CT_ACODE">CT022</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">AMARAVATHY</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT022</SimpleData>
+		<SimpleData name="CT_FDR_COD">AMY</SimpleData>
+		<SimpleData name="CT_NAME">22 KV AMARAVATHY</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL/1238/01</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL/1238/09</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL/1238/01</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">AMY</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116632903877,11.9129230839083</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">55</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT021</SimpleData>
+		<SimpleData name="CT_ACODE">CT021</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">ARIYANKUPPAM</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT021</SimpleData>
+		<SimpleData name="CT_FDR_COD">AKM</SimpleData>
+		<SimpleData name="CT_NAME">22 KV ARIANKUPPAM</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">KEPL/1238/05</SimpleData>
+		<SimpleData name="CT_Y_SERIA">KEPL/1238/07</SimpleData>
+		<SimpleData name="CT_B_SERIA">KEPL/1238/22</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">AKM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116615127094,11.9129930117782</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">56</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT020</SimpleData>
+		<SimpleData name="CT_ACODE">CT020</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">NEW</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT020</SimpleData>
+		<SimpleData name="CT_FDR_COD">NW</SimpleData>
+		<SimpleData name="CT_NAME">22 KV NEW FEEDER</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">NA</SimpleData>
+		<SimpleData name="CT_RT_AD">NA</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">NA</SimpleData>
+		<SimpleData name="CT_Y_MAKE">NA</SimpleData>
+		<SimpleData name="CT_B_MAKE">NA</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">NW</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116533648843,11.9131018063535</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">57</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT019</SimpleData>
+		<SimpleData name="CT_ACODE">CT019</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">RAJNIVAS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT019</SimpleData>
+		<SimpleData name="CT_FDR_COD">RNS</SimpleData>
+		<SimpleData name="CT_NAME">22 KV RAJNIVAS</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (600-300-150/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">11218</SimpleData>
+		<SimpleData name="CT_Y_SERIA">11216</SimpleData>
+		<SimpleData name="CT_B_SERIA">11214</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">RNS</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116515930135,11.9131450586627</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">58</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT018</SimpleData>
+		<SimpleData name="CT_ACODE">CT018</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">TOWN</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT018</SimpleData>
+		<SimpleData name="CT_FDR_COD">TWN</SimpleData>
+		<SimpleData name="CT_NAME">22 KV TOWN FEEDER</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">EMMESS</SimpleData>
+		<SimpleData name="CT_Y_MAKE">EMMESS</SimpleData>
+		<SimpleData name="CT_B_MAKE">EMMESS</SimpleData>
+		<SimpleData name="CT_R_SERIA">015003</SimpleData>
+		<SimpleData name="CT_Y_SERIA">015002</SimpleData>
+		<SimpleData name="CT_B_SERIA">015013</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">TWN</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116492867721,11.9131887354843</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">59</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT017</SimpleData>
+		<SimpleData name="CT_ACODE">CT017</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MILL</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT017</SimpleData>
+		<SimpleData name="CT_FDR_COD">MILL</SimpleData>
+		<SimpleData name="CT_NAME">22 KV MILL</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150-/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (600-300-150/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">14284</SimpleData>
+		<SimpleData name="CT_Y_SERIA">14299</SimpleData>
+		<SimpleData name="CT_B_SERIA">5213A99</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MILL</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116469593399,11.913233062311</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">60</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT016</SimpleData>
+		<SimpleData name="CT_ACODE">CT016</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">NELLITHOPE</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT016</SimpleData>
+		<SimpleData name="CT_FDR_COD">NTU</SimpleData>
+		<SimpleData name="CT_NAME">22 KV NELLITHOPE</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">11448</SimpleData>
+		<SimpleData name="CT_Y_SERIA">11447</SimpleData>
+		<SimpleData name="CT_B_SERIA">11844</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">NTU</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116440719636,11.9132874953424</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">61</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT015</SimpleData>
+		<SimpleData name="CT_ACODE">CT015</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARKET</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT015</SimpleData>
+		<SimpleData name="CT_FDR_COD">MRT</SimpleData>
+		<SimpleData name="CT_NAME">11 KV MARKET</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">400-200-100/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">400/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (400-200-100/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_Y_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_B_MAKE">KAPCO</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MRT</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116369208302,11.9134223494428</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">62</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT014</SimpleData>
+		<SimpleData name="CT_ACODE">CT014</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">LAPORTE</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT014</SimpleData>
+		<SimpleData name="CT_FDR_COD">LPRT</SimpleData>
+		<SimpleData name="CT_NAME">11 KV LAPORTE</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">1000-800-600/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">1000/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">11 KV (1000-800-600-/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">PRAGATI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">PRAGATI</SimpleData>
+		<SimpleData name="CT_B_MAKE">PRAGATI</SimpleData>
+		<SimpleData name="CT_R_SERIA">03/140491</SimpleData>
+		<SimpleData name="CT_Y_SERIA">03/140500</SimpleData>
+		<SimpleData name="CT_B_SERIA">03/140493</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">LPRT</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116342625388,11.9134741396602</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">63</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT013</SimpleData>
+		<SimpleData name="CT_ACODE">CT013</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">KANDAN</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT013</SimpleData>
+		<SimpleData name="CT_FDR_COD">KDN</SimpleData>
+		<SimpleData name="CT_NAME">11 KV KANDAN</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150-/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">11 KV (600-300-150/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">KDN</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116312757716,11.913525456518</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">64</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT012</SimpleData>
+		<SimpleData name="CT_ACODE">CT012</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">GH</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT012</SimpleData>
+		<SimpleData name="CT_FDR_COD">GH</SimpleData>
+		<SimpleData name="CT_NAME">11 KV GH</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">1000-800-600/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">1000/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">11 KV (1000-800-600-/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">PRAGATI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">PRAGATI</SimpleData>
+		<SimpleData name="CT_B_MAKE">PRAGATI</SimpleData>
+		<SimpleData name="CT_R_SERIA">140501</SimpleData>
+		<SimpleData name="CT_Y_SERIA">140492</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">GH</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116288102676,11.9135772511645</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">65</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT011</SimpleData>
+		<SimpleData name="CT_ACODE">CT011</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">GOLCONDA</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT011</SimpleData>
+		<SimpleData name="CT_FDR_COD">GLD</SimpleData>
+		<SimpleData name="CT_NAME">11 KV GOLCONDA</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">600-300-150-/1-1A</SimpleData>
+		<SimpleData name="CT_RT_AD">600/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">11 KV (600-300-150/1-1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_Y_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_B_MAKE">AMEI</SimpleData>
+		<SimpleData name="CT_R_SERIA">NA</SimpleData>
+		<SimpleData name="CT_Y_SERIA">NA</SimpleData>
+		<SimpleData name="CT_B_SERIA">NA</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">GLD</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116262163251,11.9136269105353</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">66</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT023</SimpleData>
+		<SimpleData name="CT_ACODE">CT023</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT023</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">11 KV CAP BANK</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">200-100/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">200/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">11 KV (200-100/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">INDIAN TR</SimpleData>
+		<SimpleData name="CT_Y_MAKE">INDIAN TR</SimpleData>
+		<SimpleData name="CT_B_MAKE">INDIAN TR</SimpleData>
+		<SimpleData name="CT_R_SERIA">6693</SimpleData>
+		<SimpleData name="CT_Y_SERIA">6693</SimpleData>
+		<SimpleData name="CT_B_SERIA">6693</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8116429603636,11.9127593424798</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">67</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT024</SimpleData>
+		<SimpleData name="CT_ACODE">CT024</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT024</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">22 KV CAP BANK-I</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">100-50/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">100/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (100-50/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">VIJAY</SimpleData>
+		<SimpleData name="CT_Y_MAKE">VIJAY</SimpleData>
+		<SimpleData name="CT_B_MAKE">VIJAY</SimpleData>
+		<SimpleData name="CT_R_SERIA">81</SimpleData>
+		<SimpleData name="CT_Y_SERIA">71</SimpleData>
+		<SimpleData name="CT_B_SERIA">83</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8114511358022,11.9126987022143</coordinates></Point>
+  </Placemark>
+  <Placemark>
+	<ExtendedData><SchemaData schemaUrl="#CurrentTransformer">
+		<SimpleData name="OBJECTID">68</SimpleData>
+		<SimpleData name="CT_AIN">MPM_SS_ CT025</SimpleData>
+		<SimpleData name="CT_ACODE">CT025</SimpleData>
+		<SimpleData name="CT_TOWN_NA">PUDUCHERRY</SimpleData>
+		<SimpleData name="CT_DIV_NAM">EE - I</SimpleData>
+		<SimpleData name="CT_SDIV_NA">MARAPALAM</SimpleData>
+		<SimpleData name="CT_SEC_NAM">MURUNGAPAKKAM O &amp; M</SimpleData>
+		<SimpleData name="CT_SS_NAME">MARAPALAM 110/22/11 SS</SimpleData>
+		<SimpleData name="CT_FDR_NAM">MARAPALAM SS</SimpleData>
+		<SimpleData name="CT_ID">MPM_SS_CT025</SimpleData>
+		<SimpleData name="CT_FDR_COD">MPLM</SimpleData>
+		<SimpleData name="CT_NAME">22 KV CAP BANK-II</SimpleData>
+		<SimpleData name="CT_TYPE">Outdoor</SimpleData>
+		<SimpleData name="CT_STATUS">Service</SimpleData>
+		<SimpleData name="CT_PH_REF">RYB</SimpleData>
+		<SimpleData name="CT_RT_AV">100-50/1A</SimpleData>
+		<SimpleData name="CT_RT_AD">100/1A</SimpleData>
+		<SimpleData name="CT_CLASSIF">22 KV (100-50/1A)</SimpleData>
+		<SimpleData name="CT_CLASS">0.5,PS,PS</SimpleData>
+		<SimpleData name="CT_ACCURAC">0.5</SimpleData>
+		<SimpleData name="CT_CORE_NO">3</SimpleData>
+		<SimpleData name="CT_VA_BURD">15</SimpleData>
+		<SimpleData name="CT_VA_BU_1">30</SimpleData>
+		<SimpleData name="CT_VA_BU_2">60</SimpleData>
+		<SimpleData name="CT_KP_VOLT">600</SimpleData>
+		<SimpleData name="CT_R_MAKE">VIJAY</SimpleData>
+		<SimpleData name="CT_Y_MAKE">VIJAY</SimpleData>
+		<SimpleData name="CT_B_MAKE">VIJAY</SimpleData>
+		<SimpleData name="CT_R_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_Y_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_B_DOC">1899/12/30</SimpleData>
+		<SimpleData name="CT_SS_ID">MPLM</SimpleData>
+		<SimpleData name="CT_TOWN_ID">003</SimpleData>
+		<SimpleData name="CT_SS_SEC_">009</SimpleData>
+		<SimpleData name="CT_FDR_ID">MPLM</SimpleData>
+		<SimpleData name="Enabled">1</SimpleData>
+	</SchemaData></ExtendedData>
+      <Point><coordinates>79.8114566154839,11.9125884470188</coordinates></Point>
+  </Placemark>
+</Folder>
+</Document></kml>

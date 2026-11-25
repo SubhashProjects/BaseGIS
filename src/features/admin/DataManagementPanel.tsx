@@ -50,14 +50,20 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
               hidden
               type="file"
               accept={supportedImportAccept()}
-              multiple={false}
+              multiple={true}
               onChange={async (e) => {
-                const f = e.target.files?.[0];
-                if (f) await vm.importFile(f, assetType);
+                const files = Array.from(e.target.files ?? []);
+                for (const f of files) {
+                  try {
+                    await vm.importFile(f, assetType);
+                  } catch (err) {
+                    console.warn(`Error importing ${f.name}:`, err);
+                  }
+                }
                 e.currentTarget.value = '';
               }}
             />
-            <div className="file-hint">KML · GeoJSON · CSV · XLS/XLSX · GPKG</div>
+            <div className="file-hint">KML · GeoJSON · CSV · GPKG (Single or Multi-select)</div>
           </div>
 
           <div className="data-card">

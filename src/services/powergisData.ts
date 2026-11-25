@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { SAMPLE_GIS_ASSETS } from './sampleGisData';
+import { getLocalImportedAssets } from './dataManagementService';
 
 export type PowerGISUser = {
   id: string;
@@ -208,7 +209,8 @@ export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]>
       (isHighLevel || sa.shared || sa.owners.includes(userId))
   );
 
-  const combined = [...mappedDbAssets, ...matchingSampleAssets];
+  const localImported = getLocalImportedAssets().filter((a) => !existingIds.has(a.id));
+  const combined = [...mappedDbAssets, ...localImported, ...matchingSampleAssets];
   if (combined.length > 0) {
     return combined;
   }
