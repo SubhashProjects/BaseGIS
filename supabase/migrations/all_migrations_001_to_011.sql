@@ -1,4 +1,3 @@
-﻿
 -- ==================================================================
 -- MIGRATION: 001_powergis_core.sql
 -- ==================================================================
@@ -191,6 +190,7 @@ create policy approvals_visible on public.approval_history for select using(publ
 
 drop policy if exists audit_admin_or_self on public.audit_logs;
 create policy audit_admin_or_self on public.audit_logs for select using(public.is_gis_admin() or actor_id=auth.uid());
+
 
 -- ==================================================================
 -- MIGRATION: 002_powergis_organisation_seed.sql
@@ -685,6 +685,7 @@ grant execute on function public.visible_assets(text) to anon, authenticated;
 grant execute on function public.visible_jurisdictions(text) to anon, authenticated;
 alter table public.organization_users enable row level security; alter table public.gis_jurisdictions enable row level security; alter table public.gis_assets enable row level security;
 
+
 -- ==================================================================
 -- MIGRATION: 003_production_table_names.sql
 -- ==================================================================
@@ -795,6 +796,7 @@ update public.gis_jurisdictions set id=replace(replace(id,'demo-','org-'),'sim-'
 update public.gis_assets set id=replace(replace(id,'demo-','org-'),'sim-','org-');
 update public.gis_assets set owner_je_ids=array(select replace(replace(x,'demo-','org-'),'sim-','org-') from unnest(owner_je_ids) x);
 update public.gis_assets set metadata=replace(replace(metadata::text,'demoSeed','seedData'),'simulatorOnly','seedData')::jsonb;
+
 
 -- ==================================================================
 -- MIGRATION: 004_secure_test_sessions.sql
@@ -1067,6 +1069,7 @@ grant execute on function public.logout_user(text) to anon,authenticated;
 grant execute on function public.visible_assets(text,text) to anon,authenticated;
 grant execute on function public.visible_jurisdictions(text,text) to anon,authenticated;
 
+
 -- ==================================================================
 -- MIGRATION: 005_data_import_export_backup.sql
 -- ==================================================================
@@ -1224,6 +1227,7 @@ grant execute on function public.export_assets(text) to anon,authenticated;
 grant execute on function public.create_backup_manifest(text) to anon,authenticated;
 grant execute on function public.list_backup_runs(text) to anon,authenticated;
 
+
 -- ==================================================================
 -- MIGRATION: 006_authentication_hardening.sql
 -- ==================================================================
@@ -1367,6 +1371,7 @@ revoke all on function public.visible_assets(text, text) from public;
 revoke all on function public.visible_jurisdictions(text, text) from public;
 grant execute on function public.visible_assets(text, text) to anon, authenticated;
 grant execute on function public.visible_jurisdictions(text, text) to anon, authenticated;
+
 
 -- ==================================================================
 -- MIGRATION: 007_scale_read_paths.sql
@@ -1516,6 +1521,7 @@ revoke all on function public.visible_asset_stats(text) from public;
 grant execute on function public.visible_assets_page(text, integer, timestamptz, text) to anon, authenticated;
 grant execute on function public.visible_asset_stats(text) to anon, authenticated;
 
+
 -- ==================================================================
 -- MIGRATION: 008_operational_security.sql
 -- ==================================================================
@@ -1659,6 +1665,7 @@ grant execute on function public.admin_import_assets(text,jsonb) to anon, authen
 grant execute on function public.export_assets(text) to anon, authenticated;
 grant execute on function public.create_backup_manifest(text) to anon, authenticated;
 grant execute on function public.list_backup_runs(text) to anon, authenticated;
+
 
 -- ==================================================================
 -- MIGRATION: 009_operational_workflows.sql
@@ -2053,6 +2060,7 @@ end;$$;
 revoke all on function public.claim_next_backup_run() from public,anon,authenticated;
 grant execute on function public.claim_next_backup_run() to service_role;
 
+
 -- ==================================================================
 -- MIGRATION: 010_admin_backup_restore.sql
 -- ==================================================================
@@ -2350,6 +2358,7 @@ end;
 $$;
 revoke all on function public.service_backup_page(text,integer,integer) from public,anon,authenticated;
 grant execute on function public.service_backup_page(text,integer,integer) to service_role;
+
 
 -- ==================================================================
 -- MIGRATION: 011_security_perimeter.sql

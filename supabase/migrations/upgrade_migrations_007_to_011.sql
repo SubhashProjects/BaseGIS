@@ -1,4 +1,3 @@
-﻿
 -- ==================================================================
 -- MIGRATION: 007_scale_read_paths.sql
 -- ==================================================================
@@ -147,6 +146,7 @@ revoke all on function public.visible_asset_stats(text) from public;
 grant execute on function public.visible_assets_page(text, integer, timestamptz, text) to anon, authenticated;
 grant execute on function public.visible_asset_stats(text) to anon, authenticated;
 
+
 -- ==================================================================
 -- MIGRATION: 008_operational_security.sql
 -- ==================================================================
@@ -290,6 +290,7 @@ grant execute on function public.admin_import_assets(text,jsonb) to anon, authen
 grant execute on function public.export_assets(text) to anon, authenticated;
 grant execute on function public.create_backup_manifest(text) to anon, authenticated;
 grant execute on function public.list_backup_runs(text) to anon, authenticated;
+
 
 -- ==================================================================
 -- MIGRATION: 009_operational_workflows.sql
@@ -684,6 +685,7 @@ end;$$;
 revoke all on function public.claim_next_backup_run() from public,anon,authenticated;
 grant execute on function public.claim_next_backup_run() to service_role;
 
+
 -- ==================================================================
 -- MIGRATION: 010_admin_backup_restore.sql
 -- ==================================================================
@@ -981,6 +983,7 @@ end;
 $$;
 revoke all on function public.service_backup_page(text,integer,integer) from public,anon,authenticated;
 grant execute on function public.service_backup_page(text,integer,integer) to service_role;
+
 
 -- ==================================================================
 -- MIGRATION: 011_security_perimeter.sql
