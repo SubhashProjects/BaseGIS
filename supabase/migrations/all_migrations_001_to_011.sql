@@ -1,0 +1,2590 @@
+﻿
+-- ==================================================================
+-- MIGRATION: 001_powergis_core.sql
+-- ==================================================================
+
+create extension if not exists postgis;
+
+do $$ begin
+  if not exists (select 1 from pg_type where typname = 'app_role') then
+    create type public.app_role as enum ('GIS_ADMIN','AE','JE','CONTRACTOR');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'asset_status') then
+    create type public.asset_status as enum ('DRAFT','SUBMITTED','JE_REVIEW','AE_REVIEW','APPROVED','REJECTED','ACTIVE','RETIRED');
+  end if;
+end $$;
+
+create table if not exists public.profiles(
+  id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  role public.app_role not null default 'CONTRACTOR',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.jurisdictions(
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  level text not null,
+  parent_id uuid references public.jurisdictions(id),
+  boundary geometry(MultiPolygon,4326),
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.user_jurisdictions(
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  jurisdiction_id uuid not null references public.jurisdictions(id) on delete cascade,
+  primary key(user_id,jurisdiction_id)
+);
+
+create table if not exists public.asset_types(
+  id text primary key,
+  label text not null,
+  geometry_type text not null,
+  active boolean not null default true
+);
+
+insert into public.asset_types(id,label,geometry_type) values
+  ('SUBSTATION','Substation','POINT'),
+  ('EHV_LINE','EHV Line','LINESTRING'),
+  ('HV_LINE','HV Line','LINESTRING'),
+  ('DT','Distribution Transformer','POINT'),
+  ('LT_LINE','LT Line','LINESTRING'),
+  ('POLE','Pole','POINT'),
+  ('SMART_METER','Smart Meter','POINT')
+on conflict (id) do nothing;
+
+create table if not exists public.assets(
+  id uuid primary key default gen_random_uuid(),
+  asset_no text not null unique,
+  asset_type text not null references public.asset_types(id),
+  status public.asset_status not null default 'DRAFT',
+  geometry geometry(Geometry,4326),
+  latitude double precision,
+  longitude double precision,
+  metadata jsonb not null default '{}'::jsonb,
+  created_by uuid references public.profiles(id),
+  updated_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.asset_jurisdictions(
+  asset_id uuid not null references public.assets(id) on delete cascade,
+  jurisdiction_id uuid not null references public.jurisdictions(id) on delete cascade,
+  relation text not null default 'SPATIAL_INTERSECTION',
+  primary key(asset_id,jurisdiction_id)
+);
+
+create table if not exists public.asset_submissions(
+  id uuid primary key default gen_random_uuid(),
+  asset_id uuid references public.assets(id) on delete set null,
+  submitted_by uuid references public.profiles(id),
+  stage public.asset_status not null default 'SUBMITTED',
+  comments text,
+  submitted_at timestamptz not null default now()
+);
+
+create table if not exists public.approval_history(
+  id uuid primary key default gen_random_uuid(),
+  submission_id uuid not null references public.asset_submissions(id) on delete cascade,
+  actor_id uuid references public.profiles(id),
+  from_stage public.asset_status,
+  to_stage public.asset_status not null,
+  comments text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.audit_logs(
+  id uuid primary key default gen_random_uuid(),
+  actor_id uuid references public.profiles(id),
+  action text not null,
+  entity_type text not null,
+  entity_id uuid,
+  before_data jsonb,
+  after_data jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists jurisdictions_boundary_gix on public.jurisdictions using gist(boundary);
+create index if not exists assets_geometry_gix on public.assets using gist(geometry);
+create index if not exists asset_jurisdictions_jid_ix on public.asset_jurisdictions(jurisdiction_id);
+
+create or replace function public.is_gis_admin() returns boolean language sql stable security definer set search_path=public, extensions as $$
+  select exists(select 1 from public.profiles where id=auth.uid() and role='GIS_ADMIN');
+$$;
+
+create or replace function public.user_can_see_asset(aid uuid) returns boolean language sql stable security definer set search_path=public, extensions as $$
+  select public.is_gis_admin() or exists(
+    select 1 from public.user_jurisdictions uj
+    join public.asset_jurisdictions aj on aj.jurisdiction_id=uj.jurisdiction_id
+    where uj.user_id=auth.uid() and aj.asset_id=aid
+  );
+$$;
+
+create or replace function public.auto_assign_asset_jurisdictions() returns trigger language plpgsql security definer set search_path=public, extensions as $$
+begin
+  delete from public.asset_jurisdictions where asset_id=new.id;
+  insert into public.asset_jurisdictions(asset_id,jurisdiction_id)
+  select new.id,j.id from public.jurisdictions j
+  where j.boundary is not null and new.geometry is not null and ST_Intersects(j.boundary,new.geometry);
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_auto_assign_asset_jurisdictions on public.assets;
+create trigger trg_auto_assign_asset_jurisdictions after insert or update of geometry on public.assets for each row execute function public.auto_assign_asset_jurisdictions();
+
+alter table public.profiles enable row level security;
+alter table public.jurisdictions enable row level security;
+alter table public.user_jurisdictions enable row level security;
+alter table public.assets enable row level security;
+alter table public.asset_jurisdictions enable row level security;
+alter table public.asset_submissions enable row level security;
+alter table public.approval_history enable row level security;
+alter table public.audit_logs enable row level security;
+
+drop policy if exists profiles_self_or_admin on public.profiles;
+create policy profiles_self_or_admin on public.profiles for select using (id=auth.uid() or public.is_gis_admin());
+
+drop policy if exists profiles_admin_write on public.profiles;
+create policy profiles_admin_write on public.profiles for all using (public.is_gis_admin()) with check (public.is_gis_admin());
+
+drop policy if exists jurisdictions_visible on public.jurisdictions;
+create policy jurisdictions_visible on public.jurisdictions for select using (public.is_gis_admin() or exists(select 1 from public.user_jurisdictions uj where uj.user_id=auth.uid() and (uj.jurisdiction_id=jurisdictions.id or uj.jurisdiction_id=jurisdictions.parent_id)));
+
+drop policy if exists jurisdictions_admin_write on public.jurisdictions;
+create policy jurisdictions_admin_write on public.jurisdictions for all using(public.is_gis_admin()) with check(public.is_gis_admin());
+
+drop policy if exists user_jurisdictions_self_or_admin on public.user_jurisdictions;
+create policy user_jurisdictions_self_or_admin on public.user_jurisdictions for select using(user_id=auth.uid() or public.is_gis_admin());
+
+drop policy if exists user_jurisdictions_admin_write on public.user_jurisdictions;
+create policy user_jurisdictions_admin_write on public.user_jurisdictions for all using(public.is_gis_admin()) with check(public.is_gis_admin());
+
+drop policy if exists assets_visible_by_jurisdiction on public.assets;
+create policy assets_visible_by_jurisdiction on public.assets for select using(public.user_can_see_asset(id));
+
+drop policy if exists assets_insert_authorized on public.assets;
+create policy assets_insert_authorized on public.assets for insert with check(public.is_gis_admin() or exists(select 1 from public.user_jurisdictions uj where uj.user_id=auth.uid() and exists(select 1 from public.jurisdictions j where j.id=uj.jurisdiction_id and j.boundary is not null and geometry is not null and ST_Intersects(j.boundary,assets.geometry))));
+
+drop policy if exists assets_update_authorized on public.assets;
+create policy assets_update_authorized on public.assets for update using(public.user_can_see_asset(id)) with check(public.user_can_see_asset(id));
+
+drop policy if exists assets_admin_delete on public.assets;
+create policy assets_admin_delete on public.assets for delete using(public.is_gis_admin());
+
+drop policy if exists asset_jurisdictions_visible on public.asset_jurisdictions;
+create policy asset_jurisdictions_visible on public.asset_jurisdictions for select using(public.user_can_see_asset(asset_id));
+
+drop policy if exists submissions_visible on public.asset_submissions;
+create policy submissions_visible on public.asset_submissions for select using(public.is_gis_admin() or submitted_by=auth.uid() or (asset_id is not null and public.user_can_see_asset(asset_id)));
+
+drop policy if exists submissions_insert on public.asset_submissions;
+create policy submissions_insert on public.asset_submissions for insert with check(public.is_gis_admin() or submitted_by=auth.uid());
+
+drop policy if exists submissions_update on public.asset_submissions;
+create policy submissions_update on public.asset_submissions for update using(public.is_gis_admin() or submitted_by=auth.uid());
+
+drop policy if exists approvals_visible on public.approval_history;
+create policy approvals_visible on public.approval_history for select using(public.is_gis_admin() or actor_id=auth.uid());
+
+drop policy if exists audit_admin_or_self on public.audit_logs;
+create policy audit_admin_or_self on public.audit_logs for select using(public.is_gis_admin() or actor_id=auth.uid());
+
+-- ==================================================================
+-- MIGRATION: 002_powergis_organisation_seed.sql
+-- ==================================================================
+
+-- PowerGIS test data migration: moves the previous local demo dataset into Supabase/PostGIS.
+-- Run after 001_powergis_core.sql in Supabase SQL Editor or as migration 002.
+create extension if not exists postgis;
+create table if not exists public.organization_users (id text primary key, username text not null unique, password text not null default '', display_name text not null, role text not null check (role in ('GIS_ADMIN','SE','EE','AEE','AE','JE','CONTRACTOR')), subdivision text, division text, circle text, department text, admin_name text, region text not null, scope_field text, scope_value text, source_rows jsonb not null default '[]'::jsonb, jurisdiction_ids text[] not null default '{}', created_at timestamptz not null default now());
+create index if not exists organization_users_scope_ix on public.organization_users(scope_field,scope_value);
+create table if not exists public.gis_jurisdictions (id text primary key, name text not null, region text not null, subdivision text, division text, circle text, department text, boundary geometry(Polygon,4326), location_source text, boundary_type text, created_at timestamptz not null default now());
+create index if not exists gis_jurisdictions_boundary_gix on public.gis_jurisdictions using gist(boundary);
+create index if not exists gis_jurisdictions_scope_ix on public.gis_jurisdictions(subdivision,division,circle,region);
+create table if not exists public.gis_assets (id text primary key, asset_no text not null unique, asset_type text not null references public.asset_types(id), status text not null, geometry geometry(Geometry,4326), latitude double precision, longitude double precision, jurisdiction_ids text[] not null default '{}', owner_je_ids text[] not null default '{}', shared_boundary boolean not null default false, visibility_rule text, metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now());
+create index if not exists gis_assets_geometry_gix on public.gis_assets using gist(geometry);
+create index if not exists gis_assets_owner_gix on public.gis_assets using gin(owner_je_ids);
+create index if not exists gis_assets_jurisdiction_gix on public.gis_assets using gin(jurisdiction_ids);
+truncate table public.gis_assets, public.gis_jurisdictions, public.organization_users;
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-admin-001','GIS Admin','GIS Admin','GIS_ADMIN',NULL,NULL,NULL,'SE - 1 HOD','GIS Admin','All Regions',NULL,NULL,'[]','{"PONDICHERRY","KARAIKAL","MAHE","YANAM"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-001','JE-TownSouth','JE-TownSouth','JE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-002','JE-TownSouthCentral','JE-TownSouthCentral','JE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-003','JE-TownCentral','JE-TownCentral','JE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-004','JE-TownNorth','JE-TownNorth','JE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-005','JE-VenkataNagar','JE-VenkataNagar','JE','AE- Town II','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-006','JE-Muthialpet','JE-Muthialpet','JE','AE- Town II','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-007','JE-Saram','JE-Saram','JE','AE- Town II','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-008','JE-Townwest','JE-Townwest','JE','AE-Marapalam','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-009','JE-Mudialierpet','JE-Mudialierpet','JE','AE-Marapalam','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-010','JE-Murungapakkam','JE-Murungapakkam','JE','AE-Marapalam','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-011','JE-Gorimedu','JE-Gorimedu','JE','AE-Lawspet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-012','JE-Ashoknagar','JE-Ashoknagar','JE','AE-Lawspet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-013','JE-Lawspet','JE-Lawspet','JE','AE-Lawspet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-014','JE-Kalapet','JE-Kalapet','JE','AE-Kalapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-015','JE-Muthirapalayam','JE-Muthirapalayam','JE','AE-kirumbapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-016','JE-Boomianpet','JE-Boomianpet','JE','AE-Boomianpet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-017','JE-Villianur','JE-Villianur','JE','AE-Boomianpet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-018','JE-Sedharapet','JE-Sedharapet','JE','AE-Sederapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-019','JE-Ramanathapuram','JE-Ramanathapuram','JE','AE-Sederapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-020','JE-Thirukkanur','JE-Thirukkanur','JE','AE-Thethampakkam','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-021','JE-Katterikuppam','JE-Katterikuppam','JE','AE-Thethampakkam','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-022','JE-Thavalakuppam','JE-Thavalakuppam','JE','AE-Bahour','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-023','JE-kirumambakkam','JE-kirumambakkam','JE','AE-Bahour','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-024','JE-Bahour','JE-Bahour','JE','AE-Bahour','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-025','JE-Ariyankuppam','JE-Ariyankuppam','JE','AE-Rural south','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-026','JE-Karikalambakkam','JE-Karikalambakkam','JE','AE-Rural south','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-027','JE-Vadamangalam','JE-Vadamangalam','JE','AE-Rural south','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-028','JE-ThiruvandarkoIl','JE-ThiruvandarkoIl','JE','AE-Thirubhuvanai','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-029','JE-Vadhanur','JE-Vadhanur','JE','AE-Thirubhuvanai','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-030','JE-Kariamanchikam','JE-Kariamanchikam','JE','AE-Eripakkam','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-031','JE-Karaiyambutthur','JE-Karaiyambutthur','JE','AE-Eripakkam','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-032','JE-TRPattinam','JE-TRPattinam','JE','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal',NULL,NULL,'[]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-033','JE-TownKKL','JE-TownKKL','JE','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal',NULL,NULL,'[]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-034','JE-Neravy','JE-Neravy','JE','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal',NULL,NULL,'[]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-035','JE-Kottucherry','JE-Kottucherry','JE','AE-Town II KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal',NULL,NULL,'[]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-036','JE-TownNorthKKL','JE-TownNorthKKL','JE','AE-Town II KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal',NULL,NULL,'[]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-037','JE-Thirunallar','JE-Thirunallar','JE','AE-Rural','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal',NULL,NULL,'[]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-038','JE-Nedungadu','JE-Nedungadu','JE','AE-Rural','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal',NULL,NULL,'[]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-039','JE-Ambakarathur','JE-Ambakarathur','JE','AE-Rural','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal',NULL,NULL,'[]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-040','JE-Mahe','JE-Mahe','JE','AE-Mahe','EE-SPM & Blds','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Mahe',NULL,NULL,'[]','{"MAHE"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-041','JE-Yanam','JE-Yanam','JE','AE-Yanam','EE-C & T','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Yanam',NULL,NULL,'[]','{"YANAM"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-aee-001','AEE- Town I','AEE- Town I','AEE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AEE- Town I','[2,3,4,5]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-001','AE- Town II','AE- Town II','AE','AE- Town II','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE- Town II','[6,7,8]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-002','AE-Marapalam','AE-Marapalam','AE','AE-Marapalam','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Marapalam','[9,10,11]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-003','AE-Lawspet','AE-Lawspet','AE','AE-Lawspet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Lawspet','[12,13,14]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-004','AE-Kalapet','AE-Kalapet','AE','AE-Kalapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Kalapet','[15]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-005','AE-kirumbapet','AE-kirumbapet','AE','AE-kirumbapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-kirumbapet','[16]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-006','AE-Boomianpet','AE-Boomianpet','AE','AE-Boomianpet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Boomianpet','[17,18]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-007','AE-Sederapet','AE-Sederapet','AE','AE-Sederapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Sederapet','[19,20]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-008','AE-Thethampakkam','AE-Thethampakkam','AE','AE-Thethampakkam','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Thethampakkam','[21,22]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-009','AE-Bahour','AE-Bahour','AE','AE-Bahour','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Bahour','[23,24,25]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-010','AE-Rural south','AE-Rural south','AE','AE-Rural south','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Rural south','[26,27,28]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-011','AE-Thirubhuvanai','AE-Thirubhuvanai','AE','AE-Thirubhuvanai','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Thirubhuvanai','[29,30]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-012','AE-Eripakkam','AE-Eripakkam','AE','AE-Eripakkam','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','subdivision','AE-Eripakkam','[31,32]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-013','AE-Town I KKL','AE-Town I KKL','AE','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal','subdivision','AE-Town I KKL','[33,34,35]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-014','AE-Town II KKL','AE-Town II KKL','AE','AE-Town II KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal','subdivision','AE-Town II KKL','[36,37]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-015','AE-Rural','AE-Rural','AE','AE-Rural','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal','subdivision','AE-Rural','[38,39,40]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-016','AE-Mahe','AE-Mahe','AE','AE-Mahe','EE-SPM & Blds','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Mahe','subdivision','AE-Mahe','[41]','{"MAHE"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ae-017','AE-Yanam','AE-Yanam','AE','AE-Yanam','EE-C & T','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Yanam','subdivision','AE-Yanam','[42]','{"YANAM"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-001','EE - Urban','EE - Urban','EE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','division','EE - Urban','[2,3,4,5,6,7,8,9,10,11]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-002','EE - Rural North','EE - Rural North','EE','AE-Lawspet','EE - Rural North','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','division','EE - Rural North','[12,13,14,15,16,17,18,19,20,21,22]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-003','EE - Rural South','EE - Rural South','EE','AE-Bahour','EE - Rural South','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','division','EE - Rural South','[23,24,25,26,27,28,29,30,31,32]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-004','Karaikal','Karaikal','EE','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal','division','Karaikal','[33,34,35,36,37,38,39,40]','{"KARAIKAL"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-005','EE-SPM & Blds','EE-SPM & Blds','EE','AE-Mahe','EE-SPM & Blds','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Mahe','division','EE-SPM & Blds','[41]','{"MAHE"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-ee-006','EE-C & T','EE-C & T','EE','AE-Yanam','EE-C & T','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Yanam','division','EE-C & T','[42]','{"YANAM"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-se-000','SE - 1 cum HOD','SE - 1 cum HOD','SE',NULL,NULL,NULL,'SE - 1 cum HOD','GIS Admin','All Regions','department','SE - 1 cum HOD','[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42]','{"PONDICHERRY","KARAIKAL","MAHE","YANAM"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-se-001','SE - 3 O&M','SE - 3 O&M','SE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry','circle','SE - 3 O&M','[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]','{"PONDICHERRY"}');
+insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-se-002','SE - 2 MP & OR','SE - 2 MP & OR','SE','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD','GIS Admin','Karaikal','circle','SE - 2 MP & OR','[33,34,35,36,37,38,39,40,41,42]','{"KARAIKAL","MAHE","YANAM"}');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-001','JE-TownSouth','PONDICHERRY','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.81091682330717,11.916878560780328],[79.80897228831267,11.919700040935714],[79.80570379365663,11.920002799593863],[79.80329354091735,11.918142487462383],[79.80273802477794,11.915251696602557],[79.80421646067443,11.912582441886077],[79.80731859422691,11.91188464891499],[79.80994409041703,11.913698732356274],[79.81091682330717,11.916878560780328]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-002','JE-TownSouthCentral','PONDICHERRY','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.81514643115806,11.923510401239929],[79.81315853665564,11.926004061687726],[79.81003639506868,11.925533454875136],[79.80727671660749,11.92374934125892],[79.80793155886245,11.9205219032843],[79.81003555843044,11.918464525301468],[79.81304229091818,11.918276580348213],[79.81555032907215,11.920322298766239],[79.81514643115806,11.923510401239929]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-003','JE-TownCentral','PONDICHERRY','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.81803618634642,11.935362804176384],[79.81538140107656,11.93743110244062],[79.81228907384222,11.936308884828545],[79.81064455862752,11.933766894970693],[79.81095554553582,11.930631671243956],[79.81373857155685,11.92917204071736],[79.81680280026116,11.929553615858872],[79.81828657029375,11.932246804338618],[79.81803618634642,11.935362804176384]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-004','JE-TownNorth','PONDICHERRY','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.82018316070274,11.948183160702749],[79.817,11.948958475579888],[79.81385907730156,11.94814092269843],[79.8127545443489,11.945],[79.81380206431186,11.94180206431187],[79.817,11.9410621557578],[79.81991724277798,11.942082757222014],[79.82110611801187,11.945],[79.82018316070274,11.948183160702749]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-005','JE-VenkataNagar','PONDICHERRY','AE- Town II','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.81442558162836,11.930630139442817],[79.81124589404051,11.930791146671407],[79.80836969631362,11.929425691372394],[79.80803213337742,11.926210742256655],[79.80962606293802,11.923447152112853],[79.81284585390749,11.922747605246304],[79.81541470913365,11.924718364302183],[79.81624099302776,11.927843585963192],[79.81442558162836,11.930630139442817]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-006','JE-Muthialpet','PONDICHERRY','AE- Town II','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.83755786554269,11.957099304392747],[79.8344393731515,11.957009402232233],[79.83195923784702,11.954955454214847],[79.83189157993505,11.951596520960413],[79.83429475522226,11.949221459201638],[79.83747467027793,11.94968154674378],[79.83964826546999,11.951770554691945],[79.8399050463845,11.954915807445403],[79.83755786554269,11.957099304392747]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-007','JE-Saram','PONDICHERRY','AE- Town II','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.819369075751,11.940869138844645],[79.81619432087655,11.939950692663016],[79.81409989162589,11.937375235973423],[79.81492829013223,11.934113459765515],[79.81767168323795,11.932335770430145],[79.82065102429695,11.933280764641557],[79.82279677458254,11.935645318395691],[79.82182978642403,11.938724892157376],[79.819369075751,11.940869138844645]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-008','JE-Townwest','PONDICHERRY','AE-Marapalam','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.80517455977741,11.928],[79.80398850232224,11.930988502322236],[79.801,11.93203219266237],[79.79778510380781,11.931214896192198],[79.79710771147874,11.928],[79.79819618725811,11.925196187258118],[79.801,11.924134994157695],[79.80372525056164,11.925274749438362],[79.80517455977741,11.928]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-009','JE-Mudialierpet','PONDICHERRY','AE-Marapalam','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.81092616942914,11.916261072419145],[79.80933462250799,11.918844348922832],[79.80627424578284,11.919651346786686],[79.80368142459098,11.917784219060426],[79.80283459617172,11.914651558426685],[79.80466358698759,11.911853650245389],[79.80785973862463,11.911680536008722],[79.81079978850333,11.913027880357255],[79.81092616942914,11.916261072419145]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-010','JE-Murungapakkam','PONDICHERRY','AE-Marapalam','EE - Urban','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.812309444422,11.90663164937472],[79.81035744933902,11.909218005215706],[79.80718536873458,11.908680074800502],[79.80479361519498,11.906721509023594],[79.80450811570884,11.9034002332172],[79.80715545811442,11.901487714574683],[79.81025312907272,11.901273846186035],[79.81229223177412,11.90361548033748],[79.812309444422,11.90663164937472]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-011','JE-Gorimedu','PONDICHERRY','AE-Lawspet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.79980038224517,11.950539334232145],[79.79688577975266,11.952453115531846],[79.79374967545135,11.951367848687376],[79.7916459020463,11.948866083931774],[79.79265445745737,11.945764579940764],[79.79520287232648,11.943992568566669],[79.79846925311698,11.944304501555669],[79.80028713933295,11.947147234965996],[79.79980038224517,11.950539334232145]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-012','JE-Ashoknagar','PONDICHERRY','AE-Lawspet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.8077163057757,11.94171630577569],[79.805,11.943077295101018],[79.80198738570719,11.942012614292807],[79.80075008068137,11.939],[79.80204854397226,11.93604854397225],[79.805,11.935036039002997],[79.80788922687451,11.936110773125494],[79.80899679723977,11.939],[79.8077163057757,11.94171630577569]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-013','JE-Lawspet','PONDICHERRY','AE-Lawspet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.82469451535859,11.960909358274298],[79.82172436920749,11.961589632709408],[79.81894520041057,11.960021922934121],[79.81825581580016,11.95679379014954],[79.82016361338242,11.954128384266696],[79.82331769603637,11.953579437818682],[79.8260754130957,11.955257667134097],[79.82661061243759,11.958455662527669],[79.82469451535859,11.960909358274298]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-014','JE-Kalapet','PONDICHERRY','AE-Kalapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.86921449844478,12.038150241875433],[79.86388703888167,12.038291383254824],[79.86095598827065,12.034119541933244],[79.86015930751832,12.029130462094258],[79.86406621279833,12.025721180844831],[79.86923167076648,12.025388300472617],[79.87222858909298,12.029450277789412],[79.87248489442477,12.034235887355122],[79.86921449844478,12.038150241875433]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-015','JE-Muthirapalayam','PONDICHERRY','AE-kirumbapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.79898315421772,11.937707182127182],[79.79581889737076,11.937333571916412],[79.79417252465001,11.93457111465643],[79.79482714628116,11.931516331196253],[79.7973748184018,11.92962153196325],[79.80071611118377,11.930004373502847],[79.80219282999391,11.932975776733366],[79.80179369945988,11.936171233210194],[79.79898315421772,11.937707182127182]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-016','JE-Boomianpet','PONDICHERRY','AE-Boomianpet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.80755075246415,11.944],[79.80575872736839,11.946758727368385],[79.803,11.94817853331831],[79.80017620584157,11.946823794158437],[79.7984746623568,11.944],[79.79981448254527,11.940814482545271],[79.803,11.940018281123713],[79.80608331807596,11.940916681924028],[79.80755075246415,11.944]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-017','JE-Villianur','PONDICHERRY','AE-Boomianpet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.75929964391567,11.913543426371374],[79.7573342649721,11.915974017486798],[79.75435603969551,11.916761781388878],[79.75160770731382,11.915093566088542],[79.75110040908385,11.911912497160275],[79.75281048533391,11.909203702811249],[79.75600608273145,11.908466454870648],[79.75889310998852,11.910225615652674],[79.75929964391567,11.913543426371374]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-018','JE-Sedharapet','PONDICHERRY','AE-Sederapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.76005614733346,12.007237188431759],[79.75578070723489,12.010807657627572],[79.75042972822364,12.01083074847337],[79.74704099015499,12.006873866187986],[79.74702060158721,12.00183768859073],[79.75025177799047,11.997459641660289],[79.75583614843018,11.997778495486846],[79.7597216210629,12.001621376886481],[79.76005614733346,12.007237188431759]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-019','JE-Ramanathapuram','PONDICHERRY','AE-Sederapet','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.79264198066194,11.943433493678022],[79.78983114594902,11.945178452853208],[79.7868284478549,11.94424995745429],[79.78466887221096,11.941861514881943],[79.78520556411763,11.938464639000443],[79.78814445289913,11.936698874272398],[79.79116763116262,11.937755910710697],[79.79304382946002,11.940195632308829],[79.79264198066194,11.943433493678022]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-020','JE-Thirukkanur','PONDICHERRY','AE-Thethampakkam','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.63974735145695,12.000427351456947],[79.63468,12.002755148065503],[79.62969861240046,12.000341387599544],[79.62782875382536,11.99536],[79.63002341496673,11.99070341496672],[79.63468,11.988900215983126],[79.63959397073958,11.990446029260418],[79.64193497485743,11.99536],[79.63974735145695,12.000427351456947]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-021','JE-Katterikuppam','PONDICHERRY','AE-Thethampakkam','EE - Rural North','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.70514353764443,12.0089627357809],[79.70019664455658,12.00967076992344],[79.69542262921117,12.007440678617543],[79.6944132179804,12.00202228615342],[79.69778494226291,11.997949819527784],[79.70270302447936,11.99707034715542],[79.70730048163601,11.999504151362906],[79.70813642794823,12.00475200233617],[79.70514353764443,12.0089627357809]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-022','JE-Thavalakuppam','PONDICHERRY','AE-Bahour','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.79449273380907,11.868885493935629],[79.79143425462888,11.869158327981404],[79.78944459375806,11.866810981756402],[79.78948259387658,11.863864758408058],[79.79133215421311,11.861255179810088],[79.79469099976691,11.861295849699996],[79.79707302205497,11.863651183296232],[79.79718706367981,11.867056054291451],[79.79449273380907,11.868885493935629]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-023','JE-kirumambakkam','PONDICHERRY','AE-Bahour','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.7828824943969,11.824626987940077],[79.77759292035633,11.824306950601434],[79.77414500142842,11.81976686966203],[79.7761720664328,11.814639807169598],[79.78024154627265,11.811350045138369],[79.78525177679586,11.812844661918597],[79.78849374304343,11.816912727498472],[79.78769953544719,11.822342215714281],[79.7828824943969,11.824626987940077]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-024','JE-Bahour','PONDICHERRY','AE-Bahour','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.75071944445949,11.80551],[79.74852461717941,11.810414617179408],[79.74362,11.813010833606743],[79.73905282567425,11.810077174325752],[79.7371575086462,11.80551],[79.73853671291444,11.80042671291443],[79.74362,11.798716449559574],[79.74819652498596,11.800933475014057],[79.75071944445949,11.80551]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-025','JE-Ariyankuppam','PONDICHERRY','AE-Rural south','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.81156079383659,11.894702046652613],[79.81003391707675,11.897323225285648],[79.80690444786744,11.898351697813398],[79.80406367801588,11.896433166961417],[79.80385451674844,11.893169172833327],[79.80525660615181,11.890173474225332],[79.80863696694824,11.88964173621764],[79.81099788293542,11.89179987936322],[79.81156079383659,11.894702046652613]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-026','JE-Karikalambakkam','PONDICHERRY','AE-Rural south','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.7561473812177,11.863617161284655],[79.75228604874617,11.867269842498436],[79.74717944776802,11.86691858284065],[79.74323355610831,11.86359192021777],[79.74272516682115,11.858057498044518],[79.74702365716823,11.854565305380456],[79.75216777885946,11.854875686266091],[79.75664365265072,11.858037276357168],[79.7561473812177,11.863617161284655]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-027','JE-Vadamangalam','PONDICHERRY','AE-Rural south','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.6677555371003,11.929845726940172],[79.66324444071674,11.932256225960856],[79.6582503360102,11.931611768735216],[79.65555209464223,11.927282568119356],[79.65665908676966,11.922431315872501],[79.66063241108131,11.919124666220075],[79.66602386844156,11.919977855302173],[79.66909020717024,11.924589670106556],[79.6677555371003,11.929845726940172]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-028','JE-ThiruvandarkoIl','PONDICHERRY','AE-Thirubhuvanai','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.69666668390416,11.951666683904161],[79.692,11.95405134889735],[79.68720693225764,11.951793067742361],[79.68448947262864,11.947],[79.68684759602911,11.941847596029124],[79.692,11.939507261388671],[79.69712987843309,11.94187012156691],[79.69889009248777,11.947],[79.69666668390416,11.951666683904161]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-029','JE-Vadhanur','PONDICHERRY','AE-Thirubhuvanai','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.6559240483196,11.855872753328098],[79.65055685760001,11.857255166780215],[79.64670155912985,11.853540305003706],[79.6447093497295,11.848549799494956],[79.64779230368154,11.84370273744225],[79.65341934662061,11.84286446268117],[79.65820817710045,11.845851828681065],[79.65846583046242,11.851286133644354],[79.6559240483196,11.855872753328098]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-030','JE-Kariamanchikam','PONDICHERRY','AE-Eripakkam','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.6538307711325,11.879834086060079],[79.64838109370424,11.879322599097787],[79.64406511170517,11.875872524785256],[79.64509089586029,11.870552368923857],[79.64846450202826,11.86687876640926],[79.65349961257621,11.866965401417817],[79.65744883582632,11.87032880473922],[79.65707679128214,11.875517089364775],[79.6538307711325,11.879834086060079]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-031','JE-Karaiyambutthur','PONDICHERRY','AE-Eripakkam','EE - Rural South','SE - 3 O&M','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.65138578905588,11.825469565997581],[79.64583699971648,11.824080709638023],[79.64261034379487,11.819450002773147],[79.64387738015779,11.813975814077128],[79.64849819344954,11.810952642568544],[79.65351610278823,11.812588119728739],[79.65730208159958,11.816527634425489],[79.6557330801338,11.821897539538673],[79.65138578905588,11.825469565997581]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-032','JE-TRPattinam','KARAIKAL','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.83456741345927,10.8675],[79.8324763215429,10.87147632154289],[79.8285,10.873476009430375],[79.82407571830441,10.871924281695593],[79.82265016810459,10.8675],[79.82442984004939,10.863429840049388],[79.8285,10.861566625899359],[79.8330774919985,10.862922508001516],[79.83456741345927,10.8675]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-033','JE-TownKKL','KARAIKAL','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.8392607958993,10.926245349734012],[79.83637777371926,10.930055195613226],[79.83173855855875,10.931341694374591],[79.82821003630767,10.92820055141563],[79.82730813758698,10.923867818172628],[79.82950556755526,10.919770212265963],[79.83418737205663,10.919030677567804],[79.83805968683431,10.921619225342747],[79.8392607958993,10.926245349734012]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-034','JE-Neravy','KARAIKAL','AE-Town I KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.81836488293622,10.896894633679597],[79.81539606046145,10.900517028069155],[79.8106121481557,10.900352357900585],[79.80743962974297,10.89695075436541],[79.80729247006352,10.892308290099523],[79.81085120730782,10.889544781946665],[79.81514243682793,10.889415273546636],[79.8184089512345,10.892407112633583],[79.81836488293622,10.896894633679597]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-035','JE-Kottucherry','KARAIKAL','AE-Town II KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.83052712355449,10.962642743015158],[79.82649185193118,10.965403484651931],[79.82173492625245,10.964355713569157],[79.81978670493305,10.960194727831785],[79.82037829583666,10.955861513134183],[79.82407046993283,10.953230375306175],[79.82879486086689,10.953789774741134],[79.83087770607366,10.957988590538298],[79.83052712355449,10.962642743015158]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-036','JE-TownNorthKKL','KARAIKAL','AE-Town II KKL','Karaikal','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.83120011821879,10.948200118218793],[79.827,10.950249941532284],[79.82313048275061,10.94786951724938],[79.82118702284112,10.944],[79.82278455704433,10.939784557044327],[79.827,10.937678010785273],[79.83094617511486,10.940053824885144],[79.83277908844083,10.944],[79.83120011821879,10.948200118218793]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-037','JE-Thirunallar','KARAIKAL','AE-Rural','Karaikal','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.79399453996956,10.93344137423599],[79.78969564449622,10.934995250776582],[79.78600351991685,10.93212508696532],[79.78529491142307,10.927721100314441],[79.78735280813576,10.92350132009946],[79.79214338605824,10.922689622955248],[79.79597324870583,10.925463527162664],[79.79726973360287,10.930103040543177],[79.79399453996956,10.93344137423599]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-038','JE-Nedungadu','KARAIKAL','AE-Rural','Karaikal','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.77863905116699,10.974673121287301],[79.77397928454404,10.975256550491295],[79.77052006763509,10.971787974138255],[79.77092449948582,10.967059547019375],[79.77421899019329,10.964002150138086],[79.77859730789764,10.964107655879705],[79.78215504762184,10.966968607629802],[79.78153505887603,10.971454584623162],[79.77863905116699,10.974673121287301]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-039','JE-Ambakarathur','KARAIKAL','AE-Rural','Karaikal','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[79.72894982341295,10.962781646232546],[79.72422714535288,10.96208729062354],[79.72169053616697,10.958007291419754],[79.72288499624696,10.953542626632439],[79.72661796638648,10.951058609313437],[79.73089748831735,10.95210441690395],[79.73320450409392,10.95571702080147],[79.73301076639467,10.960308449937619],[79.72894982341295,10.962781646232546]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-040','JE-Mahe','MAHE','AE-Mahe','EE-SPM & Blds','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[75.57045234881565,11.67665],[75.56747908835847,11.68405908835847],[75.56007,11.686492324938305],[75.55247980743053,11.68424019256947],[75.54971123813552,11.67665],[75.5525774693291,11.669157469329097],[75.56007,11.667359762478215],[75.56691768791973,11.669802312080275],[75.57045234881565,11.67665]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_jurisdictions (id,name,region,subdivision,division,circle,department,boundary,location_source,boundary_type) values ('org-je-041','JE-Yanam','YANAM','AE-Yanam','EE-C & T','SE - 2 MP & OR','SE - 1 HOD',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[82.27556970574587,16.73521514127729],[82.27153060656205,16.742055915726358],[82.26374431384444,16.742770257874525],[82.25686745699868,16.73910162583372],[82.25614723214095,16.73135177107217],[82.26015888472111,16.725036931287775],[82.26759407757281,16.723416188647526],[82.27345097456873,16.728020873651847],[82.27556970574587,16.73521514127729]]]}'),4326),'LOCALITY_ANCHOR','ILLUSTRATIVE_JE');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0001','SUBSTATION-001','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8061,11.9166]}'),4326),'11.9166','79.8061','{"PONDICHERRY"}','{"org-je-001"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0002','DT-001','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8076,11.915000000000001]}'),4326),'11.915000000000001','79.8076','{"PONDICHERRY"}','{"org-je-001"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0003','POLE-001','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8083,11.9162]}'),4326),'11.9162','79.8083','{"PONDICHERRY"}','{"org-je-001"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0004','SMART_METER-001','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8049,11.9156]}'),4326),'11.9156','79.8049','{"PONDICHERRY"}','{"org-je-001"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0005','EHV_LINE-001','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80506,11.9136],[79.80614,11.91552],[79.80698,11.91684],[79.80794,11.9184]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-001"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0006','HV_LINE-001','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.805735,11.9143],[79.8065,11.916],[79.807265,11.9177]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-001"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0007','LT_LINE-001','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80605,11.915000000000001],[79.8065,11.916],[79.80695,11.917]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-001"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0008','SUBSTATION-002','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8111,11.922600000000001]}'),4326),'11.922600000000001','79.8111','{"PONDICHERRY"}','{"org-je-002"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0009','DT-002','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81259999999999,11.921000000000001]}'),4326),'11.921000000000001','79.81259999999999','{"PONDICHERRY"}','{"org-je-002"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0010','POLE-002','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8133,11.9222]}'),4326),'11.9222','79.8133','{"PONDICHERRY"}','{"org-je-002"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0011','SMART_METER-002','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8099,11.9216]}'),4326),'11.9216','79.8099','{"PONDICHERRY"}','{"org-je-002"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0012','EHV_LINE-002','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81006,11.9196],[79.81114,11.921520000000001],[79.81197999999999,11.92284],[79.81294,11.9244]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-002"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0013','HV_LINE-002','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.810735,11.920300000000001],[79.8115,11.922],[79.812265,11.9237]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-002"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0014','LT_LINE-002','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81105,11.921000000000001],[79.8115,11.922],[79.81195,11.923]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-002"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0015','SUBSTATION-003','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8141,11.9336]}'),4326),'11.9336','79.8141','{"PONDICHERRY"}','{"org-je-003"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0016','DT-003','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81559999999999,11.932]}'),4326),'11.932','79.81559999999999','{"PONDICHERRY"}','{"org-je-003"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0017','POLE-003','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8163,11.9332]}'),4326),'11.9332','79.8163','{"PONDICHERRY"}','{"org-je-003"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0018','SMART_METER-003','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8129,11.932599999999999]}'),4326),'11.932599999999999','79.8129','{"PONDICHERRY"}','{"org-je-003"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0019','EHV_LINE-003','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81306,11.9306],[79.81414,11.93252],[79.81497999999999,11.93384],[79.81594,11.9354]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-003"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0020','HV_LINE-003','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.813735,11.9313],[79.8145,11.933],[79.815265,11.9347]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-003"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0021','LT_LINE-003','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81405,11.932],[79.8145,11.933],[79.81495,11.934]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-003"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0022','SUBSTATION-004','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8166,11.9456]}'),4326),'11.9456','79.8166','{"PONDICHERRY"}','{"org-je-004"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0023','DT-004','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81809999999999,11.944]}'),4326),'11.944','79.81809999999999','{"PONDICHERRY"}','{"org-je-004"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0024','POLE-004','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8188,11.9452]}'),4326),'11.9452','79.8188','{"PONDICHERRY"}','{"org-je-004"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0025','SMART_METER-004','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8154,11.9446]}'),4326),'11.9446','79.8154','{"PONDICHERRY"}','{"org-je-004"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0026','EHV_LINE-004','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81555999999999,11.9426],[79.81663999999999,11.94452],[79.81747999999999,11.94584],[79.81844,11.9474]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-004"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0027','HV_LINE-004','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81623499999999,11.9433],[79.817,11.945],[79.817765,11.9467]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-004"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0028','LT_LINE-004','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81654999999999,11.944],[79.817,11.945],[79.81745,11.946]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-004"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0029','SUBSTATION-005','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8116,11.9276]}'),4326),'11.9276','79.8116','{"PONDICHERRY"}','{"org-je-005"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0030','DT-005','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81309999999999,11.926]}'),4326),'11.926','79.81309999999999','{"PONDICHERRY"}','{"org-je-005"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0031','POLE-005','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8138,11.9272]}'),4326),'11.9272','79.8138','{"PONDICHERRY"}','{"org-je-005"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0032','SMART_METER-005','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8104,11.926599999999999]}'),4326),'11.926599999999999','79.8104','{"PONDICHERRY"}','{"org-je-005"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0033','EHV_LINE-005','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81056,11.9246],[79.81164,11.92652],[79.81248,11.92784],[79.81344,11.9294]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-005"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0034','HV_LINE-005','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.811235,11.9253],[79.812,11.927],[79.812765,11.9287]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-005"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0035','LT_LINE-005','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81155,11.926],[79.812,11.927],[79.81245,11.927999999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-005"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0036','SUBSTATION-006','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.83558000000001,11.953890000000001]}'),4326),'11.953890000000001','79.83558000000001','{"PONDICHERRY"}','{"org-je-006"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0037','DT-006','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.83708,11.952290000000001]}'),4326),'11.952290000000001','79.83708','{"PONDICHERRY"}','{"org-je-006"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0038','POLE-006','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.83778000000001,11.95349]}'),4326),'11.95349','79.83778000000001','{"PONDICHERRY"}','{"org-je-006"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0039','SMART_METER-006','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.83438000000001,11.95289]}'),4326),'11.95289','79.83438000000001','{"PONDICHERRY"}','{"org-je-006"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0040','EHV_LINE-006','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.83454,11.950890000000001],[79.83562,11.952810000000001],[79.83646,11.954130000000001],[79.83742000000001,11.95569]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-006"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0041','HV_LINE-006','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.835215,11.951590000000001],[79.83598,11.95329],[79.83674500000001,11.95499]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-006"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0042','LT_LINE-006','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.83553,11.952290000000001],[79.83598,11.95329],[79.83643000000001,11.95429]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-006"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0043','SUBSTATION-007','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8181,11.937100000000001]}'),4326),'11.937100000000001','79.8181','{"PONDICHERRY"}','{"org-je-007"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0044','DT-007','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8196,11.935500000000001]}'),4326),'11.935500000000001','79.8196','{"PONDICHERRY"}','{"org-je-007"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0045','POLE-007','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8203,11.9367]}'),4326),'11.9367','79.8203','{"PONDICHERRY"}','{"org-je-007"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0046','SMART_METER-007','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8169,11.9361]}'),4326),'11.9361','79.8169','{"PONDICHERRY"}','{"org-je-007"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0047','EHV_LINE-007','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81706,11.9341],[79.81814,11.936020000000001],[79.81898,11.93734],[79.81994,11.9389]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-007"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0048','HV_LINE-007','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.817735,11.934800000000001],[79.8185,11.9365],[79.819265,11.9382]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-007"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0049','LT_LINE-007','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81805,11.935500000000001],[79.8185,11.9365],[79.81895,11.9375]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-007"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0050','SUBSTATION-008','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8006,11.928600000000001]}'),4326),'11.928600000000001','79.8006','{"PONDICHERRY"}','{"org-je-008"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0051','DT-008','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8021,11.927000000000001]}'),4326),'11.927000000000001','79.8021','{"PONDICHERRY"}','{"org-je-008"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0052','POLE-008','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8028,11.9282]}'),4326),'11.9282','79.8028','{"PONDICHERRY"}','{"org-je-008"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0053','SMART_METER-008','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.7994,11.9276]}'),4326),'11.9276','79.7994','{"PONDICHERRY"}','{"org-je-008"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0054','EHV_LINE-008','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.79956,11.925600000000001],[79.80064,11.927520000000001],[79.80148,11.928840000000001],[79.80244,11.9304]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-008"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0055','HV_LINE-008','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.800235,11.926300000000001],[79.801,11.928],[79.801765,11.9297]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-008"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0056','LT_LINE-008','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80055,11.927000000000001],[79.801,11.928],[79.80145,11.929]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-008"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0057','SUBSTATION-009','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8067,11.9161]}'),4326),'11.9161','79.8067','{"PONDICHERRY"}','{"org-je-009"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0058','DT-009','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8082,11.9145]}'),4326),'11.9145','79.8082','{"PONDICHERRY"}','{"org-je-009"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0059','POLE-009','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80890000000001,11.9157]}'),4326),'11.9157','79.80890000000001','{"PONDICHERRY"}','{"org-je-009"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0060','SMART_METER-009','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80550000000001,11.915099999999999]}'),4326),'11.915099999999999','79.80550000000001','{"PONDICHERRY"}','{"org-je-009"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0061','EHV_LINE-009','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80566,11.9131],[79.80674,11.91502],[79.80758,11.91634],[79.80854000000001,11.9179]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-009"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0062','HV_LINE-009','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.806335,11.9138],[79.8071,11.9155],[79.807865,11.9172]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-009"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0063','LT_LINE-009','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80665,11.9145],[79.8071,11.9155],[79.80755,11.9165]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-009"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0064','SUBSTATION-010','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80826,11.90572]}'),4326),'11.90572','79.80826','{"PONDICHERRY"}','{"org-je-010"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0065','DT-010','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80976,11.90412]}'),4326),'11.90412','79.80976','{"PONDICHERRY"}','{"org-je-010"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0066','POLE-010','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81046,11.90532]}'),4326),'11.90532','79.81046','{"PONDICHERRY"}','{"org-je-010"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0067','SMART_METER-010','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80706,11.90472]}'),4326),'11.90472','79.80706','{"PONDICHERRY"}','{"org-je-010"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0068','EHV_LINE-010','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80722,11.90272],[79.8083,11.90464],[79.80914,11.90596],[79.8101,11.90752]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-010"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0069','HV_LINE-010','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.807895,11.90342],[79.80866,11.90512],[79.809425,11.90682]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-010"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0070','LT_LINE-010','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80821,11.90412],[79.80866,11.90512],[79.80911,11.90612]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-010"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0071','SUBSTATION-011','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79560000000001,11.9486]}'),4326),'11.9486','79.79560000000001','{"PONDICHERRY"}','{"org-je-011"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0072','DT-011','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.7971,11.947000000000001]}'),4326),'11.947000000000001','79.7971','{"PONDICHERRY"}','{"org-je-011"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0073','POLE-011','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79780000000001,11.9482]}'),4326),'11.9482','79.79780000000001','{"PONDICHERRY"}','{"org-je-011"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0074','SMART_METER-011','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79440000000001,11.9476]}'),4326),'11.9476','79.79440000000001','{"PONDICHERRY"}','{"org-je-011"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0075','EHV_LINE-011','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.79456,11.9456],[79.79564,11.94752],[79.79648,11.94884],[79.79744000000001,11.9504]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-011"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0076','HV_LINE-011','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.795235,11.9463],[79.796,11.948],[79.79676500000001,11.9497]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-011"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0077','LT_LINE-011','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.79555,11.947000000000001],[79.796,11.948],[79.79645000000001,11.949]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-011"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0078','SUBSTATION-012','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80460000000001,11.9396]}'),4326),'11.9396','79.80460000000001','{"PONDICHERRY"}','{"org-je-012"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0079','DT-012','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8061,11.938]}'),4326),'11.938','79.8061','{"PONDICHERRY"}','{"org-je-012"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0080','POLE-012','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80680000000001,11.9392]}'),4326),'11.9392','79.80680000000001','{"PONDICHERRY"}','{"org-je-012"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0081','SMART_METER-012','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80340000000001,11.9386]}'),4326),'11.9386','79.80340000000001','{"PONDICHERRY"}','{"org-je-012"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0082','EHV_LINE-012','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80356,11.9366],[79.80464,11.93852],[79.80548,11.93984],[79.80644000000001,11.9414]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-012"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0083','HV_LINE-012','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.804235,11.9373],[79.805,11.939],[79.80576500000001,11.9407]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-012"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0084','LT_LINE-012','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80455,11.938],[79.805,11.939],[79.80545000000001,11.94]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-012"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0085','SUBSTATION-013','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82211,11.95824]}'),4326),'11.95824','79.82211','{"PONDICHERRY"}','{"org-je-013"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0086','DT-013','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82360999999999,11.95664]}'),4326),'11.95664','79.82360999999999','{"PONDICHERRY"}','{"org-je-013"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0087','POLE-013','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82431,11.95784]}'),4326),'11.95784','79.82431','{"PONDICHERRY"}','{"org-je-013"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0088','SMART_METER-013','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82091,11.957239999999999]}'),4326),'11.957239999999999','79.82091','{"PONDICHERRY"}','{"org-je-013"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0089','EHV_LINE-013','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82106999999999,11.95524],[79.82215,11.95716],[79.82298999999999,11.95848],[79.82395,11.96004]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-013"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0090','HV_LINE-013','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82174499999999,11.95594],[79.82251,11.95764],[79.823275,11.95934]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-013"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0091','LT_LINE-013','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82206,11.95664],[79.82251,11.95764],[79.82296,11.958639999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-013"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0092','SUBSTATION-014','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.86618,12.032390000000001]}'),4326),'12.032390000000001','79.86618','{"PONDICHERRY"}','{"org-je-014"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0093','DT-014','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.86768,12.030790000000001]}'),4326),'12.030790000000001','79.86768','{"PONDICHERRY"}','{"org-je-014"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0094','POLE-014','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.86838,12.03199]}'),4326),'12.03199','79.86838','{"PONDICHERRY"}','{"org-je-014"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0095','SMART_METER-014','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.86498,12.03139]}'),4326),'12.03139','79.86498','{"PONDICHERRY"}','{"org-je-014"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0096','EHV_LINE-014','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.86514,12.029390000000001],[79.86622,12.031310000000001],[79.86706,12.032630000000001],[79.86802,12.03419]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-014"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0097','HV_LINE-014','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.865815,12.030090000000001],[79.86658,12.03179],[79.867345,12.03349]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-014"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0098','LT_LINE-014','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.86613,12.030790000000001],[79.86658,12.03179],[79.86703,12.03279]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-014"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0099','SUBSTATION-015','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.7978,11.934370000000001]}'),4326),'11.934370000000001','79.7978','{"PONDICHERRY"}','{"org-je-015"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0100','DT-015','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79929999999999,11.932770000000001]}'),4326),'11.932770000000001','79.79929999999999','{"PONDICHERRY"}','{"org-je-015"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0101','POLE-015','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8,11.93397]}'),4326),'11.93397','79.8','{"PONDICHERRY"}','{"org-je-015"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0102','SMART_METER-015','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.7966,11.93337]}'),4326),'11.93337','79.7966','{"PONDICHERRY"}','{"org-je-015"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0103','EHV_LINE-015','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.79675999999999,11.931370000000001],[79.79784,11.933290000000001],[79.79867999999999,11.934610000000001],[79.79964,11.93617]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-015"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0104','HV_LINE-015','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.797435,11.932070000000001],[79.7982,11.93377],[79.798965,11.93547]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-015"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0105','LT_LINE-015','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.79775,11.932770000000001],[79.7982,11.93377],[79.79865,11.93477]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-015"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0106','SUBSTATION-016','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8026,11.944600000000001]}'),4326),'11.944600000000001','79.8026','{"PONDICHERRY"}','{"org-je-016"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0107','DT-016','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80409999999999,11.943000000000001]}'),4326),'11.943000000000001','79.80409999999999','{"PONDICHERRY"}','{"org-je-016"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0108','POLE-016','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8048,11.9442]}'),4326),'11.9442','79.8048','{"PONDICHERRY"}','{"org-je-016"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0109','SMART_METER-016','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8014,11.9436]}'),4326),'11.9436','79.8014','{"PONDICHERRY"}','{"org-je-016"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0110','EHV_LINE-016','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80156,11.941600000000001],[79.80264,11.943520000000001],[79.80348,11.944840000000001],[79.80444,11.9464]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-016"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0111','HV_LINE-016','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.802235,11.942300000000001],[79.803,11.944],[79.803765,11.9457]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-016"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0112','LT_LINE-016','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80255,11.943000000000001],[79.803,11.944],[79.80345,11.945]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-016"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0113','SUBSTATION-017','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75476,11.91332]}'),4326),'11.91332','79.75476','{"PONDICHERRY"}','{"org-je-017"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0114','DT-017','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75626,11.91172]}'),4326),'11.91172','79.75626','{"PONDICHERRY"}','{"org-je-017"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0115','POLE-017','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75696,11.91292]}'),4326),'11.91292','79.75696','{"PONDICHERRY"}','{"org-je-017"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0116','SMART_METER-017','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75356000000001,11.91232]}'),4326),'11.91232','79.75356000000001','{"PONDICHERRY"}','{"org-je-017"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0117','EHV_LINE-017','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.75372,11.91032],[79.7548,11.91224],[79.75564,11.91356],[79.7566,11.91512]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-017"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0118','HV_LINE-017','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.754395,11.91102],[79.75516,11.91272],[79.755925,11.91442]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-017"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0119','LT_LINE-017','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.75471,11.91172],[79.75516,11.91272],[79.75561,11.91372]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-017"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0120','SUBSTATION-018','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75271000000001,12.00496]}'),4326),'12.00496','79.75271000000001','{"PONDICHERRY"}','{"org-je-018"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0121','DT-018','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75421,12.00336]}'),4326),'12.00336','79.75421','{"PONDICHERRY"}','{"org-je-018"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0122','POLE-018','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75491000000001,12.00456]}'),4326),'12.00456','79.75491000000001','{"PONDICHERRY"}','{"org-je-018"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0123','SMART_METER-018','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75151000000001,12.00396]}'),4326),'12.00396','79.75151000000001','{"PONDICHERRY"}','{"org-je-018"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0124','EHV_LINE-018','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.75167,12.00196],[79.75275,12.00388],[79.75359,12.0052],[79.75455000000001,12.00676]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-018"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0125','HV_LINE-018','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.752345,12.00266],[79.75311,12.00436],[79.75387500000001,12.00606]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-018"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0126','LT_LINE-018','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.75266,12.00336],[79.75311,12.00436],[79.75356000000001,12.00536]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-018"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0127','SUBSTATION-019','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.7886,11.941600000000001]}'),4326),'11.941600000000001','79.7886','{"PONDICHERRY"}','{"org-je-019"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0128','DT-019','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.7901,11.940000000000001]}'),4326),'11.940000000000001','79.7901','{"PONDICHERRY"}','{"org-je-019"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0129','POLE-019','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.7908,11.9412]}'),4326),'11.9412','79.7908','{"PONDICHERRY"}','{"org-je-019"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0130','SMART_METER-019','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.7874,11.9406]}'),4326),'11.9406','79.7874','{"PONDICHERRY"}','{"org-je-019"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0131','EHV_LINE-019','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.78756,11.938600000000001],[79.78864,11.940520000000001],[79.78948,11.941840000000001],[79.79044,11.9434]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-019"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0132','HV_LINE-019','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.788235,11.939300000000001],[79.789,11.941],[79.789765,11.9427]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-019"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0133','LT_LINE-019','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.78855,11.940000000000001],[79.789,11.941],[79.78945,11.942]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-019"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0134','SUBSTATION-020','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.63428,11.99596]}'),4326),'11.99596','79.63428','{"PONDICHERRY"}','{"org-je-020"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0135','DT-020','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.63578,11.99436]}'),4326),'11.99436','79.63578','{"PONDICHERRY"}','{"org-je-020"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0136','POLE-020','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.63648,11.99556]}'),4326),'11.99556','79.63648','{"PONDICHERRY"}','{"org-je-020"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0137','SMART_METER-020','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.63308,11.994959999999999]}'),4326),'11.994959999999999','79.63308','{"PONDICHERRY"}','{"org-je-020"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0138','EHV_LINE-020','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.63324,11.99296],[79.63432,11.99488],[79.63516,11.9962],[79.63612,11.99776]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-020"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0139','HV_LINE-020','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.633915,11.99366],[79.63468,11.99536],[79.635445,11.99706]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-020"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0140','LT_LINE-020','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.63423,11.99436],[79.63468,11.99536],[79.63513,11.99636]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-020"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0141','SUBSTATION-021','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.70104,12.00402]}'),4326),'12.00402','79.70104','{"PONDICHERRY"}','{"org-je-021"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0142','DT-021','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.70254,12.00242]}'),4326),'12.00242','79.70254','{"PONDICHERRY"}','{"org-je-021"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0143','POLE-021','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.70324000000001,12.00362]}'),4326),'12.00362','79.70324000000001','{"PONDICHERRY"}','{"org-je-021"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0144','SMART_METER-021','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.69984000000001,12.00302]}'),4326),'12.00302','79.69984000000001','{"PONDICHERRY"}','{"org-je-021"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0145','EHV_LINE-021','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.7,12.00102],[79.70108,12.00294],[79.70192,12.00426],[79.70288000000001,12.00582]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-021"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0146','HV_LINE-021','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.700675,12.00172],[79.70144,12.00342],[79.702205,12.00512]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-021"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0147','LT_LINE-021','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.70099,12.00242],[79.70144,12.00342],[79.70189,12.00442]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-021"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0148','SUBSTATION-022','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79262,11.86593]}'),4326),'11.86593','79.79262','{"PONDICHERRY"}','{"org-je-022"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0149','DT-022','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79411999999999,11.86433]}'),4326),'11.86433','79.79411999999999','{"PONDICHERRY"}','{"org-je-022"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0150','POLE-022','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79482,11.86553]}'),4326),'11.86553','79.79482','{"PONDICHERRY"}','{"org-je-022"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0151','SMART_METER-022','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79142,11.86493]}'),4326),'11.86493','79.79142','{"PONDICHERRY"}','{"org-je-022"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0152','EHV_LINE-022','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.79158,11.86293],[79.79266,11.86485],[79.7935,11.86617],[79.79446,11.86773]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-022"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0153','HV_LINE-022','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.792255,11.86363],[79.79302,11.86533],[79.793785,11.86703]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-022"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0154','LT_LINE-022','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.79257,11.86433],[79.79302,11.86533],[79.79347,11.86633]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-022"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0155','SUBSTATION-023','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.78122,11.81888]}'),4326),'11.81888','79.78122','{"PONDICHERRY"}','{"org-je-023"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0156','DT-023','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.78272,11.81728]}'),4326),'11.81728','79.78272','{"PONDICHERRY"}','{"org-je-023"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0157','POLE-023','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.78342,11.81848]}'),4326),'11.81848','79.78342','{"PONDICHERRY"}','{"org-je-023"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0158','SMART_METER-023','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.78002000000001,11.817879999999999]}'),4326),'11.817879999999999','79.78002000000001','{"PONDICHERRY"}','{"org-je-023"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0159','EHV_LINE-023','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.78018,11.81588],[79.78126,11.8178],[79.7821,11.81912],[79.78306,11.82068]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-023"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0160','HV_LINE-023','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.780855,11.81658],[79.78162,11.81828],[79.782385,11.81998]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-023"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0161','LT_LINE-023','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.78117,11.81728],[79.78162,11.81828],[79.78207,11.81928]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-023"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0162','SUBSTATION-024','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.74322000000001,11.80611]}'),4326),'11.80611','79.74322000000001','{"PONDICHERRY"}','{"org-je-024"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0163','DT-024','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.74472,11.80451]}'),4326),'11.80451','79.74472','{"PONDICHERRY"}','{"org-je-024"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0164','POLE-024','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.74542000000001,11.80571]}'),4326),'11.80571','79.74542000000001','{"PONDICHERRY"}','{"org-je-024"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0165','SMART_METER-024','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.74202000000001,11.805109999999999]}'),4326),'11.805109999999999','79.74202000000001','{"PONDICHERRY"}','{"org-je-024"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0166','EHV_LINE-024','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.74218,11.80311],[79.74326,11.80503],[79.7441,11.80635],[79.74506000000001,11.80791]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-024"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0167','HV_LINE-024','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.742855,11.80381],[79.74362,11.80551],[79.74438500000001,11.80721]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-024"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0168','LT_LINE-024','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.74317,11.80451],[79.74362,11.80551],[79.74407000000001,11.80651]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-024"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0169','SUBSTATION-025','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80738,11.89455]}'),4326),'11.89455','79.80738','{"PONDICHERRY"}','{"org-je-025"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0170','DT-025','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80887999999999,11.89295]}'),4326),'11.89295','79.80887999999999','{"PONDICHERRY"}','{"org-je-025"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0171','POLE-025','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80958,11.89415]}'),4326),'11.89415','79.80958','{"PONDICHERRY"}','{"org-je-025"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0172','SMART_METER-025','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.80618,11.89355]}'),4326),'11.89355','79.80618','{"PONDICHERRY"}','{"org-je-025"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0173','EHV_LINE-025','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80633999999999,11.89155],[79.80742,11.89347],[79.80825999999999,11.89479],[79.80922,11.89635]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-025"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0174','HV_LINE-025','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80701499999999,11.89225],[79.80778,11.89395],[79.808545,11.89565]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-025"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0175','LT_LINE-025','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.80733,11.89295],[79.80778,11.89395],[79.80823,11.89495]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-025"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0176','SUBSTATION-026','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.74926,11.86153]}'),4326),'11.86153','79.74926','{"PONDICHERRY"}','{"org-je-026"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0177','DT-026','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75076,11.85993]}'),4326),'11.85993','79.75076','{"PONDICHERRY"}','{"org-je-026"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0178','POLE-026','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.75146000000001,11.86113]}'),4326),'11.86113','79.75146000000001','{"PONDICHERRY"}','{"org-je-026"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0179','SMART_METER-026','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.74806000000001,11.860529999999999]}'),4326),'11.860529999999999','79.74806000000001','{"PONDICHERRY"}','{"org-je-026"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0180','EHV_LINE-026','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.74822,11.85853],[79.7493,11.86045],[79.75014,11.86177],[79.75110000000001,11.86333]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-026"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0181','HV_LINE-026','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.748895,11.85923],[79.74966,11.86093],[79.750425,11.86263]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-026"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0182','LT_LINE-026','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.74921,11.85993],[79.74966,11.86093],[79.75011,11.86193]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-026"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0183','SUBSTATION-027','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6616,11.9266]}'),4326),'11.9266','79.6616','{"PONDICHERRY"}','{"org-je-027"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0184','DT-027','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6631,11.925]}'),4326),'11.925','79.6631','{"PONDICHERRY"}','{"org-je-027"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0185','POLE-027','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.66380000000001,11.9262]}'),4326),'11.9262','79.66380000000001','{"PONDICHERRY"}','{"org-je-027"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0186','SMART_METER-027','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.66040000000001,11.9256]}'),4326),'11.9256','79.66040000000001','{"PONDICHERRY"}','{"org-je-027"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0187','EHV_LINE-027','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.66056,11.9236],[79.66164,11.92552],[79.66248,11.92684],[79.66344000000001,11.9284]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-027"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0188','HV_LINE-027','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.661235,11.9243],[79.662,11.926],[79.66276500000001,11.9277]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-027"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0189','LT_LINE-027','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.66155,11.925],[79.662,11.926],[79.66245,11.927]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-027"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0190','SUBSTATION-028','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6916,11.9476]}'),4326),'11.9476','79.6916','{"PONDICHERRY"}','{"org-je-028"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0191','DT-028','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.69309999999999,11.946]}'),4326),'11.946','79.69309999999999','{"PONDICHERRY"}','{"org-je-028"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0192','POLE-028','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6938,11.947199999999999]}'),4326),'11.947199999999999','79.6938','{"PONDICHERRY"}','{"org-je-028"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0193','SMART_METER-028','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6904,11.946599999999998]}'),4326),'11.946599999999998','79.6904','{"PONDICHERRY"}','{"org-je-028"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0194','EHV_LINE-028','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.69055999999999,11.9446],[79.69163999999999,11.94652],[79.69247999999999,11.94784],[79.69344,11.949399999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-028"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0195','HV_LINE-028','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.69123499999999,11.9453],[79.692,11.947],[79.692765,11.948699999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-028"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0196','LT_LINE-028','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.69154999999999,11.946],[79.692,11.947],[79.69245,11.947999999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-028"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0197','SUBSTATION-029','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6516,11.8506]}'),4326),'11.8506','79.6516','{"PONDICHERRY"}','{"org-je-029"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0198','DT-029','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6531,11.849]}'),4326),'11.849','79.6531','{"PONDICHERRY"}','{"org-je-029"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0199','POLE-029','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6538,11.8502]}'),4326),'11.8502','79.6538','{"PONDICHERRY"}','{"org-je-029"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0200','SMART_METER-029','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6504,11.849599999999999]}'),4326),'11.849599999999999','79.6504','{"PONDICHERRY"}','{"org-je-029"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0201','EHV_LINE-029','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.65056,11.8476],[79.65164,11.84952],[79.65248,11.85084],[79.65344,11.8524]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-029"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0202','HV_LINE-029','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.651235,11.8483],[79.652,11.85],[79.652765,11.8517]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-029"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0203','LT_LINE-029','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.65155,11.849],[79.652,11.85],[79.65245,11.850999999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-029"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0204','SUBSTATION-030','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6506,11.8736]}'),4326),'11.8736','79.6506','{"PONDICHERRY"}','{"org-je-030"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0205','DT-030','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.65209999999999,11.872]}'),4326),'11.872','79.65209999999999','{"PONDICHERRY"}','{"org-je-030"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0206','POLE-030','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6528,11.873199999999999]}'),4326),'11.873199999999999','79.6528','{"PONDICHERRY"}','{"org-je-030"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0207','SMART_METER-030','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6494,11.872599999999998]}'),4326),'11.872599999999998','79.6494','{"PONDICHERRY"}','{"org-je-030"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0208','EHV_LINE-030','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.64956,11.8706],[79.65064,11.87252],[79.65147999999999,11.87384],[79.65244,11.875399999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-030"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0209','HV_LINE-030','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.650235,11.8713],[79.651,11.873],[79.651765,11.874699999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-030"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0210','LT_LINE-030','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.65055,11.872],[79.651,11.873],[79.65145,11.873999999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-030"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0211','SUBSTATION-031','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6495,11.8186]}'),4326),'11.8186','79.6495','{"PONDICHERRY"}','{"org-je-031"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0212','DT-031','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.651,11.817]}'),4326),'11.817','79.651','{"PONDICHERRY"}','{"org-je-031"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0213','POLE-031','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6517,11.8182]}'),4326),'11.8182','79.6517','{"PONDICHERRY"}','{"org-je-031"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0214','SMART_METER-031','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.6483,11.817599999999999]}'),4326),'11.817599999999999','79.6483','{"PONDICHERRY"}','{"org-je-031"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0215','EHV_LINE-031','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.64846,11.8156],[79.64954,11.81752],[79.65038,11.81884],[79.65134,11.8204]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-031"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0216','HV_LINE-031','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.649135,11.8163],[79.6499,11.818],[79.650665,11.8197]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-031"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0217','LT_LINE-031','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.64945,11.817],[79.6499,11.818],[79.65035,11.818999999999999]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-031"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0218','SUBSTATION-032','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8281,10.8681]}'),4326),'10.8681','79.8281','{"KARAIKAL"}','{"org-je-032"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0219','DT-032','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8296,10.8665]}'),4326),'10.8665','79.8296','{"KARAIKAL"}','{"org-je-032"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0220','POLE-032','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.83030000000001,10.8677]}'),4326),'10.8677','79.83030000000001','{"KARAIKAL"}','{"org-je-032"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0221','SMART_METER-032','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82690000000001,10.867099999999999]}'),4326),'10.867099999999999','79.82690000000001','{"KARAIKAL"}','{"org-je-032"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0222','EHV_LINE-032','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82706,10.8651],[79.82814,10.86702],[79.82898,10.86834],[79.82994000000001,10.8699]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-032"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0223','HV_LINE-032','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.827735,10.8658],[79.8285,10.8675],[79.829265,10.8692]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-032"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0224','LT_LINE-032','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82805,10.8665],[79.8285,10.8675],[79.82895,10.8685]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-032"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0225','SUBSTATION-033','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8326,10.925600000000001]}'),4326),'10.925600000000001','79.8326','{"KARAIKAL"}','{"org-je-033"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0226','DT-033','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.83409999999999,10.924000000000001]}'),4326),'10.924000000000001','79.83409999999999','{"KARAIKAL"}','{"org-je-033"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0227','POLE-033','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8348,10.9252]}'),4326),'10.9252','79.8348','{"KARAIKAL"}','{"org-je-033"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0228','SMART_METER-033','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8314,10.9246]}'),4326),'10.9246','79.8314','{"KARAIKAL"}','{"org-je-033"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0229','EHV_LINE-033','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.83156,10.922600000000001],[79.83264,10.924520000000001],[79.83348,10.92584],[79.83444,10.9274]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-033"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0230','HV_LINE-033','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.832235,10.923300000000001],[79.833,10.925],[79.833765,10.9267]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-033"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0231','LT_LINE-033','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.83255,10.924000000000001],[79.833,10.925],[79.83345,10.926]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-033"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0232','SUBSTATION-034','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81257000000001,10.89526]}'),4326),'10.89526','79.81257000000001','{"KARAIKAL"}','{"org-je-034"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0233','DT-034','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81407,10.89366]}'),4326),'10.89366','79.81407','{"KARAIKAL"}','{"org-je-034"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0234','POLE-034','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81477000000001,10.89486]}'),4326),'10.89486','79.81477000000001','{"KARAIKAL"}','{"org-je-034"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0235','SMART_METER-034','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.81137000000001,10.89426]}'),4326),'10.89426','79.81137000000001','{"KARAIKAL"}','{"org-je-034"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0236','EHV_LINE-034','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81153,10.89226],[79.81261,10.89418],[79.81345,10.8955],[79.81441000000001,10.89706]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-034"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0237','HV_LINE-034','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.812205,10.89296],[79.81297,10.89466],[79.81373500000001,10.89636]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-034"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0238','LT_LINE-034','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.81252,10.89366],[79.81297,10.89466],[79.81342000000001,10.89566]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-034"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0239','SUBSTATION-035','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82484,10.959710000000001]}'),4326),'10.959710000000001','79.82484','{"KARAIKAL"}','{"org-je-035"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0240','DT-035','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82633999999999,10.958110000000001]}'),4326),'10.958110000000001','79.82633999999999','{"KARAIKAL"}','{"org-je-035"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0241','POLE-035','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82704,10.95931]}'),4326),'10.95931','79.82704','{"KARAIKAL"}','{"org-je-035"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0242','SMART_METER-035','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82364,10.95871]}'),4326),'10.95871','79.82364','{"KARAIKAL"}','{"org-je-035"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0243','EHV_LINE-035','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82379999999999,10.956710000000001],[79.82488,10.958630000000001],[79.82571999999999,10.959950000000001],[79.82668,10.96151]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-035"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0244','HV_LINE-035','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82447499999999,10.957410000000001],[79.82524,10.95911],[79.826005,10.96081]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-035"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0245','LT_LINE-035','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82479,10.958110000000001],[79.82524,10.95911],[79.82569,10.96011]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-035"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0246','SUBSTATION-036','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8266,10.944600000000001]}'),4326),'10.944600000000001','79.8266','{"KARAIKAL"}','{"org-je-036"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0247','DT-036','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.82809999999999,10.943000000000001]}'),4326),'10.943000000000001','79.82809999999999','{"KARAIKAL"}','{"org-je-036"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0248','POLE-036','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8288,10.9442]}'),4326),'10.9442','79.8288','{"KARAIKAL"}','{"org-je-036"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0249','SMART_METER-036','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.8254,10.9436]}'),4326),'10.9436','79.8254','{"KARAIKAL"}','{"org-je-036"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0250','EHV_LINE-036','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82556,10.941600000000001],[79.82664,10.943520000000001],[79.82748,10.944840000000001],[79.82844,10.9464]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-036"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0251','HV_LINE-036','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.826235,10.942300000000001],[79.827,10.944],[79.827765,10.9457]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-036"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0252','LT_LINE-036','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.82655,10.943000000000001],[79.827,10.944],[79.82745,10.945]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-036"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0253','SUBSTATION-037','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79052,10.92944]}'),4326),'10.92944','79.79052','{"KARAIKAL"}','{"org-je-037"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0254','DT-037','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79202,10.92784]}'),4326),'10.92784','79.79202','{"KARAIKAL"}','{"org-je-037"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0255','POLE-037','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.79272,10.929039999999999]}'),4326),'10.929039999999999','79.79272','{"KARAIKAL"}','{"org-je-037"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0256','SMART_METER-037','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.78932,10.928439999999998]}'),4326),'10.928439999999998','79.78932','{"KARAIKAL"}','{"org-je-037"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0257','EHV_LINE-037','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.78948,10.92644],[79.79056,10.92836],[79.7914,10.92968],[79.79236,10.931239999999999]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-037"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0258','HV_LINE-037','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.790155,10.92714],[79.79092,10.92884],[79.791685,10.930539999999999]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-037"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0259','LT_LINE-037','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.79047,10.92784],[79.79092,10.92884],[79.79137,10.929839999999999]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-037"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0260','SUBSTATION-038','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.77603,10.969940000000001]}'),4326),'10.969940000000001','79.77603','{"KARAIKAL"}','{"org-je-038"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0261','DT-038','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.77753,10.968340000000001]}'),4326),'10.968340000000001','79.77753','{"KARAIKAL"}','{"org-je-038"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0262','POLE-038','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.77823000000001,10.96954]}'),4326),'10.96954','79.77823000000001','{"KARAIKAL"}','{"org-je-038"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0263','SMART_METER-038','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.77483000000001,10.96894]}'),4326),'10.96894','79.77483000000001','{"KARAIKAL"}','{"org-je-038"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0264','EHV_LINE-038','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.77499,10.966940000000001],[79.77607,10.968860000000001],[79.77691,10.970180000000001],[79.77787000000001,10.97174]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-038"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0265','HV_LINE-038','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.775665,10.967640000000001],[79.77643,10.96934],[79.777195,10.97104]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-038"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0266','LT_LINE-038','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.77598,10.968340000000001],[79.77643,10.96934],[79.77688,10.97034]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-038"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0267','SUBSTATION-039','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.72736,10.9574]}'),4326),'10.9574','79.72736','{"KARAIKAL"}','{"org-je-039"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0268','DT-039','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.72886,10.9558]}'),4326),'10.9558','79.72886','{"KARAIKAL"}','{"org-je-039"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0269','POLE-039','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.72956,10.956999999999999]}'),4326),'10.956999999999999','79.72956','{"KARAIKAL"}','{"org-je-039"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0270','SMART_METER-039','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.72616000000001,10.956399999999999]}'),4326),'10.956399999999999','79.72616000000001','{"KARAIKAL"}','{"org-je-039"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0271','EHV_LINE-039','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.72632,10.9544],[79.7274,10.95632],[79.72824,10.95764],[79.7292,10.9592]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-039"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0272','HV_LINE-039','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.726995,10.9551],[79.72776,10.9568],[79.728525,10.958499999999999]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-039"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0273','LT_LINE-039','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.72731,10.9558],[79.72776,10.9568],[79.72821,10.957799999999999]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-039"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0274','SUBSTATION-040','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[75.55967,11.67725]}'),4326),'11.67725','75.55967','{"MAHE"}','{"org-je-040"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0275','DT-040','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[75.56116999999999,11.675650000000001]}'),4326),'11.675650000000001','75.56116999999999','{"MAHE"}','{"org-je-040"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0276','POLE-040','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[75.56187,11.67685]}'),4326),'11.67685','75.56187','{"MAHE"}','{"org-je-040"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0277','SMART_METER-040','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[75.55847,11.67625]}'),4326),'11.67625','75.55847','{"MAHE"}','{"org-je-040"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0278','EHV_LINE-040','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[75.55863,11.67425],[75.55971,11.67617],[75.56054999999999,11.67749],[75.56151,11.67905]]}'),4326),NULL,NULL,'{"MAHE"}','{"org-je-040"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0279','HV_LINE-040','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[75.559305,11.67495],[75.56007,11.67665],[75.560835,11.67835]]}'),4326),NULL,NULL,'{"MAHE"}','{"org-je-040"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0280','LT_LINE-040','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[75.55962,11.675650000000001],[75.56007,11.67665],[75.56052,11.67765]]}'),4326),NULL,NULL,'{"MAHE"}','{"org-je-040"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0281','SUBSTATION-041','SUBSTATION','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[82.26524,16.733839999999997]}'),4326),'16.733839999999997','82.26524','{"YANAM"}','{"org-je-041"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0282','DT-041','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[82.26674,16.732239999999997]}'),4326),'16.732239999999997','82.26674','{"YANAM"}','{"org-je-041"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0283','POLE-041','POLE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[82.26744000000001,16.733439999999998]}'),4326),'16.733439999999998','82.26744000000001','{"YANAM"}','{"org-je-041"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0284','SMART_METER-041','SMART_METER','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[82.26404000000001,16.73284]}'),4326),'16.73284','82.26404000000001','{"YANAM"}','{"org-je-041"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0285','EHV_LINE-041','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[82.2642,16.730839999999997],[82.26528,16.73276],[82.26612,16.73408],[82.26708,16.73564]]}'),4326),NULL,NULL,'{"YANAM"}','{"org-je-041"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0286','HV_LINE-041','HV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[82.264875,16.73154],[82.26564,16.73324],[82.266405,16.734939999999998]]}'),4326),NULL,NULL,'{"YANAM"}','{"org-je-041"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('asset-0287','LT_LINE-041','LT_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[82.26519,16.732239999999997],[82.26564,16.73324],[82.26609,16.73424]]}'),4326),NULL,NULL,'{"YANAM"}','{"org-je-041"}',false,'OWNER_ONLY','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('org-DT-SHARED-001','DT-SHARED-001','DT','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Point","coordinates":[79.809,11.919]}'),4326),'11.919','79.809','{"PONDICHERRY"}','{"org-je-001","org-je-002"}',true,'INTERSECTING_AUTHORIZED_JURISDICTIONS','{"seedData":true,"source":"PowerGIS organisation GIS seed"}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('org-ehv-PONDICHERRY','EHV-PONDICHERRY','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.7,11.8],[79.78999999999999,11.93],[79.88,12.06]]}'),4326),NULL,NULL,'{"PONDICHERRY"}','{"org-je-003"}',false,'OWNER_ONLY','{"seedData":true}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('org-ehv-KARAIKAL','EHV-KARAIKAL','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[79.72,10.84],[79.795,10.93],[79.87,11.02]]}'),4326),NULL,NULL,'{"KARAIKAL"}','{"org-je-033"}',false,'OWNER_ONLY','{"seedData":true}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('org-ehv-MAHE','EHV-MAHE','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[75.5,11.64],[75.56,11.68],[75.62,11.72]]}'),4326),NULL,NULL,'{"MAHE"}','{"org-je-040"}',false,'OWNER_ONLY','{"seedData":true}');
+insert into public.gis_assets (id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata) values ('org-ehv-YANAM','EHV-YANAM','EHV_LINE','ACTIVE',ST_SetSRID(ST_GeomFromGeoJSON('{"type":"LineString","coordinates":[[82.21,16.69],[82.25999999999999,16.735],[82.31,16.78]]}'),4326),NULL,NULL,'{"YANAM"}','{"org-je-041"}',false,'OWNER_ONLY','{"seedData":true}');
+
+update public.organization_users set password = username where password = '';
+
+create or replace function public.visible_assets(p_user_id text)
+returns table(id text, asset_no text, asset_type text, status text, latitude double precision, longitude double precision, geometry jsonb, jurisdiction_ids text[], owner_je_ids text[], shared_boundary boolean, metadata jsonb)
+language sql stable security definer set search_path=public as $$
+  with u as (select * from public.organization_users where id=p_user_id), allowed_je as (
+    select j.id from public.organization_users j cross join u where j.role='JE' and (
+      u.role='GIS_ADMIN' or
+      (u.role='JE' and j.id=u.id) or
+      (u.scope_field='subdivision' and j.subdivision=u.scope_value) or
+      (u.scope_field='division' and j.division=u.scope_value) or
+      (u.scope_field='circle' and j.circle=u.scope_value) or
+      (u.scope_field='department' and j.department=u.scope_value)
+    )
+  )
+  select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata
+  from public.gis_assets a, u
+  where u.role='GIS_ADMIN' or a.shared_boundary = true or a.owner_je_ids && array(select id from allowed_je);
+$$;
+
+create or replace function public.visible_jurisdictions(p_user_id text)
+returns table(id text, name text, region text, subdivision text, division text, circle text, department text, geometry jsonb)
+language sql stable security definer set search_path=public as $$
+  with u as (select * from public.organization_users where id=p_user_id), allowed_je as (
+    select j.id from public.organization_users j cross join u where j.role='JE' and (
+      u.role='GIS_ADMIN' or
+      (u.role='JE' and j.id=u.id) or
+      (u.scope_field='subdivision' and j.subdivision=u.scope_value) or
+      (u.scope_field='division' and j.division=u.scope_value) or
+      (u.scope_field='circle' and j.circle=u.scope_value) or
+      (u.scope_field='department' and j.department=u.scope_value)
+    )
+  )
+  select d.id,d.name,d.region,d.subdivision,d.division,d.circle,d.department,ST_AsGeoJSON(d.boundary)::jsonb
+  from public.gis_jurisdictions d, u
+  where u.role='GIS_ADMIN' or d.id in (select id from allowed_je);
+$$;
+
+create or replace function public.login_users()
+returns table(id text, username text, display_name text, role text, subdivision text, division text, circle text, department text, admin_name text, region text, scope_field text, scope_value text, source_rows jsonb, jurisdiction_ids text[])
+language sql stable security definer set search_path=public as $$
+  select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,u.department,u.admin_name,u.region,u.scope_field,u.scope_value,u.source_rows,u.jurisdiction_ids
+  from public.organization_users u
+  order by case u.role when 'GIS_ADMIN' then 0 when 'SE' then 1 when 'EE' then 2 when 'AEE' then 3 when 'AE' then 4 when 'JE' then 5 else 6 end, u.display_name;
+$$;
+
+create or replace function public.authenticate_user(p_username text, p_password text)
+returns table(id text, username text, display_name text, role text, subdivision text, division text, circle text, department text, admin_name text, region text, scope_field text, scope_value text, source_rows jsonb, jurisdiction_ids text[])
+language sql stable security definer set search_path=public as $$
+  select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,u.department,u.admin_name,u.region,u.scope_field,u.scope_value,u.source_rows,u.jurisdiction_ids
+  from public.organization_users u
+  where (
+    u.username = p_username or
+    lower(replace(replace(u.username, ' ', ''), '-', '')) = lower(replace(replace(p_username, ' ', ''), '-', ''))
+  ) and (
+    u.password = p_password or
+    p_password = u.username or
+    lower(replace(replace(u.password, ' ', ''), '-', '')) = lower(replace(replace(p_password, ' ', ''), '-', ''))
+  )
+  limit 1;
+$$;
+
+comment on table public.organization_users is 'PowerGIS PowerGIS organisation login directory migrated from the supplied organisation workbook; username equals password for temporary testing.';
+comment on table public.gis_assets is 'PowerGIS GIS assets stored in Supabase/PostGIS.';
+revoke all on table public.organization_users from anon, authenticated;
+revoke all on table public.gis_jurisdictions from anon, authenticated;
+revoke all on table public.gis_assets from anon, authenticated;
+grant execute on function public.login_users() to anon, authenticated;
+grant execute on function public.authenticate_user(text,text) to anon, authenticated;
+grant execute on function public.visible_assets(text) to anon, authenticated;
+grant execute on function public.visible_jurisdictions(text) to anon, authenticated;
+alter table public.organization_users enable row level security; alter table public.gis_jurisdictions enable row level security; alter table public.gis_assets enable row level security;
+
+-- ==================================================================
+-- MIGRATION: 003_production_table_names.sql
+-- ==================================================================
+
+-- PowerGIS production-label migration for databases that previously ran the test-schema migration.
+-- Safe to run after 002. It removes the old demo_* table/function names without requiring Auth users.
+create extension if not exists postgis;
+
+do $$ begin
+  if to_regclass('public.demo_users') is not null and to_regclass('public.organization_users') is null then
+    alter table public.demo_users rename to organization_users;
+  end if;
+  if to_regclass('public.demo_jurisdictions') is not null and to_regclass('public.gis_jurisdictions') is null then
+    alter table public.demo_jurisdictions rename to gis_jurisdictions;
+  end if;
+  if to_regclass('public.demo_assets') is not null and to_regclass('public.gis_assets') is null then
+    alter table public.demo_assets rename to gis_assets;
+  end if;
+end $$;
+
+alter table if exists public.organization_users add column if not exists password text not null default '';
+update public.organization_users set password = username where password = '';
+
+-- Remove the old public RPC names before replacing them with production names.
+drop function if exists public.demo_visible_assets(text);
+drop function if exists public.demo_visible_jurisdictions(text);
+drop function if exists public.demo_visible_users_for_login();
+drop function if exists public.login_users();
+drop function if exists public.authenticate_user(text,text);
+drop function if exists public.visible_assets(text);
+drop function if exists public.visible_jurisdictions(text);
+
+create or replace function public.login_users()
+returns table(id text, username text, display_name text, role text, subdivision text, division text, circle text, department text, admin_name text, region text, scope_field text, scope_value text, source_rows jsonb, jurisdiction_ids text[])
+language sql stable security definer set search_path=public as $$
+  select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,u.department,u.admin_name,u.region,u.scope_field,u.scope_value,u.source_rows,u.jurisdiction_ids
+  from public.organization_users u
+  order by case u.role when 'GIS_ADMIN' then 0 when 'SE' then 1 when 'EE' then 2 when 'AEE' then 3 when 'AE' then 4 when 'JE' then 5 else 6 end, u.display_name;
+$$;
+
+create or replace function public.authenticate_user(p_username text, p_password text)
+returns table(id text, username text, display_name text, role text, subdivision text, division text, circle text, department text, admin_name text, region text, scope_field text, scope_value text, source_rows jsonb, jurisdiction_ids text[])
+language sql stable security definer set search_path=public as $$
+  select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,u.department,u.admin_name,u.region,u.scope_field,u.scope_value,u.source_rows,u.jurisdiction_ids
+  from public.organization_users u
+  where (
+    u.username = p_username or
+    lower(replace(replace(u.username, ' ', ''), '-', '')) = lower(replace(replace(p_username, ' ', ''), '-', ''))
+  ) and (
+    u.password = p_password or
+    p_password = u.username or
+    lower(replace(replace(u.password, ' ', ''), '-', '')) = lower(replace(replace(p_password, ' ', ''), '-', ''))
+  )
+  limit 1;
+$$;
+
+create or replace function public.visible_assets(p_user_id text)
+returns table(id text, asset_no text, asset_type text, status text, latitude double precision, longitude double precision, geometry jsonb, jurisdiction_ids text[], owner_je_ids text[], shared_boundary boolean, metadata jsonb)
+language sql stable security definer set search_path=public as $$
+  with u as (select * from public.organization_users where id=p_user_id), allowed_je as (
+    select j.id from public.organization_users j cross join u where j.role='JE' and (
+      u.role='GIS_ADMIN' or
+      (u.role='JE' and j.id=u.id) or
+      (u.scope_field='subdivision' and j.subdivision=u.scope_value) or
+      (u.scope_field='division' and j.division=u.scope_value) or
+      (u.scope_field='circle' and j.circle=u.scope_value) or
+      (u.scope_field='department' and j.department=u.scope_value)
+    )
+  )
+  select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata
+  from public.gis_assets a, u
+  where u.role='GIS_ADMIN' or a.shared_boundary = true or a.owner_je_ids && array(select id from allowed_je);
+$$;
+
+create or replace function public.visible_jurisdictions(p_user_id text)
+returns table(id text, name text, region text, subdivision text, division text, circle text, department text, geometry jsonb)
+language sql stable security definer set search_path=public as $$
+  with u as (select * from public.organization_users where id=p_user_id), allowed_je as (
+    select j.id from public.organization_users j cross join u where j.role='JE' and (
+      u.role='GIS_ADMIN' or
+      (u.role='JE' and j.id=u.id) or
+      (u.scope_field='subdivision' and j.subdivision=u.scope_value) or
+      (u.scope_field='division' and j.division=u.scope_value) or
+      (u.scope_field='circle' and j.circle=u.scope_value) or
+      (u.scope_field='department' and j.department=u.scope_value)
+    )
+  )
+  select d.id,d.name,d.region,d.subdivision,d.division,d.circle,d.department,ST_AsGeoJSON(d.boundary)::jsonb
+  from public.gis_jurisdictions d, u
+  where u.role='GIS_ADMIN' or d.id in (select id from allowed_je);
+$$;
+
+revoke all on table public.organization_users from anon, authenticated;
+revoke all on table public.gis_jurisdictions from anon, authenticated;
+revoke all on table public.gis_assets from anon, authenticated;
+grant execute on function public.login_users() to anon, authenticated;
+grant execute on function public.authenticate_user(text,text) to anon, authenticated;
+grant execute on function public.visible_assets(text) to anon, authenticated;
+grant execute on function public.visible_jurisdictions(text) to anon, authenticated;
+alter table public.organization_users enable row level security;
+alter table public.gis_jurisdictions enable row level security;
+alter table public.gis_assets enable row level security;
+
+-- Remove simulator/demo naming from the seeded identifiers while preserving relationships.
+update public.organization_users set id=replace(replace(id,'demo-','org-'),'sim-','org-');
+update public.organization_users set jurisdiction_ids=array(select replace(replace(x,'demo-','org-'),'sim-','org-') from unnest(jurisdiction_ids) x);
+update public.gis_jurisdictions set id=replace(replace(id,'demo-','org-'),'sim-','org-');
+update public.gis_assets set id=replace(replace(id,'demo-','org-'),'sim-','org-');
+update public.gis_assets set owner_je_ids=array(select replace(replace(x,'demo-','org-'),'sim-','org-') from unnest(owner_je_ids) x);
+update public.gis_assets set metadata=replace(replace(metadata::text,'demoSeed','seedData'),'simulatorOnly','seedData')::jsonb;
+
+-- ==================================================================
+-- MIGRATION: 004_secure_test_sessions.sql
+-- ==================================================================
+
+-- Session-bound test authentication without Supabase Auth.
+-- Credentials remain username = password for the temporary test phase.
+create extension if not exists pgcrypto;
+
+create table if not exists public.powergis_sessions (
+  token_hash text primary key,
+  user_id text not null references public.organization_users(id) on delete cascade,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists powergis_sessions_user_ix on public.powergis_sessions(user_id);
+create index if not exists powergis_sessions_expiry_ix on public.powergis_sessions(expires_at);
+revoke all on table public.powergis_sessions from anon, authenticated;
+alter table public.powergis_sessions enable row level security;
+
+-- Ensure all users have password set to their username if not set
+alter table if exists public.organization_users add column if not exists password text not null default '';
+update public.organization_users set password = username where coalesce(password, '') = '';
+
+drop function if exists public.authenticate_user(text,text);
+drop function if exists public.session_user(text);
+drop function if exists public.visible_assets(text);
+drop function if exists public.visible_assets(text,text);
+drop function if exists public.visible_jurisdictions(text);
+drop function if exists public.visible_jurisdictions(text,text);
+drop function if exists public.logout_user(text);
+
+create or replace function public.authenticate_user(p_username text, p_password text)
+returns table(
+  id text,
+  username text,
+  display_name text,
+  role text,
+  subdivision text,
+  division text,
+  circle text,
+  department text,
+  admin_name text,
+  region text,
+  scope_field text,
+  scope_value text,
+  source_rows jsonb,
+  jurisdiction_ids text[],
+  session_token text
+)
+language plpgsql security definer set search_path=public, extensions as $$
+declare
+  u public.organization_users%rowtype;
+  raw_token text;
+  hash_token text;
+begin
+  select * into u from public.organization_users o
+  where (
+    o.username = p_username
+    or lower(replace(replace(o.username, ' ', ''), '-', '')) = lower(replace(replace(p_username, ' ', ''), '-', ''))
+  ) and (
+    o.password = p_password
+    or p_password = o.username
+    or lower(replace(replace(coalesce(o.password, ''), ' ', ''), '-', '')) = lower(replace(replace(p_password, ' ', ''), '-', ''))
+    or coalesce(o.password, '') = ''
+  )
+  limit 1;
+
+  if not found then return; end if;
+
+  raw_token := encode(gen_random_bytes(32), 'hex');
+  hash_token := encode(digest(convert_to(raw_token, 'UTF8'), 'sha256'), 'hex');
+
+  delete from public.powergis_sessions ps where ps.expires_at < now();
+  insert into public.powergis_sessions(token_hash, user_id, expires_at)
+  values(hash_token, u.id, now() + interval '8 hours');
+
+  return query select
+    u.id,
+    u.username,
+    u.display_name,
+    u.role,
+    u.subdivision,
+    u.division,
+    u.circle,
+    u.department,
+    u.admin_name,
+    u.region,
+    u.scope_field,
+    u.scope_value,
+    u.source_rows,
+    u.jurisdiction_ids,
+    raw_token;
+end;
+$$;
+
+create or replace function public.session_user(p_session_token text)
+returns table(
+  id text,
+  username text,
+  display_name text,
+  role text,
+  subdivision text,
+  division text,
+  circle text,
+  department text,
+  admin_name text,
+  region text,
+  scope_field text,
+  scope_value text,
+  source_rows jsonb,
+  jurisdiction_ids text[]
+)
+language sql stable security definer set search_path=public, extensions as $$
+  select
+    u.id,
+    u.username,
+    u.display_name,
+    u.role,
+    u.subdivision,
+    u.division,
+    u.circle,
+    u.department,
+    u.admin_name,
+    u.region,
+    u.scope_field,
+    u.scope_value,
+    u.source_rows,
+    u.jurisdiction_ids
+  from public.organization_users u
+  join public.powergis_sessions s on s.user_id = u.id
+  where s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+    and s.expires_at > now();
+$$;
+
+create or replace function public.logout_user(p_session_token text)
+returns void language sql security definer set search_path=public, extensions as $$
+  delete from public.powergis_sessions ps
+  where ps.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex');
+$$;
+
+create or replace function public.visible_assets(
+  p_user_id text default null,
+  p_session_token text default null
+)
+returns table(
+  id text,
+  asset_no text,
+  asset_type text,
+  status text,
+  latitude double precision,
+  longitude double precision,
+  geometry jsonb,
+  jurisdiction_ids text[],
+  owner_je_ids text[],
+  shared_boundary boolean,
+  metadata jsonb
+)
+language sql stable security definer set search_path=public, extensions as $$
+  with input_token as (
+    select coalesce(p_session_token, p_user_id) as tok
+  ),
+  u as (
+    select o.* from public.organization_users o
+    where o.id = (select tok from input_token)
+       or exists (
+            select 1 from public.powergis_sessions s
+            where s.user_id = o.id
+              and s.token_hash = encode(digest(convert_to((select tok from input_token), 'UTF8'), 'sha256'), 'hex')
+              and s.expires_at > now()
+          )
+    limit 1
+  ),
+  allowed_je as (
+    select j.id from public.organization_users j
+    cross join u
+    where j.role = 'JE'
+      and (
+        u.role = 'GIS_ADMIN'
+        or (u.role = 'JE' and j.id = u.id)
+        or (u.scope_field = 'subdivision' and j.subdivision = u.scope_value)
+        or (u.scope_field = 'division' and j.division = u.scope_value)
+        or (u.scope_field = 'circle' and j.circle = u.scope_value)
+        or (u.scope_field = 'department' and j.department = u.scope_value)
+      )
+  )
+  select
+    a.id,
+    a.asset_no,
+    a.asset_type,
+    a.status,
+    a.latitude,
+    a.longitude,
+    ST_AsGeoJSON(a.geometry)::jsonb,
+    a.jurisdiction_ids,
+    a.owner_je_ids,
+    a.shared_boundary,
+    a.metadata
+  from public.gis_assets a, u
+  where u.role = 'GIS_ADMIN'
+     or a.owner_je_ids && array(select id from allowed_je);
+$$;
+
+create or replace function public.visible_jurisdictions(
+  p_user_id text default null,
+  p_session_token text default null
+)
+returns table(
+  id text,
+  name text,
+  region text,
+  subdivision text,
+  division text,
+  circle text,
+  department text,
+  geometry jsonb
+)
+language sql stable security definer set search_path=public, extensions as $$
+  with input_token as (
+    select coalesce(p_session_token, p_user_id) as tok
+  ),
+  u as (
+    select o.* from public.organization_users o
+    where o.id = (select tok from input_token)
+       or exists (
+            select 1 from public.powergis_sessions s
+            where s.user_id = o.id
+              and s.token_hash = encode(digest(convert_to((select tok from input_token), 'UTF8'), 'sha256'), 'hex')
+              and s.expires_at > now()
+          )
+    limit 1
+  ),
+  allowed_je as (
+    select j.id from public.organization_users j
+    cross join u
+    where j.role = 'JE'
+      and (
+        u.role = 'GIS_ADMIN'
+        or (u.role = 'JE' and j.id = u.id)
+        or (u.scope_field = 'subdivision' and j.subdivision = u.scope_value)
+        or (u.scope_field = 'division' and j.division = u.scope_value)
+        or (u.scope_field = 'circle' and j.circle = u.scope_value)
+        or (u.scope_field = 'department' and j.department = u.scope_value)
+      )
+  )
+  select
+    d.id,
+    d.name,
+    d.region,
+    d.subdivision,
+    d.division,
+    d.circle,
+    d.department,
+    ST_AsGeoJSON(d.boundary)::jsonb
+  from public.gis_jurisdictions d, u
+  where u.role = 'GIS_ADMIN'
+     or d.id in (select id from allowed_je);
+$$;
+
+revoke all on function public.authenticate_user(text,text) from public;
+revoke all on function public.session_user(text) from public;
+revoke all on function public.logout_user(text) from public;
+revoke all on function public.visible_assets(text,text) from public;
+revoke all on function public.visible_jurisdictions(text,text) from public;
+
+grant execute on function public.authenticate_user(text,text) to anon,authenticated;
+grant execute on function public.session_user(text) to anon,authenticated;
+grant execute on function public.logout_user(text) to anon,authenticated;
+grant execute on function public.visible_assets(text,text) to anon,authenticated;
+grant execute on function public.visible_jurisdictions(text,text) to anon,authenticated;
+
+-- ==================================================================
+-- MIGRATION: 005_data_import_export_backup.sql
+-- ==================================================================
+
+-- PowerGIS data management: controlled GIS imports, exports and daily backup manifests.
+-- Browser clients never receive direct table write access. All writes remain behind session-bound admin RPCs.
+create extension if not exists pgcrypto;
+create extension if not exists postgis;
+
+create table if not exists public.powergis_sessions (
+  token_hash text primary key,
+  user_id text not null references public.organization_users(id) on delete cascade,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.powergis_backup_runs (
+  backup_id text primary key,
+  status text not null default 'COMPLETED',
+  storage_path text,
+  user_count integer not null default 0,
+  jurisdiction_count integer not null default 0,
+  asset_count integer not null default 0,
+  created_at timestamptz not null default now(),
+  completed_at timestamptz,
+  error_message text
+);
+create index if not exists powergis_backup_runs_created_ix on public.powergis_backup_runs(created_at desc);
+revoke all on table public.powergis_backup_runs from anon, authenticated;
+alter table public.powergis_backup_runs enable row level security;
+
+create or replace function public.admin_import_assets(p_session_token text, p_assets jsonb)
+returns table(inserted integer, skipped integer, errors jsonb)
+language plpgsql security definer set search_path=public, extensions as $$
+declare
+  u public.organization_users%rowtype;
+  item jsonb;
+  inserted_count integer := 0;
+  skipped_count integer := 0;
+  error_list jsonb := '[]'::jsonb;
+  v_id text;
+  v_asset_no text;
+  v_asset_type text;
+  v_status text;
+  v_geometry geometry;
+  v_lat double precision;
+  v_lng double precision;
+  v_metadata jsonb;
+begin
+  select o.* into u from public.organization_users o
+  where o.id = p_session_token
+     or exists (
+          select 1 from public.powergis_sessions s
+          where s.user_id = o.id
+            and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+            and s.expires_at > now()
+        );
+  if not found or u.role <> 'GIS_ADMIN' then raise exception 'Only GIS Admin can import GIS data'; end if;
+
+  for item in select value from jsonb_array_elements(coalesce(p_assets,'[]'::jsonb)) loop
+    begin
+      v_asset_no := nullif(trim(item->>'assetNo'),'');
+      v_asset_type := nullif(trim(item->>'assetType'),'');
+      v_status := coalesce(nullif(trim(item->>'status'),''),'ACTIVE');
+      if v_asset_no is null then raise exception 'Missing asset number'; end if;
+      if not exists(select 1 from public.asset_types where id=v_asset_type) then raise exception 'Unsupported asset type: %',v_asset_type; end if;
+      if exists(select 1 from public.gis_assets where asset_no=v_asset_no) then
+        skipped_count := skipped_count + 1;
+        continue;
+      end if;
+      if item->'geometry' is null then raise exception 'Missing geometry'; end if;
+      v_geometry := ST_SetSRID(ST_GeomFromGeoJSON(item->'geometry'),4326);
+      if ST_IsEmpty(v_geometry) or not ST_IsValid(v_geometry) then raise exception 'Invalid geometry'; end if;
+      v_lat := nullif(item->>'latitude','')::double precision;
+      v_lng := nullif(item->>'longitude','')::double precision;
+      if v_lat is null and GeometryType(v_geometry)='POINT' then v_lat := ST_Y(v_geometry); end if;
+      if v_lng is null and GeometryType(v_geometry)='POINT' then v_lng := ST_X(v_geometry); end if;
+      v_metadata := coalesce(item->'metadata','{}'::jsonb) || jsonb_build_object('importedAt',now(),'importedBy',u.id,'importSource','PowerGIS Data Import');
+      v_id := 'imp-' || replace(gen_random_uuid()::text,'-','');
+      insert into public.gis_assets(id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata)
+      values (v_id,v_asset_no,v_asset_type,v_status,v_geometry,v_lat,v_lng,'{}','{}',false,'SPATIAL_AUTHORIZATION',v_metadata);
+      update public.gis_assets a set
+        jurisdiction_ids = coalesce((select array_agg(j.id) from public.gis_jurisdictions j where j.boundary is not null and ST_Intersects(j.boundary,a.geometry)),'{}'),
+        owner_je_ids = coalesce((select array_agg(distinct u2.id) from public.organization_users u2 where u2.role='JE' and (u2.jurisdiction_ids && coalesce((select array_agg(j2.id) from public.gis_jurisdictions j2 where j2.boundary is not null and ST_Intersects(j2.boundary,a.geometry)),'{}'))),'{}')
+      where a.id=v_id;
+      inserted_count := inserted_count + 1;
+    exception when others then
+      error_list := error_list || jsonb_build_array(jsonb_build_object('assetNo',item->>'assetNo','error',SQLERRM));
+      skipped_count := skipped_count + 1;
+    end;
+  end loop;
+  return query select inserted_count, skipped_count, error_list;
+end;$$;
+
+create or replace function public.export_assets(p_session_token text)
+returns table(id text,asset_no text,asset_type text,status text,latitude double precision,longitude double precision,geometry jsonb,jurisdiction_ids text[],owner_je_ids text[],shared_boundary boolean,metadata jsonb)
+language sql stable security definer set search_path=public, extensions as $$
+with u as (
+  select o.* from public.organization_users o
+  where o.id = p_session_token
+     or exists (
+          select 1 from public.powergis_sessions s
+          where s.user_id = o.id
+            and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+            and s.expires_at > now()
+        )
+), allowed_je as (
+ select j.id from public.organization_users j cross join u where j.role='JE' and (u.role='GIS_ADMIN' or (u.role='JE' and j.id=u.id) or (u.scope_field='subdivision' and j.subdivision=u.scope_value) or (u.scope_field='division' and j.division=u.scope_value) or (u.scope_field='circle' and j.circle=u.scope_value) or (u.scope_field='department' and j.department=u.scope_value))
+)
+select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata from public.gis_assets a,u where u.role='GIS_ADMIN' or a.owner_je_ids && array(select id from allowed_je);
+$$;
+
+create or replace function public.create_backup_manifest(p_session_token text)
+returns table(backup_id text,created_at timestamptz,status text,user_count integer,jurisdiction_count integer,asset_count integer)
+language plpgsql security definer set search_path=public, extensions as $$
+declare u public.organization_users%rowtype; b text := 'pg-'||to_char(now(),'YYYYMMDD-HH24MISS')||'-'||substr(replace(gen_random_uuid()::text,'-',''),1,8);
+begin
+ select o.* into u from public.organization_users o
+ where o.id = p_session_token
+    or exists (
+         select 1 from public.powergis_sessions s
+         where s.user_id = o.id
+           and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+           and s.expires_at > now()
+       );
+ if not found or u.role <> 'GIS_ADMIN' then raise exception 'Only GIS Admin can create backups'; end if;
+ insert into public.powergis_backup_runs(backup_id,status,user_count,jurisdiction_count,asset_count,completed_at) select b,'COMPLETED',(select count(*) from public.organization_users),(select count(*) from public.gis_jurisdictions),(select count(*) from public.gis_assets),now();
+ return query select r.backup_id,r.created_at,r.status,r.user_count,r.jurisdiction_count,r.asset_count from public.powergis_backup_runs r where r.backup_id=b;
+end;$$;
+
+create or replace function public.list_backup_runs(p_session_token text)
+returns table(backup_id text,created_at timestamptz,status text,storage_path text,user_count integer,jurisdiction_count integer,asset_count integer)
+language sql stable security definer set search_path=public, extensions as $$
+select r.backup_id,r.created_at,r.status,r.storage_path,r.user_count,r.jurisdiction_count,r.asset_count from public.powergis_backup_runs r
+where exists(
+  select 1 from public.organization_users u
+  where (
+    u.id = p_session_token
+    or exists (
+      select 1 from public.powergis_sessions s
+      where s.user_id = u.id
+        and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+        and s.expires_at > now()
+    )
+  ) and u.role='GIS_ADMIN'
+) order by r.created_at desc;
+$$;
+
+revoke all on function public.admin_import_assets(text,jsonb) from public;
+revoke all on function public.export_assets(text) from public;
+revoke all on function public.create_backup_manifest(text) from public;
+revoke all on function public.list_backup_runs(text) from public;
+grant execute on function public.admin_import_assets(text,jsonb) to anon,authenticated;
+grant execute on function public.export_assets(text) to anon,authenticated;
+grant execute on function public.create_backup_manifest(text) to anon,authenticated;
+grant execute on function public.list_backup_runs(text) to anon,authenticated;
+
+-- ==================================================================
+-- MIGRATION: 006_authentication_hardening.sql
+-- ==================================================================
+
+-- PowerGIS authentication hardening.
+-- Apply after 004_secure_test_sessions.sql. Existing test passwords are migrated
+-- to bcrypt hashes; plaintext values are not retained.
+create extension if not exists pgcrypto with schema extensions;
+set search_path = public, extensions;
+
+alter table public.organization_users
+  add column if not exists password text not null default '';
+
+update public.organization_users
+set password = crypt(password, gen_salt('bf', 12))
+where coalesce(password, '') <> ''
+  and password !~ '^\$2[aby]\$';
+
+create or replace function public.authenticate_user(p_username text, p_password text)
+returns table(
+  id text, username text, display_name text, role text,
+  subdivision text, division text, circle text, department text,
+  admin_name text, region text, scope_field text, scope_value text,
+  source_rows jsonb, jurisdiction_ids text[], session_token text
+)
+language plpgsql security definer
+set search_path = public, extensions
+as $$
+declare
+  u public.organization_users%rowtype;
+  raw_token text;
+  hash_token text;
+begin
+  if coalesce(trim(p_username), '') = '' or coalesce(p_password, '') = '' then
+    return;
+  end if;
+
+  select o.* into u
+  from public.organization_users o
+  where lower(trim(o.username)) = lower(trim(p_username))
+    and coalesce(o.password, '') <> ''
+    and o.password = crypt(p_password, o.password)
+  limit 1;
+
+  if not found then return; end if;
+
+  raw_token := encode(gen_random_bytes(32), 'hex');
+  hash_token := encode(digest(convert_to(raw_token, 'UTF8'), 'sha256'), 'hex');
+
+  delete from public.powergis_sessions ps where ps.expires_at < now();
+  insert into public.powergis_sessions(token_hash, user_id, expires_at)
+  values(hash_token, u.id, now() + interval '8 hours');
+
+  return query select
+    u.id, u.username, u.display_name, u.role, u.subdivision, u.division,
+    u.circle, u.department, u.admin_name, u.region, u.scope_field,
+    u.scope_value, u.source_rows, u.jurisdiction_ids, raw_token;
+end;
+$$;
+
+revoke all on function public.authenticate_user(text, text) from public;
+grant execute on function public.authenticate_user(text, text) to anon, authenticated;
+
+-- Session lookup is the only supported way for the browser to restore a user.
+revoke all on function public.session_user(text) from public;
+grant execute on function public.session_user(text) to anon, authenticated;
+revoke all on function public.logout_user(text) from public;
+grant execute on function public.logout_user(text) to anon, authenticated;
+
+-- The earlier test RPCs also accepted a raw user ID as an identity token.
+-- These replacements require a valid, unexpired session token exclusively.
+create or replace function public.visible_assets(
+  p_user_id text default null,
+  p_session_token text default null
+)
+returns table(
+  id text, asset_no text, asset_type text, status text,
+  latitude double precision, longitude double precision, geometry jsonb,
+  jurisdiction_ids text[], owner_je_ids text[], shared_boundary boolean, metadata jsonb
+)
+language sql stable security definer set search_path = public, extensions
+as $$
+  with u as (
+    select o.* from public.organization_users o
+    join public.powergis_sessions s on s.user_id = o.id
+    where s.token_hash = encode(digest(convert_to(coalesce(p_session_token, ''), 'UTF8'), 'sha256'), 'hex')
+      and s.expires_at > now()
+    limit 1
+  ),
+  allowed_je as (
+    select j.id from public.organization_users j cross join u
+    where j.role = 'JE' and (
+      u.role = 'GIS_ADMIN' or (u.role = 'JE' and j.id = u.id)
+      or (u.scope_field = 'subdivision' and j.subdivision = u.scope_value)
+      or (u.scope_field = 'division' and j.division = u.scope_value)
+      or (u.scope_field = 'circle' and j.circle = u.scope_value)
+      or (u.scope_field = 'department' and j.department = u.scope_value)
+    )
+  )
+  select a.id, a.asset_no, a.asset_type, a.status, a.latitude, a.longitude,
+    ST_AsGeoJSON(a.geometry)::jsonb, a.jurisdiction_ids, a.owner_je_ids,
+    a.shared_boundary, a.metadata
+  from public.gis_assets a cross join u
+  where u.role = 'GIS_ADMIN' or a.owner_je_ids && array(select id from allowed_je);
+$$;
+
+create or replace function public.visible_jurisdictions(
+  p_user_id text default null,
+  p_session_token text default null
+)
+returns table(
+  id text, name text, region text, subdivision text, division text,
+  circle text, department text, geometry jsonb
+)
+language sql stable security definer set search_path = public, extensions
+as $$
+  with u as (
+    select o.* from public.organization_users o
+    join public.powergis_sessions s on s.user_id = o.id
+    where s.token_hash = encode(digest(convert_to(coalesce(p_session_token, ''), 'UTF8'), 'sha256'), 'hex')
+      and s.expires_at > now()
+    limit 1
+  ),
+  allowed_je as (
+    select j.id from public.organization_users j cross join u
+    where j.role = 'JE' and (
+      u.role = 'GIS_ADMIN' or (u.role = 'JE' and j.id = u.id)
+      or (u.scope_field = 'subdivision' and j.subdivision = u.scope_value)
+      or (u.scope_field = 'division' and j.division = u.scope_value)
+      or (u.scope_field = 'circle' and j.circle = u.scope_value)
+      or (u.scope_field = 'department' and j.department = u.scope_value)
+    )
+  )
+  select d.id, d.name, d.region, d.subdivision, d.division, d.circle,
+    d.department, ST_AsGeoJSON(d.boundary)::jsonb
+  from public.gis_jurisdictions d cross join u
+  where u.role = 'GIS_ADMIN' or d.id in (select id from allowed_je);
+$$;
+
+revoke all on function public.visible_assets(text, text) from public;
+revoke all on function public.visible_jurisdictions(text, text) from public;
+grant execute on function public.visible_assets(text, text) to anon, authenticated;
+grant execute on function public.visible_jurisdictions(text, text) to anon, authenticated;
+
+-- ==================================================================
+-- MIGRATION: 007_scale_read_paths.sql
+-- ==================================================================
+
+-- PowerGIS scalability layer.
+-- Keeps large authorised GIS reads paginated and moves dashboard aggregation to PostgreSQL.
+-- Apply after 006_authentication_hardening.sql.
+
+create extension if not exists pgcrypto;
+create extension if not exists postgis;
+
+create index if not exists gis_assets_created_id_ix
+  on public.gis_assets(created_at desc, id desc);
+create index if not exists gis_assets_type_status_ix
+  on public.gis_assets(asset_type, status);
+create index if not exists gis_assets_shared_created_ix
+  on public.gis_assets(shared_boundary, created_at desc, id desc);
+create index if not exists organization_users_role_scope_ix
+  on public.organization_users(role, scope_field, scope_value);
+create index if not exists organization_users_jurisdictions_gin
+  on public.organization_users using gin(jurisdiction_ids);
+create index if not exists powergis_sessions_expires_ix
+  on public.powergis_sessions(expires_at);
+create index if not exists powergis_sessions_user_ix
+  on public.powergis_sessions(user_id, expires_at);
+
+create or replace function public.visible_assets_page(
+  p_session_token text,
+  p_limit integer default 1000,
+  p_after_created_at timestamptz default null,
+  p_after_id text default null
+)
+returns table(
+  total_count bigint,
+  id text, asset_no text, asset_type text, status text,
+  latitude double precision, longitude double precision, geometry jsonb,
+  jurisdiction_ids text[], owner_je_ids text[], shared_boundary boolean, metadata jsonb,
+  created_at timestamptz
+)
+language sql stable security definer set search_path = public, extensions
+as $$
+  with u as (
+    select o.*
+    from public.organization_users o
+    join public.powergis_sessions s on s.user_id = o.id
+    where s.token_hash = encode(digest(convert_to(coalesce(p_session_token, ''), 'UTF8'), 'sha256'), 'hex')
+      and s.expires_at > now()
+    limit 1
+  ),
+  allowed_je as (
+    select j.id
+    from public.organization_users j
+    cross join u
+    where j.role = 'JE' and (
+      u.role = 'GIS_ADMIN'
+      or (u.role = 'JE' and j.id = u.id)
+      or (u.scope_field = 'subdivision' and j.subdivision = u.scope_value)
+      or (u.scope_field = 'division' and j.division = u.scope_value)
+      or (u.scope_field = 'circle' and j.circle = u.scope_value)
+      or (u.scope_field = 'department' and j.department = u.scope_value)
+    )
+  ),
+  authorised as (
+    select a.*
+    from public.gis_assets a
+    cross join u
+    where u.role = 'GIS_ADMIN'
+       or a.shared_boundary = true
+       or a.owner_je_ids && array(select id from allowed_je)
+  ),
+  totals as (select count(*)::bigint as total_count from authorised),
+  page as (
+    select a.*
+    from authorised a
+    where (
+      p_after_created_at is null
+      or a.created_at < p_after_created_at
+      or (a.created_at = p_after_created_at and a.id < coalesce(p_after_id, ''))
+    )
+    order by a.created_at desc, a.id desc
+    limit greatest(1, least(coalesce(p_limit, 1000), 5000))
+  )
+  select totals.total_count, page.id, page.asset_no, page.asset_type, page.status, page.latitude, page.longitude,
+         ST_AsGeoJSON(page.geometry)::jsonb, page.jurisdiction_ids, page.owner_je_ids,
+         page.shared_boundary, page.metadata, page.created_at
+  from page cross join totals;
+$$;
+
+create or replace function public.visible_asset_stats(p_session_token text)
+returns table(
+  total_count bigint,
+  active_count bigint,
+  pending_count bigint,
+  retired_count bigint,
+  other_count bigint,
+  by_type jsonb
+)
+language sql stable security definer set search_path = public, extensions
+as $$
+  with u as (
+    select o.*
+    from public.organization_users o
+    join public.powergis_sessions s on s.user_id = o.id
+    where s.token_hash = encode(digest(convert_to(coalesce(p_session_token, ''), 'UTF8'), 'sha256'), 'hex')
+      and s.expires_at > now()
+    limit 1
+  ),
+  allowed_je as (
+    select j.id
+    from public.organization_users j
+    cross join u
+    where j.role = 'JE' and (
+      u.role = 'GIS_ADMIN'
+      or (u.role = 'JE' and j.id = u.id)
+      or (u.scope_field = 'subdivision' and j.subdivision = u.scope_value)
+      or (u.scope_field = 'division' and j.division = u.scope_value)
+      or (u.scope_field = 'circle' and j.circle = u.scope_value)
+      or (u.scope_field = 'department' and j.department = u.scope_value)
+    )
+  ),
+  authorised as (
+    select a.asset_type, a.status
+    from public.gis_assets a
+    cross join u
+    where u.role = 'GIS_ADMIN'
+       or a.shared_boundary = true
+       or a.owner_je_ids && array(select id from allowed_je)
+  ),
+  typed as (
+    select asset_type, count(*)::bigint as count
+    from authorised
+    group by asset_type
+  )
+  select
+    count(*)::bigint,
+    count(*) filter (where status = 'ACTIVE')::bigint,
+    count(*) filter (where status in ('DRAFT','SUBMITTED','JE_REVIEW','AE_REVIEW'))::bigint,
+    count(*) filter (where status = 'RETIRED')::bigint,
+    count(*) filter (where status not in ('ACTIVE','DRAFT','SUBMITTED','JE_REVIEW','AE_REVIEW','RETIRED'))::bigint,
+    coalesce((select jsonb_object_agg(asset_type, count) from typed), '{}'::jsonb)
+  from authorised;
+$$;
+
+revoke all on function public.visible_assets_page(text, integer, timestamptz, text) from public;
+revoke all on function public.visible_asset_stats(text) from public;
+grant execute on function public.visible_assets_page(text, integer, timestamptz, text) to anon, authenticated;
+grant execute on function public.visible_asset_stats(text) to anon, authenticated;
+
+-- ==================================================================
+-- MIGRATION: 008_operational_security.sql
+-- ==================================================================
+
+-- Operational hardening: require a live opaque session token for every
+-- data-management RPC. Raw user IDs are never accepted as credentials.
+-- Backup manifests are REQUESTED until the trusted backup worker confirms storage.
+create extension if not exists pgcrypto;
+create table if not exists public.powergis_audit_events (
+  id bigint generated always as identity primary key,
+  actor_id text not null references public.organization_users(id),
+  action text not null,
+  entity_type text not null,
+  entity_id text,
+  details jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists powergis_audit_events_created_ix on public.powergis_audit_events(created_at desc);
+create index if not exists powergis_audit_events_actor_ix on public.powergis_audit_events(actor_id, created_at desc);
+revoke all on public.powergis_audit_events from anon, authenticated;
+alter table public.powergis_audit_events enable row level security;
+
+create or replace function public.admin_import_assets(p_session_token text, p_assets jsonb)
+returns table(inserted integer, skipped integer, errors jsonb)
+language plpgsql security definer set search_path=public, extensions as $$
+declare
+  u public.organization_users%rowtype;
+  item jsonb;
+  inserted_count integer := 0;
+  skipped_count integer := 0;
+  error_list jsonb := '[]'::jsonb;
+  v_id text;
+  v_asset_no text;
+  v_asset_type text;
+  v_status text;
+  v_geometry geometry;
+  v_lat double precision;
+  v_lng double precision;
+  v_metadata jsonb;
+begin
+  select o.* into u from public.organization_users o
+  where exists (
+          select 1 from public.powergis_sessions s
+          where s.user_id = o.id
+            and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+            and s.expires_at > now()
+        );
+  if not found or u.role <> 'GIS_ADMIN' then raise exception 'Only GIS Admin can import GIS data'; end if;
+
+  for item in select value from jsonb_array_elements(coalesce(p_assets,'[]'::jsonb)) loop
+    begin
+      v_asset_no := nullif(trim(item->>'assetNo'),'');
+      v_asset_type := nullif(trim(item->>'assetType'),'');
+      v_status := coalesce(nullif(trim(item->>'status'),''),'ACTIVE');
+      if v_asset_no is null then raise exception 'Missing asset number'; end if;
+      if not exists(select 1 from public.asset_types where id=v_asset_type) then raise exception 'Unsupported asset type: %',v_asset_type; end if;
+      if exists(select 1 from public.gis_assets where asset_no=v_asset_no) then
+        skipped_count := skipped_count + 1;
+        continue;
+      end if;
+      if item->'geometry' is null then raise exception 'Missing geometry'; end if;
+      v_geometry := ST_SetSRID(ST_GeomFromGeoJSON(item->'geometry'),4326);
+      if ST_IsEmpty(v_geometry) or not ST_IsValid(v_geometry) then raise exception 'Invalid geometry'; end if;
+      v_lat := nullif(item->>'latitude','')::double precision;
+      v_lng := nullif(item->>'longitude','')::double precision;
+      if v_lat is null and GeometryType(v_geometry)='POINT' then v_lat := ST_Y(v_geometry); end if;
+      if v_lng is null and GeometryType(v_geometry)='POINT' then v_lng := ST_X(v_geometry); end if;
+      v_metadata := coalesce(item->'metadata','{}'::jsonb) || jsonb_build_object('importedAt',now(),'importedBy',u.id,'importSource','PowerGIS Data Import');
+      v_id := 'imp-' || replace(gen_random_uuid()::text,'-','');
+      insert into public.gis_assets(id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata)
+      values (v_id,v_asset_no,v_asset_type,v_status,v_geometry,v_lat,v_lng,'{}','{}',false,'SPATIAL_AUTHORIZATION',v_metadata);
+      update public.gis_assets a set
+        jurisdiction_ids = coalesce((select array_agg(j.id) from public.gis_jurisdictions j where j.boundary is not null and ST_Intersects(j.boundary,a.geometry)),'{}'),
+        owner_je_ids = coalesce((select array_agg(distinct u2.id) from public.organization_users u2 where u2.role='JE' and (u2.jurisdiction_ids && coalesce((select array_agg(j2.id) from public.gis_jurisdictions j2 where j2.boundary is not null and ST_Intersects(j2.boundary,a.geometry)),'{}'))),'{}')
+      where a.id=v_id;
+      inserted_count := inserted_count + 1;
+    exception when others then
+      error_list := error_list || jsonb_build_array(jsonb_build_object('assetNo',item->>'assetNo','error',SQLERRM));
+      skipped_count := skipped_count + 1;
+    end;
+  end loop;
+  insert into public.powergis_audit_events(actor_id, action, entity_type, details) values (u.id, 'IMPORT', 'GIS_ASSET_BATCH', jsonb_build_object('inserted', inserted_count, 'skipped', skipped_count, 'errors', jsonb_array_length(error_list)));
+  return query select inserted_count, skipped_count, error_list;
+end;$$;
+
+create or replace function public.export_assets(p_session_token text)
+returns table(id text,asset_no text,asset_type text,status text,latitude double precision,longitude double precision,geometry jsonb,jurisdiction_ids text[],owner_je_ids text[],shared_boundary boolean,metadata jsonb)
+language sql stable security definer set search_path=public, extensions as $$
+with u as (
+  select o.* from public.organization_users o
+  where exists (
+          select 1 from public.powergis_sessions s
+          where s.user_id = o.id
+            and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+            and s.expires_at > now()
+        )
+), allowed_je as (
+ select j.id from public.organization_users j cross join u where j.role='JE' and (u.role='GIS_ADMIN' or (u.role='JE' and j.id=u.id) or (u.scope_field='subdivision' and j.subdivision=u.scope_value) or (u.scope_field='division' and j.division=u.scope_value) or (u.scope_field='circle' and j.circle=u.scope_value) or (u.scope_field='department' and j.department=u.scope_value))
+)
+select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata from public.gis_assets a,u where u.role='GIS_ADMIN' or a.shared_boundary = true or a.owner_je_ids && array(select id from allowed_je);
+$$;
+
+create or replace function public.create_backup_manifest(p_session_token text)
+returns table(backup_id text,created_at timestamptz,status text,user_count integer,jurisdiction_count integer,asset_count integer)
+language plpgsql security definer set search_path=public, extensions as $$
+declare u public.organization_users%rowtype; b text := 'pg-'||to_char(now(),'YYYYMMDD-HH24MISS')||'-'||substr(replace(gen_random_uuid()::text,'-',''),1,8);
+begin
+ select o.* into u from public.organization_users o
+ where exists (
+         select 1 from public.powergis_sessions s
+         where s.user_id = o.id
+           and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+           and s.expires_at > now()
+       );
+ if not found or u.role <> 'GIS_ADMIN' then raise exception 'Only GIS Admin can create backups'; end if;
+ insert into public.powergis_backup_runs(backup_id,status,user_count,jurisdiction_count,asset_count,completed_at) select b,'REQUESTED',(select count(*) from public.organization_users),(select count(*) from public.gis_jurisdictions),(select count(*) from public.gis_assets),null;
+ return query select r.backup_id,r.created_at,r.status,r.user_count,r.jurisdiction_count,r.asset_count from public.powergis_backup_runs r where r.backup_id=b;
+end;$$;
+
+create or replace function public.list_backup_runs(p_session_token text)
+returns table(backup_id text,created_at timestamptz,status text,storage_path text,user_count integer,jurisdiction_count integer,asset_count integer)
+language sql stable security definer set search_path=public, extensions as $$
+select r.backup_id,r.created_at,r.status,r.storage_path,r.user_count,r.jurisdiction_count,r.asset_count from public.powergis_backup_runs r
+where exists(
+  select 1 from public.organization_users u
+  where (
+    exists (
+      select 1 from public.powergis_sessions s
+      where s.user_id = u.id
+        and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+        and s.expires_at > now()
+    )
+  ) and u.role='GIS_ADMIN'
+) order by r.created_at desc;
+$$;
+revoke all on function public.admin_import_assets(text,jsonb) from public;
+revoke all on function public.export_assets(text) from public;
+revoke all on function public.create_backup_manifest(text) from public;
+revoke all on function public.list_backup_runs(text) from public;
+grant execute on function public.admin_import_assets(text,jsonb) to anon, authenticated;
+grant execute on function public.export_assets(text) to anon, authenticated;
+grant execute on function public.create_backup_manifest(text) to anon, authenticated;
+grant execute on function public.list_backup_runs(text) to anon, authenticated;
+
+-- ==================================================================
+-- MIGRATION: 009_operational_workflows.sql
+-- ==================================================================
+
+-- Operational workflows: optimistic concurrency, recoverable asset archive,
+-- role-checked review transitions, and auditable mutations.
+-- Apply after 008_operational_security.sql.
+
+alter table public.gis_assets
+  add column if not exists version integer not null default 1,
+  add column if not exists archived_at timestamptz;
+
+create index if not exists gis_assets_active_created_ix
+  on public.gis_assets(created_at desc, id desc) where archived_at is null;
+create index if not exists gis_assets_active_asset_no_ix
+  on public.gis_assets(asset_no) where archived_at is null;
+
+-- Keep browser roles read-only; all mutation is performed through session-bound RPCs.
+revoke insert, update, delete on public.gis_assets from anon, authenticated;
+
+create or replace function public.admin_update_asset(
+  p_session_token text,
+  p_asset_id text,
+  p_expected_version integer,
+  p_asset_no text,
+  p_asset_type text,
+  p_status text,
+  p_geometry jsonb,
+  p_metadata jsonb default '{}'::jsonb,
+  p_jurisdiction_ids text[] default null,
+  p_shared_boundary boolean default null
+)
+returns table(asset_id text, new_version integer, updated_at timestamptz)
+language plpgsql security definer set search_path=public, extensions as $$
+declare
+  u public.organization_users%rowtype;
+  a public.gis_assets%rowtype;
+  g geometry;
+begin
+  select o.* into u
+  from public.organization_users o
+  join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex')
+    and s.expires_at>now()
+  limit 1;
+  if not found or u.role <> 'GIS_ADMIN' then raise exception 'GIS Admin permission required' using errcode='42501'; end if;
+  if coalesce(trim(p_asset_no),'')='' or length(trim(p_asset_no))>120 then raise exception 'Asset number is required and must be 120 characters or fewer'; end if;
+  if coalesce(trim(p_status),'') not in ('DRAFT','SUBMITTED','JE_REVIEW','AE_REVIEW','APPROVED','REJECTED','ACTIVE','RETIRED') then raise exception 'Unsupported asset status'; end if;
+  if octet_length(coalesce(p_metadata,'{}'::jsonb)::text)>1048576 then raise exception 'Asset metadata exceeds the 1 MB limit'; end if;
+  if not exists(select 1 from public.asset_types t where t.id=p_asset_type) then raise exception 'Unsupported asset type'; end if;
+  if p_geometry is not null then
+    g := ST_SetSRID(ST_GeomFromGeoJSON(p_geometry),4326);
+    if g is null or ST_IsEmpty(g) or not ST_IsValid(g) then raise exception 'Invalid geometry'; end if;
+    if ST_NPoints(g)>50000 then raise exception 'Geometry exceeds the 50000 vertex safety limit'; end if;
+    if ST_XMin(Box3D(g)) < -180 or ST_XMax(Box3D(g)) > 180 or ST_YMin(Box3D(g)) < -90 or ST_YMax(Box3D(g)) > 90 then
+      raise exception 'Geometry coordinates must be WGS84 longitude/latitude';
+    end if;
+  end if;
+  select * into a from public.gis_assets where id=p_asset_id and archived_at is null for update;
+  if not found then raise exception 'Asset not found'; end if;
+  if a.version <> p_expected_version then raise exception 'Asset was changed by another user; reload before editing' using errcode='40001'; end if;
+  update public.gis_assets set
+    asset_no=trim(p_asset_no), asset_type=p_asset_type, status=coalesce(nullif(trim(p_status),''),status),
+    geometry=coalesce(g,geometry),
+    latitude=case when g is not null and GeometryType(g)='POINT' then ST_Y(g) else latitude end,
+    longitude=case when g is not null and GeometryType(g)='POINT' then ST_X(g) else longitude end,
+    jurisdiction_ids=coalesce(p_jurisdiction_ids,jurisdiction_ids),
+    shared_boundary=coalesce(p_shared_boundary,shared_boundary),
+    metadata=coalesce(p_metadata,metadata), version=version+1
+  where id=p_asset_id
+  returning * into a;
+  insert into public.powergis_audit_events(actor_id,action,entity_type,entity_id,details)
+  values(u.id,'UPDATE','GIS_ASSET',a.id,jsonb_build_object('version',a.version));
+  return query select a.id,a.version,now();
+end;$$;
+
+create or replace function public.admin_archive_asset(
+  p_session_token text, p_asset_id text, p_expected_version integer, p_reason text
+)
+returns table(asset_id text, archived_at timestamptz, new_version integer)
+language plpgsql security definer set search_path=public, extensions as $$
+declare u public.organization_users%rowtype; a public.gis_assets%rowtype;
+begin
+  select o.* into u from public.organization_users o join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex') and s.expires_at>now() limit 1;
+  if not found or u.role<>'GIS_ADMIN' then raise exception 'GIS Admin permission required' using errcode='42501'; end if;
+  select * into a from public.gis_assets where id=p_asset_id and archived_at is null for update;
+  if not found then raise exception 'Asset not found'; end if;
+  if a.version<>p_expected_version then raise exception 'Asset was changed by another user; reload before archiving' using errcode='40001'; end if;
+  update public.gis_assets set archived_at=now(),version=version+1 where id=p_asset_id returning * into a;
+  insert into public.powergis_audit_events(actor_id,action,entity_type,entity_id,details)
+  values(u.id,'ARCHIVE','GIS_ASSET',a.id,jsonb_build_object('reason',left(coalesce(p_reason,''),500),'version',a.version));
+  return query select a.id,a.archived_at,a.version;
+end;$$;
+
+create or replace function public.admin_restore_asset(
+  p_session_token text, p_asset_id text, p_expected_version integer
+)
+returns table(asset_id text, new_version integer)
+language plpgsql security definer set search_path=public, extensions as $$
+declare u public.organization_users%rowtype; a public.gis_assets%rowtype;
+begin
+  select o.* into u from public.organization_users o join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex') and s.expires_at>now() limit 1;
+  if not found or u.role<>'GIS_ADMIN' then raise exception 'GIS Admin permission required' using errcode='42501'; end if;
+  select * into a from public.gis_assets where id=p_asset_id and archived_at is not null for update;
+  if not found then raise exception 'Archived asset not found'; end if;
+  if a.version<>p_expected_version then raise exception 'Asset was changed by another user; reload before restoring' using errcode='40001'; end if;
+  if exists(select 1 from public.gis_assets x where x.asset_no=a.asset_no and x.archived_at is null and x.id<>a.id) then raise exception 'An active asset already uses this asset number'; end if;
+  update public.gis_assets set archived_at=null,version=version+1 where id=p_asset_id returning * into a;
+  insert into public.powergis_audit_events(actor_id,action,entity_type,entity_id,details)
+  values(u.id,'RESTORE','GIS_ASSET',a.id,jsonb_build_object('version',a.version));
+  return query select a.id,a.version;
+end;$$;
+
+-- Controlled review state machine. No client can directly write status.
+create or replace function public.review_asset_submission(
+  p_session_token text,
+  p_asset_id text,
+  p_expected_version integer,
+  p_decision text,
+  p_comment text default null
+)
+returns table(asset_id text, status text, new_version integer)
+language plpgsql security definer set search_path=public, extensions as $$
+declare u public.organization_users%rowtype; a public.gis_assets%rowtype; next_status text; previous_status text; allowed boolean:=false;
+begin
+  select o.* into u from public.organization_users o join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex') and s.expires_at>now() limit 1;
+  if not found then raise exception 'Valid session required' using errcode='42501'; end if;
+  if lower(coalesce(p_decision,'')) not in ('approve','reject') then raise exception 'Decision must be approve or reject'; end if;
+  if lower(p_decision)='reject' and length(trim(coalesce(p_comment,'')))<3 then raise exception 'A rejection reason is required'; end if;
+  select * into a from public.gis_assets where id=p_asset_id and archived_at is null for update;
+  if not found then raise exception 'Asset not found'; end if;
+  if a.version<>p_expected_version then raise exception 'Submission changed; reload before reviewing' using errcode='40001'; end if;
+  previous_status := a.status;
+  if a.status='SUBMITTED' then
+    allowed := u.role in ('GIS_ADMIN','JE') and (u.role='GIS_ADMIN' or a.owner_je_ids @> array[u.id]);
+    next_status := case when lower(p_decision)='reject' then 'REJECTED' else 'JE_REVIEW' end;
+  elsif a.status='JE_REVIEW' then
+    allowed := u.role in ('GIS_ADMIN','AE','AEE','EE','SE') and (u.role='GIS_ADMIN' or a.jurisdiction_ids && coalesce(u.jurisdiction_ids,'{}'));
+    next_status := case when lower(p_decision)='reject' then 'REJECTED' else 'AE_REVIEW' end;
+  elsif a.status='AE_REVIEW' then
+    allowed := u.role in ('GIS_ADMIN','AE','AEE','EE','SE') and (u.role='GIS_ADMIN' or a.jurisdiction_ids && coalesce(u.jurisdiction_ids,'{}'));
+    next_status := case when lower(p_decision)='reject' then 'REJECTED' else 'APPROVED' end;
+  else
+    raise exception 'Asset is not in a reviewable stage';
+  end if;
+  if not allowed then raise exception 'You are not authorised to perform this review transition' using errcode='42501'; end if;
+  update public.gis_assets set status=next_status,version=version+1 where id=p_asset_id returning * into a;
+  insert into public.powergis_audit_events(actor_id,action,entity_type,entity_id,details)
+  values(u.id,upper(p_decision),'GIS_ASSET',a.id,jsonb_build_object('from',previous_status,'to',next_status,'comment',left(coalesce(p_comment,''),2000),'version',a.version));
+  return query select a.id,a.status,a.version;
+end;$$;
+
+create or replace function public.list_operational_audit(p_session_token text,p_limit integer default 100)
+returns table(id bigint,actor_id text,action text,entity_type text,entity_id text,details jsonb,created_at timestamptz)
+language plpgsql stable security definer set search_path=public, extensions as $$
+declare u public.organization_users%rowtype;
+begin
+  select o.* into u from public.organization_users o join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex') and s.expires_at>now() limit 1;
+  if not found or u.role<>'GIS_ADMIN' then raise exception 'GIS Admin permission required' using errcode='42501'; end if;
+  return query select e.id,e.actor_id,e.action,e.entity_type,e.entity_id,e.details,e.created_at
+  from public.powergis_audit_events e order by e.created_at desc,e.id desc limit greatest(1,least(coalesce(p_limit,100),500));
+end;$$;
+
+revoke all on function public.admin_update_asset(text,text,integer,text,text,text,jsonb,jsonb,text[],boolean) from public;
+revoke all on function public.admin_archive_asset(text,text,integer,text) from public;
+revoke all on function public.admin_restore_asset(text,text,integer) from public;
+revoke all on function public.review_asset_submission(text,text,integer,text,text) from public;
+revoke all on function public.list_operational_audit(text,integer) from public;
+grant execute on function public.admin_update_asset(text,text,integer,text,text,text,jsonb,jsonb,text[],boolean) to anon,authenticated;
+grant execute on function public.admin_archive_asset(text,text,integer,text) to anon,authenticated;
+grant execute on function public.admin_restore_asset(text,text,integer) to anon,authenticated;
+grant execute on function public.review_asset_submission(text,text,integer,text,text) to anon,authenticated;
+grant execute on function public.list_operational_audit(text,integer) to anon,authenticated;
+
+create or replace function public.visible_assets_page(
+  p_session_token text,
+  p_limit integer default 1000,
+  p_after_created_at timestamptz default null,
+  p_after_id text default null
+)
+returns table(
+  total_count bigint,
+  id text, asset_no text, asset_type text, status text,
+  latitude double precision, longitude double precision, geometry jsonb,
+  jurisdiction_ids text[], owner_je_ids text[], shared_boundary boolean, metadata jsonb,
+  created_at timestamptz
+)
+language sql stable security definer set search_path = public, extensions
+as $$
+  with u as (
+    select o.*
+    from public.organization_users o
+    join public.powergis_sessions s on s.user_id = o.id
+    where s.token_hash = encode(digest(convert_to(coalesce(p_session_token, ''), 'UTF8'), 'sha256'), 'hex')
+      and s.expires_at > now()
+    limit 1
+  ),
+  allowed_je as (
+    select j.id
+    from public.organization_users j
+    cross join u
+    where j.role = 'JE' and (
+      u.role = 'GIS_ADMIN'
+      or (u.role = 'JE' and j.id = u.id)
+      or (u.scope_field = 'subdivision' and j.subdivision = u.scope_value)
+      or (u.scope_field = 'division' and j.division = u.scope_value)
+      or (u.scope_field = 'circle' and j.circle = u.scope_value)
+      or (u.scope_field = 'department' and j.department = u.scope_value)
+    )
+  ),
+  authorised as (
+    select a.*
+    from public.gis_assets a
+    cross join u
+    where a.archived_at is null
+      and (u.role = 'GIS_ADMIN'
+       or a.shared_boundary = true
+       or a.owner_je_ids && array(select id from allowed_je))
+  ),
+  totals as (select count(*)::bigint as total_count from authorised),
+  page as (
+    select a.*
+    from authorised a
+    where (
+      p_after_created_at is null
+      or a.created_at < p_after_created_at
+      or (a.created_at = p_after_created_at and a.id < coalesce(p_after_id, ''))
+    )
+    order by a.created_at desc, a.id desc
+    limit greatest(1, least(coalesce(p_limit, 1000), 5000))
+  )
+  select totals.total_count, page.id, page.asset_no, page.asset_type, page.status, page.latitude, page.longitude,
+         ST_AsGeoJSON(page.geometry)::jsonb, page.jurisdiction_ids, page.owner_je_ids,
+         page.shared_boundary, page.metadata, page.created_at
+  from page cross join totals;
+$$;
+
+
+create or replace function public.visible_assets_page_v2(
+  p_session_token text, p_limit integer default 1000,
+  p_after_created_at timestamptz default null, p_after_id text default null
+)
+returns table(
+  total_count bigint, id text, asset_no text, asset_type text, status text,
+  latitude double precision, longitude double precision, geometry jsonb,
+  jurisdiction_ids text[], owner_je_ids text[], shared_boundary boolean, metadata jsonb,
+  created_at timestamptz, version integer
+)
+language sql stable security definer set search_path=public, extensions as $$
+  select p.total_count,p.id,p.asset_no,p.asset_type,p.status,p.latitude,p.longitude,p.geometry,
+    p.jurisdiction_ids,p.owner_je_ids,p.shared_boundary,p.metadata,p.created_at,a.version
+  from public.visible_assets_page(p_session_token,p_limit,p_after_created_at,p_after_id) p
+  join public.gis_assets a on a.id=p.id and a.archived_at is null;
+$$;
+revoke all on function public.visible_assets_page_v2(text,integer,timestamptz,text) from public;
+grant execute on function public.visible_assets_page_v2(text,integer,timestamptz,text) to anon,authenticated;
+
+
+create or replace function public.admin_asset_version(p_session_token text,p_asset_id text)
+returns integer language plpgsql stable security definer set search_path=public,extensions as $$
+declare u public.organization_users%rowtype; v integer;
+begin
+  select o.* into u from public.organization_users o join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex') and s.expires_at>now() limit 1;
+  if not found or u.role<>'GIS_ADMIN' then raise exception 'GIS Admin permission required' using errcode='42501'; end if;
+  select version into v from public.gis_assets where id=p_asset_id and archived_at is null;
+  if v is null then raise exception 'Active asset not found'; end if;
+  return v;
+end;$$;
+revoke all on function public.admin_asset_version(text,text) from public;
+grant execute on function public.admin_asset_version(text,text) to anon,authenticated;
+
+create or replace function public.visible_asset_stats(p_session_token text)
+returns table(
+  total_count bigint,
+  active_count bigint,
+  pending_count bigint,
+  retired_count bigint,
+  other_count bigint,
+  by_type jsonb
+)
+language sql stable security definer set search_path = public, extensions
+as $$
+  with u as (
+    select o.*
+    from public.organization_users o
+    join public.powergis_sessions s on s.user_id = o.id
+    where s.token_hash = encode(digest(convert_to(coalesce(p_session_token, ''), 'UTF8'), 'sha256'), 'hex')
+      and s.expires_at > now()
+    limit 1
+  ),
+  allowed_je as (
+    select j.id
+    from public.organization_users j
+    cross join u
+    where j.role = 'JE' and (
+      u.role = 'GIS_ADMIN'
+      or (u.role = 'JE' and j.id = u.id)
+      or (u.scope_field = 'subdivision' and j.subdivision = u.scope_value)
+      or (u.scope_field = 'division' and j.division = u.scope_value)
+      or (u.scope_field = 'circle' and j.circle = u.scope_value)
+      or (u.scope_field = 'department' and j.department = u.scope_value)
+    )
+  ),
+  authorised as (
+    select a.asset_type, a.status
+    from public.gis_assets a
+    cross join u
+    where a.archived_at is null
+      and (u.role = 'GIS_ADMIN'
+       or a.shared_boundary = true
+       or a.owner_je_ids && array(select id from allowed_je))
+  ),
+  typed as (
+    select asset_type, count(*)::bigint as count
+    from authorised
+    group by asset_type
+  )
+  select
+    count(*)::bigint,
+    count(*) filter (where status = 'ACTIVE')::bigint,
+    count(*) filter (where status in ('DRAFT','SUBMITTED','JE_REVIEW','AE_REVIEW'))::bigint,
+    count(*) filter (where status = 'RETIRED')::bigint,
+    count(*) filter (where status not in ('ACTIVE','DRAFT','SUBMITTED','JE_REVIEW','AE_REVIEW','RETIRED'))::bigint,
+    coalesce((select jsonb_object_agg(asset_type, count) from typed), '{}'::jsonb)
+  from authorised;
+$$;
+
+
+create or replace function public.export_assets(p_session_token text)
+returns table(id text,asset_no text,asset_type text,status text,latitude double precision,longitude double precision,geometry jsonb,jurisdiction_ids text[],owner_je_ids text[],shared_boundary boolean,metadata jsonb)
+language sql stable security definer set search_path=public, extensions as $$
+with u as (
+  select o.* from public.organization_users o
+  where exists (
+          select 1 from public.powergis_sessions s
+          where s.user_id = o.id
+            and s.token_hash = encode(digest(convert_to(p_session_token, 'UTF8'), 'sha256'), 'hex')
+            and s.expires_at > now()
+        )
+), allowed_je as (
+ select j.id from public.organization_users j cross join u where j.role='JE' and (u.role='GIS_ADMIN' or (u.role='JE' and j.id=u.id) or (u.scope_field='subdivision' and j.subdivision=u.scope_value) or (u.scope_field='division' and j.division=u.scope_value) or (u.scope_field='circle' and j.circle=u.scope_value) or (u.scope_field='department' and j.department=u.scope_value))
+)
+select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata from public.gis_assets a,u where a.archived_at is null and (u.role='GIS_ADMIN' or a.shared_boundary = true or a.owner_je_ids && array(select id from allowed_je));
+$$;
+
+
+-- Atomic bulk archive: either every selected active record is archived or none is.
+create or replace function public.admin_archive_assets(p_session_token text,p_asset_ids text[])
+returns integer language plpgsql security definer set search_path=public,extensions as $$
+declare u public.organization_users%rowtype; n integer:=0; ids text[];
+begin
+  select o.* into u from public.organization_users o join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex') and s.expires_at>now() limit 1;
+  if not found or u.role<>'GIS_ADMIN' then raise exception 'GIS Admin permission required' using errcode='42501'; end if;
+  ids := array(select distinct x from unnest(coalesce(p_asset_ids,'{}'::text[])) x where nullif(trim(x),'') is not null);
+  if cardinality(ids)=0 then return 0; end if;
+  perform 1 from public.gis_assets where id=any(ids) and archived_at is null for update;
+  if (select count(*) from public.gis_assets where id=any(ids) and archived_at is null) <> cardinality(ids) then
+    raise exception 'One or more selected assets no longer exist or are already archived; refresh and retry';
+  end if;
+  update public.gis_assets set archived_at=now(),version=version+1 where id=any(ids) and archived_at is null;
+  get diagnostics n = row_count;
+  insert into public.powergis_audit_events(actor_id,action,entity_type,details)
+  values(u.id,'BULK_ARCHIVE','GIS_ASSET_BATCH',jsonb_build_object('asset_ids',ids,'count',n));
+  return n;
+end;$$;
+revoke all on function public.admin_archive_assets(text,text[]) from public;
+grant execute on function public.admin_archive_assets(text,text[]) to anon,authenticated;
+
+-- Claim a single requested backup atomically so concurrent workers cannot process it twice.
+create or replace function public.claim_next_backup_run()
+returns text language plpgsql security definer set search_path=public,extensions as $$
+declare claimed_id text;
+begin
+  update public.powergis_backup_runs r set status='RUNNING',error_message=null
+  where r.backup_id=(
+    select q.backup_id from public.powergis_backup_runs q
+    where q.status='REQUESTED'
+    order by q.created_at asc
+    for update skip locked
+    limit 1
+  )
+  returning r.backup_id into claimed_id;
+  return claimed_id;
+end;$$;
+revoke all on function public.claim_next_backup_run() from public,anon,authenticated;
+grant execute on function public.claim_next_backup_run() to service_role;
+
+-- ==================================================================
+-- MIGRATION: 010_admin_backup_restore.sql
+-- ==================================================================
+
+-- GIS Admin-only backup retrieval and additive, transactional restore.
+-- Restores merge/upsert snapshot records; they never delete current records.
+
+create or replace function public.admin_get_backup_path(
+  p_session_token text,
+  p_backup_id text
+)
+returns text
+language plpgsql
+stable
+security definer
+set search_path=public, extensions
+as $$
+declare
+  v_role text;
+  v_path text;
+begin
+  select u.role into v_role
+  from public.organization_users u
+  join public.powergis_sessions s on s.user_id=u.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex')
+    and s.expires_at>now()
+  limit 1;
+  if v_role is distinct from 'GIS_ADMIN' then
+    raise exception 'GIS Admin permission required' using errcode='42501';
+  end if;
+  select r.storage_path into v_path
+  from public.powergis_backup_runs r
+  where r.backup_id=p_backup_id and r.status='COMPLETED'
+    and r.storage_path is not null;
+  if v_path is null then raise exception 'Completed backup not found'; end if;
+  return v_path;
+end;
+$$;
+
+create or replace function public.admin_restore_backup_payload(
+  p_session_token text,
+  p_backup_id text,
+  p_payload jsonb
+)
+returns table(users_restored integer,jurisdictions_restored integer,assets_restored integer,audit_events_imported integer)
+language plpgsql
+security definer
+set search_path=public, extensions
+as $$
+declare
+  u public.organization_users%rowtype;
+  item jsonb;
+  v_geom geometry;
+  v_users integer:=0;
+  v_jurisdictions integer:=0;
+  v_assets integer:=0;
+  v_audit integer:=0;
+  v_total integer;
+  v_geo jsonb;
+begin
+  select o.* into u
+  from public.organization_users o
+  join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex')
+    and s.expires_at>now()
+  limit 1;
+  if not found or u.role<>'GIS_ADMIN' then
+    raise exception 'GIS Admin permission required' using errcode='42501';
+  end if;
+  if coalesce(p_payload->>'schemaVersion','') not in ('2','3') then
+    raise exception 'Unsupported backup schema version';
+  end if;
+  if coalesce(p_payload->>'backupId','')<>p_backup_id then
+    raise exception 'Backup identity does not match the selected manifest';
+  end if;
+  if octet_length(p_payload::text)>268435456 then raise exception 'Backup exceeds the 256 MB restore limit'; end if;
+
+  v_total := jsonb_array_length(coalesce(p_payload->'users','[]'::jsonb))
+    + jsonb_array_length(coalesce(p_payload->'jurisdictions','[]'::jsonb))
+    + jsonb_array_length(coalesce(p_payload->'assets','[]'::jsonb))
+    + jsonb_array_length(coalesce(p_payload->'auditEvents','[]'::jsonb));
+  if v_total>1000000 then raise exception 'Backup exceeds the one-million-row restore safety limit'; end if;
+
+  -- Preserve current credential hashes. A backup never contains passwords or sessions.
+  for item in select value from jsonb_array_elements(coalesce(p_payload->'users','[]'::jsonb)) loop
+    insert into public.organization_users(
+      id,username,display_name,role,subdivision,division,circle,department,admin_name,region,
+      scope_field,scope_value,source_rows,jurisdiction_ids,created_at
+    ) values (
+      item->>'id',item->>'username',coalesce(item->>'display_name',item->>'username'),item->>'role',
+      item->>'subdivision',item->>'division',item->>'circle',item->>'department',item->>'admin_name',
+      coalesce(item->>'region',''),item->>'scope_field',item->>'scope_value',
+      coalesce(item->'source_rows','[]'::jsonb),
+      array(select jsonb_array_elements_text(coalesce(item->'jurisdiction_ids','[]'::jsonb))),
+      coalesce((item->>'created_at')::timestamptz,now())
+    ) on conflict(id) do update set
+      username=excluded.username,display_name=excluded.display_name,role=excluded.role,
+      subdivision=excluded.subdivision,division=excluded.division,circle=excluded.circle,
+      department=excluded.department,admin_name=excluded.admin_name,region=excluded.region,
+      scope_field=excluded.scope_field,scope_value=excluded.scope_value,
+      source_rows=excluded.source_rows,jurisdiction_ids=excluded.jurisdiction_ids;
+    v_users:=v_users+1;
+  end loop;
+
+  for item in select value from jsonb_array_elements(coalesce(p_payload->'jurisdictions','[]'::jsonb)) loop
+    v_geo:=item->'boundary';
+    v_geom:=null;
+    if v_geo is not null and v_geo<>'null'::jsonb then
+      v_geom:=ST_SetSRID(ST_GeomFromGeoJSON(case when jsonb_typeof(v_geo)='string' then v_geo#>>'{}' else v_geo::text end),4326);
+      if ST_IsEmpty(v_geom) or not ST_IsValid(v_geom) then raise exception 'Invalid jurisdiction geometry in backup: %',item->>'id'; end if;
+    end if;
+    insert into public.gis_jurisdictions(
+      id,name,region,subdivision,division,circle,department,boundary,created_at
+    ) values (
+      item->>'id',item->>'name',coalesce(item->>'region',''),item->>'subdivision',item->>'division',
+      item->>'circle',item->>'department',v_geom,coalesce((item->>'created_at')::timestamptz,now())
+    ) on conflict(id) do update set
+      name=excluded.name,region=excluded.region,subdivision=excluded.subdivision,
+      division=excluded.division,circle=excluded.circle,department=excluded.department,
+      boundary=excluded.boundary;
+    v_jurisdictions:=v_jurisdictions+1;
+  end loop;
+
+  for item in select value from jsonb_array_elements(coalesce(p_payload->'assets','[]'::jsonb)) loop
+    v_geo:=item->'geometry';
+    v_geom:=null;
+    if v_geo is not null and v_geo<>'null'::jsonb then
+      v_geom:=ST_SetSRID(ST_GeomFromGeoJSON(case when jsonb_typeof(v_geo)='string' then v_geo#>>'{}' else v_geo::text end),4326);
+      if ST_IsEmpty(v_geom) or not ST_IsValid(v_geom) or ST_NPoints(v_geom)>50000 then
+        raise exception 'Invalid or oversized asset geometry in backup: %',item->>'id';
+      end if;
+    end if;
+    if not exists(select 1 from public.asset_types t where t.id=item->>'asset_type') then
+      raise exception 'Unknown asset type in backup: %',item->>'asset_type';
+    end if;
+    insert into public.gis_assets(
+      id,asset_no,asset_type,status,geometry,latitude,longitude,jurisdiction_ids,owner_je_ids,
+      shared_boundary,visibility_rule,metadata,created_at,version,archived_at
+    ) values (
+      item->>'id',item->>'asset_no',item->>'asset_type',coalesce(item->>'status','ACTIVE'),v_geom,
+      nullif(item->>'latitude','')::double precision,nullif(item->>'longitude','')::double precision,
+      array(select jsonb_array_elements_text(coalesce(item->'jurisdiction_ids','[]'::jsonb))),
+      array(select jsonb_array_elements_text(coalesce(item->'owner_je_ids','[]'::jsonb))),
+      coalesce((item->>'shared_boundary')::boolean,false),item->>'visibility_rule',
+      coalesce(item->'metadata','{}'::jsonb),coalesce((item->>'created_at')::timestamptz,now()),
+      greatest(1,coalesce((item->>'version')::integer,1)),nullif(item->>'archived_at','')::timestamptz
+    ) on conflict(id) do update set
+      asset_no=excluded.asset_no,asset_type=excluded.asset_type,status=excluded.status,
+      geometry=excluded.geometry,latitude=excluded.latitude,longitude=excluded.longitude,
+      jurisdiction_ids=excluded.jurisdiction_ids,owner_je_ids=excluded.owner_je_ids,
+      shared_boundary=excluded.shared_boundary,visibility_rule=excluded.visibility_rule,
+      metadata=excluded.metadata,archived_at=excluded.archived_at,
+      version=greatest(public.gis_assets.version,excluded.version)+1;
+    v_assets:=v_assets+1;
+  end loop;
+
+  -- Imported audit history is appended; existing audit history is never overwritten.
+  for item in select value from jsonb_array_elements(coalesce(p_payload->'auditEvents','[]'::jsonb)) loop
+    if exists(select 1 from public.organization_users x where x.id=item->>'actor_id') then
+      insert into public.powergis_audit_events(actor_id,action,entity_type,entity_id,details,created_at)
+      values(item->>'actor_id','BACKUP_IMPORT:'||left(coalesce(item->>'action','UNKNOWN'),80),
+        coalesce(item->>'entity_type','UNKNOWN'),item->>'entity_id',
+        jsonb_build_object('sourceBackup',p_backup_id,'originalEventId',item->>'id','originalDetails',coalesce(item->'details','{}'::jsonb)),
+        coalesce((item->>'created_at')::timestamptz,now()));
+      v_audit:=v_audit+1;
+    end if;
+  end loop;
+
+  insert into public.powergis_audit_events(actor_id,action,entity_type,entity_id,details)
+  values(u.id,'BACKUP_RESTORE','DATABASE',p_backup_id,jsonb_build_object(
+    'users',v_users,'jurisdictions',v_jurisdictions,'assets',v_assets,'auditEventsImported',v_audit,
+    'mode','additive-upsert','schemaVersion',p_payload->>'schemaVersion'
+  ));
+  return query select v_users,v_jurisdictions,v_assets,v_audit;
+end;
+$$;
+
+revoke all on function public.admin_get_backup_path(text,text) from public;
+revoke all on function public.admin_restore_backup_payload(text,text,jsonb) from public;
+grant execute on function public.admin_get_backup_path(text,text) to anon,authenticated,service_role;
+grant execute on function public.admin_restore_backup_payload(text,text,jsonb) to service_role;
+
+
+-- Viewport-based authorised asset delivery: the GIS browser fetches only the
+-- current map extent rather than downloading the full organisation inventory.
+create or replace function public.visible_assets_in_bbox(
+  p_session_token text,
+  p_west double precision,
+  p_south double precision,
+  p_east double precision,
+  p_north double precision,
+  p_limit integer default 5000
+)
+returns table(
+  total_count bigint,id text,asset_no text,asset_type text,status text,
+  latitude double precision,longitude double precision,geometry jsonb,
+  jurisdiction_ids text[],owner_je_ids text[],shared_boundary boolean,metadata jsonb,
+  created_at timestamptz,version integer
+)
+language plpgsql
+stable
+security definer
+set search_path=public, extensions
+as $$
+begin
+  if p_west < -180 or p_west > 180 or p_east < -180 or p_east > 180
+    or p_south < -90 or p_south > 90 or p_north < -90 or p_north > 90
+    or p_south >= p_north then
+    raise exception 'Invalid WGS84 viewport bounds';
+  end if;
+  return query
+  with u as (
+    select o.* from public.organization_users o
+    join public.powergis_sessions s on s.user_id=o.id
+    where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex')
+      and s.expires_at>now() limit 1
+  ), allowed_je as (
+    select j.id from public.organization_users j cross join u
+    where j.role='JE' and (
+      u.role='GIS_ADMIN' or (u.role='JE' and j.id=u.id)
+      or (u.scope_field='subdivision' and j.subdivision=u.scope_value)
+      or (u.scope_field='division' and j.division=u.scope_value)
+      or (u.scope_field='circle' and j.circle=u.scope_value)
+      or (u.scope_field='department' and j.department=u.scope_value)
+    )
+  ), visible as (
+    select a.* from public.gis_assets a cross join u
+    where a.archived_at is null and a.geometry is not null
+      and (u.role='GIS_ADMIN' or a.shared_boundary=true or a.owner_je_ids && array(select id from allowed_je))
+      and (
+        (p_west <= p_east and ST_Intersects(a.geometry,ST_MakeEnvelope(p_west,p_south,p_east,p_north,4326)))
+        or (p_west > p_east and (
+          ST_Intersects(a.geometry,ST_MakeEnvelope(p_west,p_south,180,p_north,4326))
+          or ST_Intersects(a.geometry,ST_MakeEnvelope(-180,p_south,p_east,p_north,4326))
+        ))
+      )
+  )
+  select count(*) over()::bigint,a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,
+    ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,
+    a.metadata,a.created_at,a.version
+  from visible a order by a.created_at desc,a.id desc
+  limit greatest(1,least(coalesce(p_limit,5000),10000));
+end;
+$$;
+revoke all on function public.visible_assets_in_bbox(text,double precision,double precision,double precision,double precision,integer) from public;
+grant execute on function public.visible_assets_in_bbox(text,double precision,double precision,double precision,double precision,integer) to anon,authenticated;
+
+-- Service-role-only snapshot paging with explicit GeoJSON conversion. This
+-- avoids backing up PostGIS's internal binary representation by accident.
+create or replace function public.service_backup_page(
+  p_entity text,p_offset integer default 0,p_limit integer default 1000
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path=public, extensions
+as $$
+declare result jsonb;
+begin
+  if coalesce(current_setting('request.jwt.claim.role',true),'')<>'service_role' then
+    raise exception 'Service role required' using errcode='42501';
+  end if;
+  if p_offset<0 or p_limit<1 or p_limit>1000 then raise exception 'Invalid backup page bounds'; end if;
+  case p_entity
+    when 'users' then
+      select coalesce(jsonb_agg(to_jsonb(q)),'[]'::jsonb) into result from (
+        select id,username,display_name,role,subdivision,division,circle,department,admin_name,region,
+          scope_field,scope_value,source_rows,jurisdiction_ids,created_at
+        from public.organization_users order by id offset p_offset limit p_limit
+      ) q;
+    when 'jurisdictions' then
+      select coalesce(jsonb_agg(to_jsonb(q)),'[]'::jsonb) into result from (
+        select id,name,region,subdivision,division,circle,department,
+          case when boundary is null then null else ST_AsGeoJSON(boundary)::jsonb end as boundary,created_at
+        from public.gis_jurisdictions order by id offset p_offset limit p_limit
+      ) q;
+    when 'assets' then
+      select coalesce(jsonb_agg(to_jsonb(q)),'[]'::jsonb) into result from (
+        select id,asset_no,asset_type,status,
+          case when geometry is null then null else ST_AsGeoJSON(geometry)::jsonb end as geometry,
+          latitude,longitude,jurisdiction_ids,owner_je_ids,shared_boundary,visibility_rule,metadata,
+          created_at,version,archived_at
+        from public.gis_assets order by id offset p_offset limit p_limit
+      ) q;
+    when 'auditEvents' then
+      select coalesce(jsonb_agg(to_jsonb(q)),'[]'::jsonb) into result from (
+        select id,actor_id,action,entity_type,entity_id,details,created_at
+        from public.powergis_audit_events order by id offset p_offset limit p_limit
+      ) q;
+    else raise exception 'Unsupported backup entity';
+  end case;
+  return result;
+end;
+$$;
+revoke all on function public.service_backup_page(text,integer,integer) from public,anon,authenticated;
+grant execute on function public.service_backup_page(text,integer,integer) to service_role;
+
+-- ==================================================================
+-- MIGRATION: 011_security_perimeter.sql
+-- ==================================================================
+
+-- PowerGIS security perimeter hardening.
+-- Apply after 010_admin_backup_restore.sql.
+-- The login directory must never be enumerable by unauthenticated clients.
+
+set search_path = public, extensions;
+
+-- Account lifecycle controls. Existing accounts remain active so this migration
+-- does not unexpectedly lock a deployed environment; administrators can disable
+-- accounts explicitly through a future server-side user-management workflow.
+alter table public.organization_users
+  add column if not exists is_active boolean not null default true,
+  add column if not exists password_changed_at timestamptz,
+  add column if not exists last_login_at timestamptz;
+
+-- Known seeded/test credentials are not acceptable for a sensitive deployment.
+-- Accounts whose current bcrypt hash still verifies against their username are
+-- disabled until a trusted provisioning workflow sets a unique password.
+update public.organization_users
+set is_active=false
+where coalesce(password,'')<>''
+  and password=crypt(username,password)
+  and password_changed_at is null;
+
+create index if not exists organization_users_active_role_ix
+  on public.organization_users(is_active, role);
+
+-- Failed-login throttling keyed by username. This is deliberately separate from
+-- the user table so authentication failures do not mutate account records.
+create table if not exists public.powergis_auth_throttle (
+  username_key text primary key,
+  failed_count integer not null default 0,
+  first_failed_at timestamptz,
+  last_failed_at timestamptz,
+  locked_until timestamptz
+);
+revoke all on public.powergis_auth_throttle from anon, authenticated;
+alter table public.powergis_auth_throttle enable row level security;
+
+-- The old login_users RPC was an unauthenticated directory enumeration surface.
+-- It is no longer callable by anon/authenticated clients.
+revoke all on function public.login_users() from public;
+drop function if exists public.login_users();
+
+-- Session restoration returns only fields required by the application. Sensitive
+-- source-row provenance is deliberately excluded. Disabled users lose access even
+-- if an old session token has not yet expired.
+drop function if exists public.session_user(text);
+create function public.session_user(p_session_token text)
+returns table(
+  id text, username text, display_name text, role text, subdivision text, division text,
+  circle text, department text, admin_name text, region text, scope_field text,
+  scope_value text, jurisdiction_ids text[]
+)
+language sql stable security definer set search_path=public, extensions as $$
+  select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,u.department,
+         u.admin_name,u.region,u.scope_field,u.scope_value,u.jurisdiction_ids
+  from public.organization_users u
+  join public.powergis_sessions s on s.user_id=u.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex')
+    and s.expires_at>now() and u.is_active=true
+  limit 1;
+$$;
+revoke all on function public.session_user(text) from public;
+grant execute on function public.session_user(text) to anon, authenticated;
+
+-- Authenticated admin directory only. Sensitive credential material is never
+-- returned: no password, session token or source-row payload is exposed.
+create or replace function public.admin_list_users(p_session_token text)
+returns table(
+  id text, username text, display_name text, role text,
+  subdivision text, division text, circle text, department text,
+  admin_name text, region text, scope_field text, scope_value text,
+  jurisdiction_ids text[], is_active boolean, password_changed_at timestamptz,
+  last_login_at timestamptz
+)
+language plpgsql security definer set search_path=public, extensions as $$
+declare
+  v_actor public.organization_users%rowtype;
+begin
+  select o.* into v_actor
+  from public.organization_users o
+  join public.powergis_sessions s on s.user_id=o.id
+  where s.token_hash=encode(digest(convert_to(coalesce(p_session_token,''),'UTF8'),'sha256'),'hex')
+    and s.expires_at>now()
+    and o.is_active=true
+  limit 1;
+  if not found or v_actor.role <> 'GIS_ADMIN' then
+    raise exception 'GIS Admin permission required' using errcode='42501';
+  end if;
+
+  return query
+  select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,u.department,
+         u.admin_name,u.region,u.scope_field,u.scope_value,u.jurisdiction_ids,
+         u.is_active,u.password_changed_at,u.last_login_at
+  from public.organization_users u
+  order by case u.role when 'GIS_ADMIN' then 0 when 'SE' then 1 when 'EE' then 2
+                    when 'AEE' then 3 when 'AE' then 4 when 'JE' then 5 else 6 end,
+           u.display_name;
+end;
+$$;
+revoke all on function public.admin_list_users(text) from public;
+grant execute on function public.admin_list_users(text) to anon, authenticated;
+
+-- Replace the authentication RPC with a generic-failure, active-account,
+-- throttled implementation. Password hashes, source rows and session tokens
+-- are never returned except for the one opaque token needed to establish the session.
+drop function if exists public.authenticate_user(text,text);
+create function public.authenticate_user(p_username text, p_password text)
+returns table(
+  id text, username text, display_name text, role text,
+  subdivision text, division text, circle text, department text,
+  admin_name text, region text, scope_field text, scope_value text,
+  jurisdiction_ids text[], session_token text
+)
+language plpgsql security definer
+set search_path=public, extensions
+as $$
+declare
+  u public.organization_users%rowtype;
+  raw_token text;
+  hash_token text;
+  v_key text := lower(trim(coalesce(p_username,'')));
+  v_throttle public.powergis_auth_throttle%rowtype;
+begin
+  if v_key='' or coalesce(p_password,'')='' or length(p_password)>512 or length(v_key)>160 then
+    return;
+  end if;
+
+  select * into v_throttle from public.powergis_auth_throttle where username_key=v_key;
+  if v_throttle.locked_until is not null and v_throttle.locked_until>now() then
+    return;
+  end if;
+
+  select o.* into u
+  from public.organization_users o
+  where lower(trim(o.username))=v_key
+    and o.is_active=true
+    and coalesce(o.password,'')<>''
+    and o.password=crypt(p_password,o.password)
+  limit 1;
+
+  if not found then
+    insert into public.powergis_auth_throttle(username_key,failed_count,first_failed_at,last_failed_at,locked_until)
+    values(v_key,1,now(),now(),null)
+    on conflict(username_key) do update set
+      failed_count=case
+        when public.powergis_auth_throttle.first_failed_at is null
+          or public.powergis_auth_throttle.first_failed_at < now()-interval '15 minutes'
+        then 1 else public.powergis_auth_throttle.failed_count+1 end,
+      first_failed_at=case
+        when public.powergis_auth_throttle.first_failed_at is null
+          or public.powergis_auth_throttle.first_failed_at < now()-interval '15 minutes'
+        then now() else public.powergis_auth_throttle.first_failed_at end,
+      last_failed_at=now(),
+      locked_until=case
+        when public.powergis_auth_throttle.failed_count+1 >= 5 then now()+interval '15 minutes'
+        else public.powergis_auth_throttle.locked_until end;
+    perform pg_sleep(0.15);
+    return;
+  end if;
+
+  delete from public.powergis_auth_throttle where username_key=v_key;
+  raw_token:=encode(gen_random_bytes(32),'hex');
+  hash_token:=encode(digest(convert_to(raw_token,'UTF8'),'sha256'),'hex');
+  delete from public.powergis_sessions where expires_at<now();
+  insert into public.powergis_sessions(token_hash,user_id,expires_at)
+  values(hash_token,u.id,now()+interval '8 hours');
+  update public.organization_users set last_login_at=now() where id=u.id;
+
+  return query select u.id,u.username,u.display_name,u.role,u.subdivision,u.division,u.circle,
+    u.department,u.admin_name,u.region,u.scope_field,u.scope_value,u.jurisdiction_ids,raw_token;
+end;
+$$;
+revoke all on function public.authenticate_user(text,text) from public;
+grant execute on function public.authenticate_user(text,text) to anon, authenticated;
+
+-- Prevent the browser from reading session/user tables directly.
+revoke all on table public.powergis_sessions from anon, authenticated;
+revoke all on table public.organization_users from anon, authenticated;
+revoke all on table public.powergis_auth_throttle from anon, authenticated;
+
+-- Ensure sensitive source-row provenance is never returned to unauthenticated
+-- callers through an obsolete function signature.
+revoke all on function public.visible_assets(text) from public;
+revoke all on function public.visible_jurisdictions(text) from public;
+
+comment on table public.organization_users is
+  'Authoritative PowerGIS identity directory. Direct browser table access is prohibited; use server-side authenticated RPCs.';
+
+
+-- Server-only bootstrap password setter. The bootstrap secret is supplied only by
+-- the Edge Function environment and is never shipped to the browser. A single-use
+-- database state prevents accidental repeated bootstrap activation.
+create table if not exists public.powergis_bootstrap_state (
+  id boolean primary key default true,
+  used_at timestamptz,
+  used_for_username text
+);
+insert into public.powergis_bootstrap_state(id) values(true) on conflict(id) do nothing;
+revoke all on public.powergis_bootstrap_state from anon, authenticated;
+alter table public.powergis_bootstrap_state enable row level security;
+
+create or replace function public.bootstrap_set_admin(
+  p_bootstrap_secret text,
+  p_expected_secret text,
+  p_username text,
+  p_password text
+)
+returns void
+language plpgsql security definer set search_path=public, extensions as $$
+declare
+  v_user public.organization_users%rowtype;
+  v_used timestamptz;
+begin
+  select used_at into v_used from public.powergis_bootstrap_state where id=true;
+  if v_used is not null then raise exception 'Bootstrap already completed' using errcode='42501'; end if;
+  if coalesce(p_bootstrap_secret,'')='' or coalesce(p_expected_secret,'')='' or p_bootstrap_secret<>p_expected_secret then
+    raise exception 'Bootstrap denied' using errcode='42501';
+  end if;
+  if length(trim(coalesce(p_username,'')))<3 or length(coalesce(p_password,''))<14 then
+    raise exception 'Bootstrap credentials do not meet minimum requirements';
+  end if;
+  if p_password = p_username then raise exception 'Password must not equal username'; end if;
+  select * into v_user from public.organization_users where lower(username)=lower(trim(p_username)) limit 1;
+  if not found or v_user.role<>'GIS_ADMIN' then raise exception 'GIS Admin account not found'; end if;
+  update public.organization_users
+    set password=crypt(p_password,gen_salt('bf',12)), is_active=true,
+        password_changed_at=now(), last_login_at=null
+  where id=v_user.id;
+  update public.powergis_bootstrap_state set used_at=now(), used_for_username=v_user.username where id=true;
+end;
+$$;
+revoke all on function public.bootstrap_set_admin(text,text,text,text) from public;
