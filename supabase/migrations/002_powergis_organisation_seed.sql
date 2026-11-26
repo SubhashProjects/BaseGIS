@@ -10,7 +10,7 @@ create table if not exists public.gis_assets (id text primary key, asset_no text
 create index if not exists gis_assets_geometry_gix on public.gis_assets using gist(geometry);
 create index if not exists gis_assets_owner_gix on public.gis_assets using gin(owner_je_ids);
 create index if not exists gis_assets_jurisdiction_gix on public.gis_assets using gin(jurisdiction_ids);
-truncate table public.gis_assets, public.gis_jurisdictions, public.organization_users;
+truncate table public.gis_assets, public.gis_jurisdictions, public.organization_users cascade;
 insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-admin-001','GIS Admin','GIS Admin','GIS_ADMIN',NULL,NULL,NULL,'SE - 1 HOD','GIS Admin','All Regions',NULL,NULL,'[]','{"PONDICHERRY","KARAIKAL","MAHE","YANAM"}');
 insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-001','JE-TownSouth','JE-TownSouth','JE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
 insert into public.organization_users (id,username,display_name,role,subdivision,division,circle,department,admin_name,region,scope_field,scope_value,source_rows,jurisdiction_ids) values ('org-je-002','JE-TownSouthCentral','JE-TownSouthCentral','JE','AEE- Town I','EE - Urban','SE - 3 O&M','SE - 1 HOD','GIS Admin','Pondicherry',NULL,NULL,'[]','{"PONDICHERRY"}');
