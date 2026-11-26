@@ -36,3 +36,20 @@ No new frontend runtime or charting dependencies were introduced. The repository
 - TypeScript/TSX source transpilation syntax check: passed for 40 source and Edge Function files.
 - Full `npm run build` and `npm run lint`: not verified in this environment. The pre-existing `node_modules` installation was incomplete, and `npm ci` could not complete within the available execution window. Re-run both commands in a normal network-enabled development environment before deployment.
 - Migration 006: generated but not applied to a live Supabase database here. Apply to a disposable staging copy first and validate the password migration and RPC permissions before production.
+
+## Scalability hardening added in this revision
+
+- Added `007_scale_read_paths.sql` with keyset-paginated authorised asset reads, PostgreSQL-side dashboard statistics, GIS asset indexes, user-scope indexes and session expiry indexes.
+- Dashboard statistics no longer require downloading the entire asset inventory to calculate totals, status counts and layer counts.
+- Large authorised asset reads are fetched in bounded pages instead of one unbounded JSON response, with a client-side safety ceiling.
+- Asset refresh events are debounced to prevent bursts of repeated reads when several local changes happen together.
+- GIS imports use configurable database batch sizes and a high but bounded server-sync ceiling rather than silently stopping after 1,500 records.
+- Existing client-side IndexedDB remains an offline/import cache; the database RPC layer remains the authoritative concurrent multi-user path.
+
+### Concurrency note
+
+These changes make the application substantially safer for large datasets and concurrent users, but they do not by themselves establish a numeric capacity guarantee. Final concurrent-user limits depend on the Supabase/Postgres plan, connection pooling, PostGIS query cost, storage, tile provider quotas, hosting limits and production data shape. Load-test the deployed staging environment with realistic GIS volumes before assigning an SLA.
+
+## Operational reliability pass (2026-11-26)
+
+See `docs/operational-reliability-hardening.md` for the full release gate. This pass removes browser-profile session restoration and local/demo authentication fallbacks, validates sessions on startup, removes local/demo records from the live GIS inventory, makes the paginated read path fail closed, hardens import/export/backup semantics, adds migration 008 for opaque-session-only data-management RPCs and import audit events, and disables incomplete asset/user/approval writes. These changes deliberately reduce available write functionality until the required server-side transactions are implemented; they do not certify a live deployment or load capacity.

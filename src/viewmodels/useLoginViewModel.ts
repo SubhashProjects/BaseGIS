@@ -21,7 +21,7 @@ export function useLoginViewModel(onLogin: (user: PowerGISUser) => void) {
         if (first) {
           setSelected(first.id);
           setUsername(first.username);
-          setPassword(first.username);
+          setPassword('');
         }
       })
       .catch((e) => setError(e?.message || 'Unable to connect to Supabase.'))
@@ -52,13 +52,13 @@ export function useLoginViewModel(onLogin: (user: PowerGISUser) => void) {
     const first = users.find((u) => u.role === r);
     setSelected(first?.id ?? '');
     setUsername(first?.username ?? '');
-    setPassword(first?.username ?? '');
+    setPassword('');
   };
 
   const chooseUser = (u: PowerGISUser) => {
     setSelected(u.id);
     setUsername(u.username);
-    setPassword(u.username);
+    setPassword('');
     setQuery('');
     setError('');
   };

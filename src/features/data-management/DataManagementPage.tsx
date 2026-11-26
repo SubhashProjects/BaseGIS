@@ -26,7 +26,6 @@ import {
   deleteAssets,
   updateAsset,
   getDeletedAssetIds,
-  restoreAllDeletedAssets,
   getLiveGridAssets,
   listLoginUsers,
   addCustomUser,
@@ -243,6 +242,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
 
   const [activeTab, setActiveTab] = useState<TabMode>('tables');
   const [liveGridAssets, setLiveGridAssets] = useState<PowerGISAsset[]>([]);
+  const [loadError, setLoadError] = useState('');
   const [localAssets, setLocalAssets] = useState<PowerGISAsset[]>(getLocalImportedAssets);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(getDeletedAssetIds);
 
@@ -333,24 +333,35 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
     const parsedLng = parseFloat(editLng);
     const jurs = editJurisdiction.split(',').map((s) => s.trim()).filter(Boolean);
 
-    await updateAsset(editingAsset.id, {
-      assetNo: editAssetNo.trim(),
-      assetType: editAssetType,
-      status: editStatus as any,
-      lat: Number.isFinite(parsedLat) ? parsedLat : editingAsset.lat,
-      lng: Number.isFinite(parsedLng) ? parsedLng : editingAsset.lng,
-      latitude: Number.isFinite(parsedLat) ? parsedLat : editingAsset.latitude,
-      longitude: Number.isFinite(parsedLng) ? parsedLng : editingAsset.longitude,
-      jurisdictions: jurs.length > 0 ? jurs : editingAsset.jurisdictions,
-      shared: editShared,
-      metadata: editMetadata,
-    });
-    setEditingAsset(null);
+    try {
+      await updateAsset(editingAsset.id, {
+        version: editingAsset.version,
+        geometry: editingAsset.geometry,
+        assetNo: editAssetNo.trim(),
+        assetType: editAssetType,
+        status: editStatus as any,
+        lat: Number.isFinite(parsedLat) ? parsedLat : editingAsset.lat,
+        lng: Number.isFinite(parsedLng) ? parsedLng : editingAsset.lng,
+        latitude: Number.isFinite(parsedLat) ? parsedLat : editingAsset.latitude,
+        longitude: Number.isFinite(parsedLng) ? parsedLng : editingAsset.longitude,
+        jurisdictions: jurs.length > 0 ? jurs : editingAsset.jurisdictions,
+        shared: editShared,
+        metadata: editMetadata,
+      });
+      setEditingAsset(null);
+    } catch (error: any) {
+      alert(error?.message || 'Asset update was not saved.');
+    }
   };
 
   const handleDeleteSingle = async (id: string, name: string) => {
     if (window.confirm(`Delete asset "${name}"? This will remove it from the map, table, and storage.`)) {
-      await deleteAssets([id, name]);
+      try {
+        await deleteAssets([id]);
+      } catch (error: any) {
+        alert(error?.message || 'Asset deletion was not saved.');
+        return;
+      }
       setDeletedIds(getDeletedAssetIds());
       if (editingAsset?.id === id) setEditingAsset(null);
       if (inspectedAsset?.id === id) setInspectedAsset(null);
@@ -367,7 +378,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
     const refreshData = () => {
       setLocalAssets(getLocalImportedAssets());
       setDeletedIds(getDeletedAssetIds());
-      void getLiveGridAssets(currentUser.id).then(setLiveGridAssets);
+      void getLiveGridAssets(currentUser.id).then((assets) => { setLiveGridAssets(assets); setLoadError(''); }).catch((error: any) => setLoadError(error?.message || 'Unable to load authorised GIS assets.'));
     };
     refreshData();
     window.addEventListener('powergis:assets-changed', refreshData);
@@ -494,20 +505,25 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
       jurisdictions: jurs.length > 0 ? jurs : ['PONDICHERRY'],
     };
 
-    if (editingUserId) {
-      await updateCustomUser(editingUserId, userObj);
-    } else {
-      await addCustomUser(userObj);
+    try {
+      if (editingUserId) await updateCustomUser(editingUserId, userObj);
+      else await addCustomUser(userObj);
+      setIsUserModalOpen(false);
+      const refreshed = await listLoginUsers();
+      setUsersList(refreshed);
+    } catch (error: any) {
+      alert(error?.message || 'User changes were not saved.');
     }
-
-    setIsUserModalOpen(false);
-    const refreshed = await listLoginUsers();
-    setUsersList(refreshed);
   };
 
   const handleDeleteUserSingle = async (u: PowerGISUser) => {
     if (window.confirm(`Delete officer account "${u.displayName}" (${u.username})?`)) {
-      await deleteCustomUser(u.id);
+      try {
+        await deleteCustomUser(u.id);
+      } catch (error: any) {
+        alert(error?.message || 'User deactivation was not saved.');
+        return;
+      }
       setSelectedUserIds((prev) => {
         const next = new Set(prev);
         next.delete(u.id);
@@ -521,8 +537,11 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
   const handleDeleteSelectedUsers = async () => {
     if (selectedUserIds.size === 0) return;
     if (window.confirm(`Delete ${selectedUserIds.size} selected user account(s)?`)) {
-      for (const id of Array.from(selectedUserIds)) {
-        await deleteCustomUser(id);
+      try {
+        for (const id of Array.from(selectedUserIds)) await deleteCustomUser(id);
+      } catch (error: any) {
+        alert(error?.message || 'User deactivation was not saved.');
+        return;
       }
       setSelectedUserIds(new Set());
       const refreshed = await listLoginUsers();
@@ -536,12 +555,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
         'Reset all user roles and hierarchy to default database seed? This will clear all custom modifications.'
       )
     ) {
-      localStorage.removeItem('powergis_custom_users');
-      localStorage.removeItem('powergis_deleted_user_ids');
-      setSelectedUserIds(new Set());
-      const refreshed = await listLoginUsers();
-      setUsersList(refreshed);
-      window.dispatchEvent(new CustomEvent('powergis:users-changed'));
+      alert('Reset is unavailable until a server-side user-administration workflow is deployed. No accounts were changed.');
     }
   };
 
@@ -780,19 +794,18 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
       });
       selectedIds.forEach((id) => idsToDelete.push(id));
 
-      await deleteAssets(idsToDelete);
-      setDeletedIds(getDeletedAssetIds());
-      setSelectedIds(new Set());
+      try {
+        await deleteAssets(idsToDelete);
+        setDeletedIds(getDeletedAssetIds());
+        setSelectedIds(new Set());
+      } catch (error: any) {
+        alert(error?.message || 'Asset deletion was not saved.');
+      }
     }
   };
 
   const handleRestoreDefaults = async () => {
-    if (window.confirm('Restore all default sample assets and clear deleted items?')) {
-      restoreAllDeletedAssets();
-      setDeletedIds(new Set());
-      setSelectedIds(new Set());
-      window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
-    }
+    alert('Sample-asset restoration is disabled. Live GIS records are server-authoritative; use an approved database recovery process.');
   };
 
   // Export current filtered table to CSV with ALL Raw Feature Metadata / Attributes
@@ -902,6 +915,7 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
 
   return (
     <div className="content data-management-page">
+      {loadError && <div className="notice error-notice" role="alert">Live GIS inventory unavailable: {loadError}</div>}
       <div className="page-title">
         <div>
           <h1>Data Management & Tables View</h1>
@@ -1089,10 +1103,11 @@ export function DataManagementPage({ currentUser }: { currentUser: PowerGISUser 
                   type="button"
                   className="dm-sync-btn"
                   onClick={handleRestoreDefaults}
-                  title="Restore default sample assets and clear deleted items"
+                  disabled
+                  title="Recovery is performed through an approved database restore process"
                 >
                   <RotateCcw size={13} />
-                  <span>Restore Defaults</span>
+                  <span>Restore Disabled</span>
                 </button>
               </div>
 

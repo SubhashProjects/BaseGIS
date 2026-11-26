@@ -1,17 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Eye, EyeOff, Zap, ChevronDown, ShieldCheck, Users } from './icons';
-import { authenticateUser, listLoginUsers, type PowerGISUser } from '../services/powergisData';
-
-// Roles for the Department Officers Portal (GIS_ADMIN is separated to its own portal)
-const officerRoleOrder = ['SE', 'EE', 'AEE', 'AE', 'JE', 'CONTRACTOR'] as const;
-const officerRoleLabels: Record<string, string> = {
-  SE: 'SE',
-  EE: 'EE',
-  AEE: 'AEE',
-  AE: 'AE',
-  JE: 'JE',
-  CONTRACTOR: 'Contractor',
-};
+import { useState } from 'react';
+import { Eye, EyeOff, Zap, ShieldCheck, Users } from './icons';
+import { authenticateUser, type PowerGISUser } from '../services/powergisData';
 
 export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void }) {
   // Portal mode: 'ADMIN' (GIS Admin login) or 'OFFICER' (Department officer login)
@@ -22,135 +11,27 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
     return 'ADMIN';
   });
 
-  const [allUsers, setAllUsers] = useState<PowerGISUser[]>([]);
-  const [role, setRole] = useState<string>('SE');
-  const [query, setQuery] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [selected, setSelected] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState('');
 
   // Admin portal specific form state
-  const [adminUsername, setAdminUsername] = useState('GIS Admin');
-  const [adminPassword, setAdminPassword] = useState('GIS Admin');
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [adminShowPassword, setAdminShowPassword] = useState(false);
   const [adminError, setAdminError] = useState('');
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-        setIsEditing(false);
-        setQuery('');
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Sync hash with portalMode
-  useEffect(() => {
-    const handleHash = () => {
-      if (window.location.hash === '#login-officers') {
-        setPortalMode('OFFICER');
-      } else if (window.location.hash === '#login-admin') {
-        setPortalMode('ADMIN');
-      }
-    };
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
 
   const switchPortal = (mode: 'ADMIN' | 'OFFICER') => {
     setPortalMode(mode);
     setError('');
     setAdminError('');
+    setUsername('');
+    setPassword('');
+    setAdminUsername('');
+    setAdminPassword('');
     window.location.hash = mode === 'ADMIN' ? 'login-admin' : 'login-officers';
-  };
-
-  useEffect(() => {
-    listLoginUsers()
-      .then((data) => {
-        setAllUsers(data);
-        const seUsers = data.filter((u) => u.role === 'SE');
-        if (seUsers.length > 0) {
-          const first = seUsers[0];
-          setSelected(first.id);
-          setUsername(first.username);
-          setPassword(first.username);
-        }
-      })
-      .catch((e) => setError(e.message || 'Unable to connect to Supabase.'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const filteredOfficers = useMemo(
-    () =>
-      allUsers.filter(
-        (u) =>
-          u.role === role &&
-          (!query ||
-            `${u.displayName} ${u.username} ${u.subdivision ?? ''} ${u.division ?? ''} ${u.circle ?? ''} ${u.department ?? ''} ${u.region}`
-              .toLowerCase()
-              .includes(query.toLowerCase()))
-      ),
-    [allUsers, role, query]
-  );
-
-  const currentOfficer = allUsers.find((u) => u.id === selected) ?? filteredOfficers[0] ?? null;
-
-  const chooseRole = (r: string) => {
-    setRole(r);
-    setQuery('');
-    setIsEditing(false);
-    setError('');
-    setDropdownOpen(false);
-    const matching = allUsers.filter((u) => u.role === r);
-    if (matching.length > 0) {
-      const first = matching[0];
-      setSelected(first.id);
-      setUsername(first.username);
-      setPassword(first.username);
-    } else {
-      setSelected('');
-      setUsername('');
-      setPassword('');
-    }
-  };
-
-  const chooseUser = (u: PowerGISUser) => {
-    setSelected(u.id);
-    setUsername(u.username);
-    setPassword(u.username);
-    setError('');
-    setQuery('');
-    setIsEditing(false);
-    setDropdownOpen(false);
-  };
-
-  const handleQueryChange = (val: string) => {
-    setQuery(val);
-    setIsEditing(true);
-    setDropdownOpen(true);
-    const matches = allUsers.filter(
-      (u) =>
-        u.role === role &&
-        `${u.displayName} ${u.username} ${u.subdivision ?? ''} ${u.division ?? ''} ${u.circle ?? ''} ${u.department ?? ''} ${u.region}`
-          .toLowerCase()
-          .includes(val.toLowerCase())
-    );
-    if (matches.length > 0) {
-      setSelected(matches[0].id);
-      setUsername(matches[0].username);
-      setPassword(matches[0].username);
-    }
   };
 
   const signInOfficer = async () => {
@@ -194,8 +75,6 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
       setSigningIn(false);
     }
   };
-
-  const displayOfficerValue = isEditing ? query : (currentOfficer ? currentOfficer.displayName : '');
 
   return (
     <div className="login-shell">
@@ -314,146 +193,76 @@ export function LoginScreen({ onLogin }: { onLogin: (user: PowerGISUser) => void
 
           <div className="login-title-section">
             <h1>Officer Sign In</h1>
-            <p className="login-sub">Select your designation and officer profile to continue.</p>
+            <p className="login-sub">Use your assigned account credentials. The officer directory is not exposed before authentication.</p>
           </div>
 
-          {/* Role tabs for SE, EE, AEE, AE, JE, Contractor */}
-          <div className="role-tabs">
-            {officerRoleOrder.map((r) => (
-              <button
-                key={r}
-                type="button"
-                className={role === r ? 'active' : ''}
-                onClick={() => chooseRole(r)}
-              >
-                {officerRoleLabels[r]}
-              </button>
-            ))}
+          <div className="login-security-note">
+            <ShieldCheck size={14} />
+            <span>Authorised accounts only. Enter your assigned username and password.</span>
           </div>
 
-          {loading ? (
-            <div className="login-loading">Loading officers directory…</div>
-          ) : (
-            <>
-              <div className="login-field" ref={dropdownRef}>
-                <label htmlFor="officer-search-input">Officer Profile ({officerRoleLabels[role]})</label>
-                <div className="single-search-dropdown">
-                  <Search size={14} className="single-search-icon" />
-                  <input
-                    id="officer-search-input"
-                    type="text"
-                    className="single-search-input"
-                    value={displayOfficerValue}
-                    onChange={(e) => handleQueryChange(e.target.value)}
-                    onFocus={() => {
-                      setIsEditing(true);
-                      setQuery('');
-                      setDropdownOpen(true);
-                    }}
-                    placeholder={currentOfficer ? currentOfficer.displayName : `Select or search ${officerRoleLabels[role]} officer…`}
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    className="single-dropdown-arrow"
-                    onClick={() => {
-                      setDropdownOpen((prev) => !prev);
-                      setIsEditing(false);
-                    }}
-                    aria-label="Toggle options"
-                    tabIndex={-1}
-                  >
-                    <ChevronDown size={14} className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
-                  </button>
+          <div className="login-fields-wrap">
+            <div className="login-field">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+            </div>
 
-                  {dropdownOpen && (
-                    <div className="custom-dropdown-list">
-                      {filteredOfficers.length === 0 ? (
-                        <div className="dropdown-empty">No officers found matching "{query}"</div>
-                      ) : (
-                        filteredOfficers.map((u) => (
-                          <button
-                            key={u.id}
-                            type="button"
-                            className={`dropdown-option ${currentOfficer?.id === u.id ? 'selected' : ''}`}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => chooseUser(u)}
-                          >
-                            <span className="dropdown-option-name">{u.displayName}</span>
-                            <span className="dropdown-option-sub">
-                              {u.subdivision ? `${u.subdivision} • ` : u.division ? `${u.division} • ` : ''}
-                              {u.region}
-                            </span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="login-fields-wrap">
-                <div className="login-field">
-                  <label htmlFor="username">Username</label>
-                  <input
-                    id="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    autoComplete="username"
-                  />
-                </div>
-
-                <div className="login-field">
-                  <label htmlFor="password">Password</label>
-                  <div className="password-input-wrap">
-                    <input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="current-password"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') signInOfficer();
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle-btn"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      title={showPassword ? 'Hide password' : 'Show password'}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="login-error-slot">
-                {error && <span className="login-error-text">{error}</span>}
-              </div>
-
-              <button
-                type="button"
-                className="btn primary login-btn"
-                onClick={signInOfficer}
-                disabled={signingIn}
-              >
-                {signingIn ? 'Signing in…' : 'Sign in to PowerGIS'}
-              </button>
-
-              <div className="login-portal-switcher">
+            <div className="login-field">
+              <label htmlFor="password">Password</label>
+              <div className="password-input-wrap">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') signInOfficer();
+                  }}
+                />
                 <button
                   type="button"
-                  className="login-switch-btn"
-                  onClick={() => switchPortal('ADMIN')}
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  <ShieldCheck size={14} />
-                  <span><strong>Switch to GIS Admin Login →</strong></span>
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-            </>
-          )}
+            </div>
+          </div>
+
+          <div className="login-error-slot">
+            {error && <span className="login-error-text">{error}</span>}
+          </div>
+
+          <button
+            type="button"
+            className="btn primary login-btn"
+            onClick={signInOfficer}
+            disabled={signingIn}
+          >
+            {signingIn ? 'Signing in…' : 'Sign in to PowerGIS'}
+          </button>
+
+          <div className="login-portal-switcher">
+            <button
+              type="button"
+              className="login-switch-btn"
+              onClick={() => switchPortal('ADMIN')}
+            >
+              <ShieldCheck size={14} />
+              <span><strong>Switch to GIS Admin Login →</strong></span>
+            </button>
+          </div>
         </div>
       )}
     </div>

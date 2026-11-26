@@ -1,7 +1,4 @@
 import { supabase } from '../config/supabase';
-import { SAMPLE_GIS_ASSETS } from './sampleGisData';
-import { getLocalImportedAssets } from './dataManagementService';
-import { DEFAULT_ORGANIZATION_USERS } from './defaultUsers';
 
 export type PowerGISUser = {
   id: string;
@@ -33,6 +30,7 @@ export type PowerGISAsset = {
   latitude?: number;
   longitude?: number;
   metadata?: Record<string, any>;
+  version?: number;
 };
 
 export type PowerGISBoundary = {
@@ -46,21 +44,6 @@ export type PowerGISBoundary = {
   geometry: any;
 };
 
-const SE1_HOD_USER: PowerGISUser = {
-  id: 'org-se-000',
-  username: 'SE - 1 cum HOD',
-  displayName: 'SE - 1 cum HOD',
-  role: 'SE',
-  subdivision: null,
-  division: null,
-  circle: null,
-  department: 'SE - 1 cum HOD',
-  admin: 'GIS Admin',
-  region: 'All Regions',
-  scopeField: 'department',
-  scopeValue: 'SE - 1 cum HOD',
-  jurisdictions: ['PONDICHERRY', 'KARAIKAL', 'MAHE', 'YANAM'],
-};
 
 function requireSupabase() {
   if (!supabase) throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
@@ -68,16 +51,10 @@ function requireSupabase() {
 }
 
 function mapUser(row: any): PowerGISUser {
-  let displayName = row.display_name;
-  let username = row.username;
-  if (displayName === 'SE - 1 HOD' || username === 'SE - 1 HOD') {
-    displayName = 'SE - 1 cum HOD';
-    username = 'SE - 1 cum HOD';
-  }
   return {
     id: row.id,
-    username,
-    displayName,
+    username: row.username,
+    displayName: row.display_name,
     role: row.role,
     subdivision: row.subdivision ?? null,
     division: row.division ?? null,
@@ -91,89 +68,18 @@ function mapUser(row: any): PowerGISUser {
   };
 }
 
-// --- USER ROLES & HIERARCHY STORAGE & MANAGEMENT ---
-const CUSTOM_USERS_KEY = 'powergis_custom_users';
-const DELETED_USERS_KEY = 'powergis_deleted_user_ids';
-
-export function getCustomUsers(): PowerGISUser[] {
-  try {
-    const raw = localStorage.getItem(CUSTOM_USERS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch {
-    /* ignore */
-  }
-  return [];
+// User directory and identity are server-authoritative; browser-local user
+// registries are deliberately not used for authentication or administration.
+export async function addCustomUser(_user: PowerGISUser): Promise<void> {
+  throw new Error('User creation is unavailable until the server-side user-administration RPC and audit workflow are deployed.');
 }
 
-export function saveCustomUsers(users: PowerGISUser[]): void {
-  try {
-    localStorage.setItem(CUSTOM_USERS_KEY, JSON.stringify(users));
-  } catch {
-    /* ignore */
-  }
-  window.dispatchEvent(new CustomEvent('powergis:users-changed'));
+export async function updateCustomUser(_userId: string, _updates: Partial<PowerGISUser>): Promise<void> {
+  throw new Error('User editing is unavailable until the server-side user-administration RPC and audit workflow are deployed.');
 }
 
-export function getDeletedUserIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DELETED_USERS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return new Set(parsed);
-    }
-  } catch {
-    /* ignore */
-  }
-  return new Set();
-}
-
-export function saveDeletedUserIds(ids: Set<string>): void {
-  try {
-    localStorage.setItem(DELETED_USERS_KEY, JSON.stringify(Array.from(ids)));
-  } catch {
-    /* ignore */
-  }
-  window.dispatchEvent(new CustomEvent('powergis:users-changed'));
-}
-
-export async function addCustomUser(user: PowerGISUser): Promise<void> {
-  const current = getCustomUsers();
-  const next = [...current.filter((u) => u.id !== user.id && u.username !== user.username), user];
-  saveCustomUsers(next);
-  const deleted = getDeletedUserIds();
-  if (deleted.has(user.id)) {
-    deleted.delete(user.id);
-    saveDeletedUserIds(deleted);
-  }
-}
-
-export async function updateCustomUser(userId: string, updates: Partial<PowerGISUser>): Promise<void> {
-  const allUsers = await listLoginUsers();
-  const target = allUsers.find((u) => u.id === userId);
-  if (!target) return;
-  const updatedUser: PowerGISUser = { ...target, ...updates };
-
-  const currentCustom = getCustomUsers();
-  const index = currentCustom.findIndex((u) => u.id === userId);
-  if (index !== -1) {
-    currentCustom[index] = updatedUser;
-    saveCustomUsers([...currentCustom]);
-  } else {
-    saveCustomUsers([...currentCustom, updatedUser]);
-  }
-}
-
-export async function deleteCustomUser(userId: string): Promise<void> {
-  const deleted = getDeletedUserIds();
-  deleted.add(userId);
-  saveDeletedUserIds(deleted);
-
-  const currentCustom = getCustomUsers();
-  const filtered = currentCustom.filter((u) => u.id !== userId);
-  saveCustomUsers(filtered);
+export async function deleteCustomUser(_userId: string): Promise<void> {
+  throw new Error('User deactivation is unavailable until the server-side user-administration RPC and audit workflow are deployed.');
 }
 
 export function exportUsersToCsv(users: PowerGISUser[]): string {
@@ -321,456 +227,221 @@ export function exportUsersToExcelXml(users: PowerGISUser[]): string {
 }
 
 export async function listLoginUsers(): Promise<PowerGISUser[]> {
-  const deletedUserIds = getDeletedUserIds();
-  const customUsers = getCustomUsers();
-
-  let baseList: PowerGISUser[] = [];
-  try {
-    const client = requireSupabase();
-    const { data, error } = await client.rpc('login_users');
-    if (!error && Array.isArray(data) && data.length > 0) {
-      baseList = data.map(mapUser);
-    }
-  } catch (err) {
-    console.warn('Supabase login_users rpc note, falling back to local seed:', err);
-  }
-
-  if (baseList.length === 0) {
-    baseList = [...DEFAULT_ORGANIZATION_USERS];
-  }
-
-  // Build unified map of users (seeded + custom overrides)
-  const map = new Map<string, PowerGISUser>();
-  baseList.forEach((u) => {
-    if (!deletedUserIds.has(u.id) && !deletedUserIds.has(u.username)) {
-      map.set(u.id, u);
-    }
-  });
-
-  // Apply custom additions or edits
-  customUsers.forEach((u) => {
-    if (!deletedUserIds.has(u.id) && !deletedUserIds.has(u.username)) {
-      map.set(u.id, u);
-    }
-  });
-
-  const list = Array.from(map.values());
-
-  // Guarantee that SE - 1 cum HOD is available under SE role
-  if (!list.some((u: PowerGISUser) => u.username === 'SE - 1 cum HOD' || u.displayName === 'SE - 1 cum HOD' || u.id === 'org-se-000')) {
-    const seIndex = list.findIndex((u: PowerGISUser) => u.role === 'SE');
-    if (seIndex !== -1) {
-      list.splice(seIndex, 0, SE1_HOD_USER);
-    } else {
-      list.push(SE1_HOD_USER);
-    }
-  }
-
-  // Guarantee GIS Admin is always available
-  if (!list.some((u: PowerGISUser) => u.role === 'GIS_ADMIN' || u.username === 'GIS Admin')) {
-    list.unshift({
-      id: 'org-admin-001',
-      username: 'GIS Admin',
-      displayName: 'GIS Admin',
-      role: 'GIS_ADMIN',
-      subdivision: null,
-      division: null,
-      circle: null,
-      department: 'SE - 1 cum HOD',
-      admin: 'GIS Admin',
-      region: 'All Regions',
-      scopeField: null,
-      scopeValue: null,
-      jurisdictions: ['PONDICHERRY', 'KARAIKAL', 'MAHE', 'YANAM'],
-    });
-  }
-
-  return list;
+  // Directory data is sensitive and is never exposed before authentication.
+  // This RPC is GIS-Admin-only and requires the current live session.
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('admin_list_users', { p_session_token: sessionToken() });
+  if (error) throw new Error(error.message || 'Unable to load authorised users.');
+  return Array.isArray(data) ? data.map(mapUser) : [];
 }
 
 export async function authenticateUser(username: string, password: string): Promise<PowerGISUser | null> {
   const cleanUsername = username.trim();
-  const normalized = cleanUsername.toLowerCase().replace(/[\s-]/g, '');
-  const isSe1Hod = normalized === 'se1hod' || normalized === 'se1cumhod';
-  const isGisAdmin = normalized === 'gisadmin' || cleanUsername.toLowerCase() === 'gis admin';
-
-  try {
-    const client = requireSupabase();
-    let { data, error } = await client.rpc('authenticate_user', { p_username: cleanUsername, p_password: password });
-    if (error) {
-      console.warn('Supabase authenticate_user error:', error.message || error);
-    }
-    if ((error || !data || data.length === 0) && isSe1Hod) {
-      const fallback = await client.rpc('authenticate_user', { p_username: 'SE - 1 HOD', p_password: password });
-      if (!fallback.error && fallback.data && fallback.data.length > 0) {
-        data = fallback.data;
-        error = null;
-      }
-    }
-    if (!error && data && data.length > 0) {
-      const row = data[0];
-      if (row.session_token) {
-        localStorage.setItem('powergis_session_token', row.session_token);
-      } else {
-        localStorage.setItem('powergis_session_token', row.id);
-      }
-      return mapUser(row);
-    }
-  } catch (err) {
-    console.warn('RPC authentication note:', err);
-  }
-
-  // Graceful fallback for SE - 1 cum HOD
-  if (isSe1Hod) {
-    localStorage.setItem('powergis_session_token', SE1_HOD_USER.id);
-    return SE1_HOD_USER;
-  }
-
-  // Graceful fallback for GIS Admin
-  if (isGisAdmin) {
-    const adminUser: PowerGISUser = {
-      id: 'org-admin-001',
-      username: 'GIS Admin',
-      displayName: 'GIS Admin',
-      role: 'GIS_ADMIN',
-      subdivision: null,
-      division: null,
-      circle: null,
-      department: 'SE - 1 cum HOD',
-      admin: 'GIS Admin',
-      region: 'All Regions',
-      scopeField: null,
-      scopeValue: null,
-      jurisdictions: ['PONDICHERRY', 'KARAIKAL', 'MAHE', 'YANAM'],
-    };
-    localStorage.setItem('powergis_session_token', adminUser.id);
-    return adminUser;
-  }
-
-  // Fallback to local user registry (supports custom added users and offline testing)
-  const allUsers = await listLoginUsers();
-  const match = allUsers.find(
-    (u) =>
-      u.username.toLowerCase() === cleanUsername.toLowerCase() ||
-      u.displayName.toLowerCase() === cleanUsername.toLowerCase()
-  );
-  if (match) {
-    localStorage.setItem('powergis_session_token', match.id);
-    return match;
-  }
-
-  return null;
+  if (!cleanUsername || !password) return null;
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('authenticate_user', {
+    p_username: cleanUsername,
+    p_password: password,
+  });
+  if (error) throw new Error(error.message || 'Authentication service unavailable.');
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row?.session_token) return null;
+  sessionStorage.setItem('powergis_session_token', row.session_token);
+  return mapUser(row);
 }
 
-const DELETED_ASSETS_KEY = 'powergis_deleted_asset_ids';
-const ASSET_OVERRIDES_KEY = 'powergis_asset_overrides';
-
-export function getDeletedAssetIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DELETED_ASSETS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return new Set(parsed);
-    }
-  } catch {
-    /* ignore */
-  }
-  return new Set();
+function sessionToken(): string {
+  const token = sessionStorage.getItem('powergis_session_token');
+  if (!token) throw new Error('Your session has expired. Please sign in again.');
+  return token;
 }
 
-export function saveDeletedAssetIds(ids: Set<string>): void {
+export async function restoreAuthenticatedUser(): Promise<PowerGISUser | null> {
+  const token = sessionStorage.getItem('powergis_session_token');
+  if (!token) return null;
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('session_user', { p_session_token: token });
+  if (error) throw new Error(error.message || 'Unable to validate your session.');
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) {
+    sessionStorage.removeItem('powergis_session_token');
+    return null;
+  }
+  return mapUser(row);
+}
+
+export async function revokeSession(): Promise<void> {
+  const token = sessionStorage.getItem('powergis_session_token');
   try {
-    localStorage.setItem(DELETED_ASSETS_KEY, JSON.stringify(Array.from(ids)));
-  } catch {
-    /* ignore */
+    if (token && supabase) await supabase.rpc('logout_user', { p_session_token: token });
+  } finally {
+    sessionStorage.removeItem('powergis_session_token');
   }
 }
 
-export function getAssetOverrides(): Record<string, Partial<PowerGISAsset>> {
-  try {
-    const raw = localStorage.getItem(ASSET_OVERRIDES_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') return parsed;
-    }
-  } catch {
-    /* ignore */
+export async function updateAsset(id: string, updates: Partial<PowerGISAsset> & { version?: number }): Promise<void> {
+  const client = requireSupabase();
+  if (!updates.version) throw new Error('Asset version is missing. Refresh the record before editing.');
+  let geometry = updates.geometry ?? null;
+  if (geometry?.type === 'Point' && Number.isFinite(updates.lng) && Number.isFinite(updates.lat)) {
+    geometry = { type: 'Point', coordinates: [Number(updates.lng), Number(updates.lat)] };
+  } else if (!geometry && Number.isFinite(updates.lng) && Number.isFinite(updates.lat)) {
+    geometry = { type: 'Point', coordinates: [Number(updates.lng), Number(updates.lat)] };
   }
-  return {};
-}
-
-export function saveAssetOverrides(overrides: Record<string, Partial<PowerGISAsset>>): void {
-  try {
-    localStorage.setItem(ASSET_OVERRIDES_KEY, JSON.stringify(overrides));
-  } catch {
-    /* ignore */
-  }
-}
-
-export async function updateAsset(id: string, updates: Partial<PowerGISAsset>): Promise<void> {
-  const overrides = getAssetOverrides();
-  overrides[id] = { ...(overrides[id] || {}), ...updates };
-  saveAssetOverrides(overrides);
-
-  // Also update local imported assets if it exists there
-  try {
-    const { getLocalImportedAssets, saveLocalImportedAssets } = await import('./dataManagementService');
-    const local = getLocalImportedAssets();
-    const idx = local.findIndex((a) => a.id === id || a.assetNo === id);
-    if (idx !== -1) {
-      local[idx] = { ...local[idx], ...updates };
-      saveLocalImportedAssets(local);
-    }
-  } catch {
-    /* ignore */
-  }
-
-  // Attempt database update if online
-  try {
-    const client: any = requireSupabase();
-    if (client && typeof client.from === 'function') {
-      await client.from('gis_assets').update?.({
-        asset_no: updates.assetNo,
-        asset_type: updates.assetType,
-        status: updates.status,
-        geometry: updates.geometry,
-      }).eq?.('id', id);
-    }
-  } catch {
-    /* ignore */
-  }
-
+  const { error } = await client.rpc('admin_update_asset', {
+    p_session_token: sessionToken(), p_asset_id: id, p_expected_version: updates.version,
+    p_asset_no: updates.assetNo, p_asset_type: updates.assetType, p_status: updates.status,
+    p_geometry: geometry, p_metadata: updates.metadata ?? null,
+    p_jurisdiction_ids: updates.jurisdictions ?? null, p_shared_boundary: updates.shared ?? null,
+  });
+  if (error) throw new Error(error.message || 'Asset update was rejected.');
   window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
 }
 
 export async function deleteAssets(ids: string[]): Promise<void> {
-  const currentDeleted = getDeletedAssetIds();
-  const toDelete = new Set(ids.map((x) => String(x).trim()));
-
-  // 1. Scan and collect all matching IDs and assetNos from sample data
-  SAMPLE_GIS_ASSETS.forEach((sa) => {
-    if (toDelete.has(sa.id) || toDelete.has(sa.assetNo) || toDelete.has(sa.assetNo.trim())) {
-      currentDeleted.add(sa.id);
-      currentDeleted.add(sa.assetNo);
-    }
-  });
-
-  // 2. Scan and remove from local imported store
-  try {
-    const { getLocalImportedAssets, saveLocalImportedAssets } = await import('./dataManagementService');
-    const local = getLocalImportedAssets();
-    local.forEach((la) => {
-      if (toDelete.has(la.id) || toDelete.has(la.assetNo) || toDelete.has(la.assetNo.trim())) {
-        currentDeleted.add(la.id);
-        currentDeleted.add(la.assetNo);
-      }
-    });
-    const remaining = local.filter((la) => !currentDeleted.has(la.id) && !currentDeleted.has(la.assetNo));
-    saveLocalImportedAssets(remaining);
-  } catch {
-    /* ignore */
-  }
-
-  // 3. Add raw passed IDs and asset numbers
-  ids.forEach((id) => {
-    const clean = String(id).trim();
-    if (clean) {
-      currentDeleted.add(clean);
-    }
-  });
-
-  saveDeletedAssetIds(currentDeleted);
-
-  // 4. Attempt database deletion if connected
-  try {
-    const client: any = requireSupabase();
-    if (client && typeof client.from === 'function') {
-      await client.from('gis_assets').delete?.().in?.('id', Array.from(currentDeleted));
-    }
-  } catch {
-    /* ignore offline */
-  }
-
-  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
-}
-
-export function restoreAllDeletedAssets(): void {
-  localStorage.removeItem(DELETED_ASSETS_KEY);
-  localStorage.removeItem(ASSET_OVERRIDES_KEY);
-  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
-}
-
-export async function getLiveGridAssets(userId: string): Promise<PowerGISAsset[]> {
   const client = requireSupabase();
-  let data: any[] | null = null;
-  let error: any = null;
-
-  try {
-    const res = await client.rpc('visible_assets', { p_user_id: userId });
-    data = res.data;
-    error = res.error;
-  } catch (e) {
-    error = e;
-  }
-
-  // If SE - 1 cum HOD was queried before the DB seed was updated, load full assets via GIS Admin scope
-  if ((!data || data.length === 0) && userId === 'org-se-000') {
-    try {
-      const res = await client.rpc('visible_assets', { p_user_id: 'org-admin-001' });
-      if (!res.error && res.data) {
-        data = res.data;
-        error = null;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
-  if (error) {
-    console.warn('Supabase asset fetch notice:', error);
-  }
-
-  const mappedDbAssets: PowerGISAsset[] = (data ?? []).map((row: any) => {
-    let rawType = String(row.asset_type || 'ASSET').toUpperCase().replace(/[^A-Z0-9_]/g, '_');
-    if (rawType === 'STREET_POLE' || rawType === 'STREETPOLES' || rawType === 'STREET_POLES' || rawType === 'POLES') {
-      rawType = 'POLE';
-    }
-    return {
-      id: String(row.id),
-      assetNo: String(row.asset_no),
-      assetType: rawType,
-      status: String(row.status),
-      jurisdictions: row.jurisdiction_ids ?? [],
-      owners: row.owner_je_ids ?? [],
-      shared: !!row.shared_boundary,
-      geometry: row.geometry,
-      lat:
-        row.latitude != null
-          ? Number(row.latitude)
-          : row.geometry?.type === 'Point' && Array.isArray(row.geometry.coordinates)
-          ? Number(row.geometry.coordinates[1])
-          : undefined,
-      lng:
-        row.longitude != null
-          ? Number(row.longitude)
-          : row.geometry?.type === 'Point' && Array.isArray(row.geometry.coordinates)
-          ? Number(row.geometry.coordinates[0])
-          : undefined,
-    };
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  if (!uniqueIds.length) return;
+  const { data, error } = await client.rpc('admin_archive_assets', {
+    p_session_token: sessionToken(), p_asset_ids: uniqueIds,
   });
+  if (error) throw new Error(error.message || 'The selected assets were not archived.');
+  if (Number(data) !== uniqueIds.length) throw new Error('The server did not confirm that every selected asset was archived. Refresh the inventory.');
+  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
+}
 
-  const deletedIds = getDeletedAssetIds();
-  const filterNotDeleted = (a: PowerGISAsset) =>
-    !deletedIds.has(a.id) &&
-    !deletedIds.has(a.assetNo) &&
-    !deletedIds.has(String(a.id).trim()) &&
-    !deletedIds.has(String(a.assetNo).trim());
-
-  const overrides = getAssetOverrides();
-  const applyOverrides = (a: PowerGISAsset): PowerGISAsset => {
-    const o = overrides[a.id] || overrides[a.assetNo];
-    if (!o) return a;
-    return {
-      ...a,
-      ...o,
-      lat: o.latitude ?? o.lat ?? a.lat,
-      lng: o.longitude ?? o.lng ?? a.lng,
-      metadata: { ...(a.metadata || {}), ...(o.metadata || {}) },
-    };
+function mapAssetRow(row: any): PowerGISAsset {
+  let rawType = String(row.asset_type || 'ASSET').toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+  if (rawType === 'STREET_POLE' || rawType === 'STREETPOLES' || rawType === 'STREET_POLES' || rawType === 'POLES') rawType = 'POLE';
+  return {
+    id: String(row.id),
+    assetNo: String(row.asset_no),
+    assetType: rawType,
+    status: String(row.status),
+    jurisdictions: row.jurisdiction_ids ?? [],
+    owners: row.owner_je_ids ?? [],
+    shared: !!row.shared_boundary,
+    geometry: row.geometry,
+    lat: row.latitude != null ? Number(row.latitude) : row.geometry?.type === 'Point' ? Number(row.geometry.coordinates?.[1]) : undefined,
+    lng: row.longitude != null ? Number(row.longitude) : row.geometry?.type === 'Point' ? Number(row.geometry.coordinates?.[0]) : undefined,
+    metadata: row.metadata ?? undefined,
+    version: row.version != null ? Number(row.version) : undefined,
   };
+}
 
-  const filteredDbAssets = mappedDbAssets.filter(filterNotDeleted);
+/** @deprecated Browser-local deletion state is not authoritative. */
+export function getDeletedAssetIds(): Set<string> { return new Set(); }
+/** @deprecated Browser-local deletion state is not authoritative. */
+export function restoreAllDeletedAssets(): void {
+  throw new Error('Restore is unavailable until server-side soft-delete and recovery are deployed.');
+}
 
-  // Normalized key set of existing database assets
-  const existingKeys = new Set<string>();
-  filteredDbAssets.forEach((a) => {
-    if (a.id) existingKeys.add(a.id.toLowerCase().trim());
-    if (a.assetNo) existingKeys.add(a.assetNo.toLowerCase().trim());
+
+export type AssetStats = {
+  totalCount: number;
+  activeCount: number;
+  pendingCount: number;
+  retiredCount: number;
+  otherCount: number;
+  byType: Record<string, number>;
+};
+
+export async function getVisibleAssetStats(): Promise<AssetStats | null> {
+  const client = requireSupabase();
+  try {
+    const { data, error } = await client.rpc('visible_asset_stats', { p_session_token: sessionToken() });
+    if (!error && data) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
+        return {
+          totalCount: Number(row.total_count || 0),
+          activeCount: Number(row.active_count || 0),
+          pendingCount: Number(row.pending_count || 0),
+          retiredCount: Number(row.retired_count || 0),
+          otherCount: Number(row.other_count || 0),
+          byType: Object.fromEntries(Object.entries(row.by_type || {}).map(([k, v]) => [k, Number(v)])),
+        };
+      }
+    }
+  } catch (error) {
+    console.warn('Supabase asset stats notice:', error);
+  }
+  return null;
+}
+
+export async function getVisibleAssetsPage(
+  limit = 1000,
+  afterCreatedAt?: string,
+  afterId?: string,
+): Promise<{ assets: PowerGISAsset[]; totalCount: number; nextCursor?: { createdAt: string; id: string } }> {
+  const client = requireSupabase();
+  try {
+    const { data, error } = await client.rpc('visible_assets_page_v2', {
+      p_session_token: sessionToken(),
+      p_limit: limit,
+      p_after_created_at: afterCreatedAt ?? null,
+      p_after_id: afterId ?? null,
+    });
+    if (!error && Array.isArray(data)) {
+      const rows = data as any[];
+      const assets = rows.map(mapAssetRow);
+      const last = rows[rows.length - 1];
+      return {
+        assets,
+        totalCount: Number(rows[0]?.total_count || 0),
+        nextCursor: rows.length === limit && last?.created_at ? { createdAt: String(last.created_at), id: String(last.id) } : undefined,
+      };
+    }
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Paginated GIS data is unavailable.');
+  }
+
+  throw new Error('Paginated GIS data is unavailable. Apply migration 007 and verify the authorised read RPC.');
+}
+
+export async function getVisibleAssetsInBounds(bounds: { west: number; south: number; east: number; north: number }, limit = 5000): Promise<{ assets: PowerGISAsset[]; totalCount: number }> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('visible_assets_in_bbox', {
+    p_session_token: sessionToken(), p_west: bounds.west, p_south: bounds.south,
+    p_east: bounds.east, p_north: bounds.north, p_limit: limit,
   });
+  if (error) throw new Error(error.message || 'Unable to load assets in the current map extent.');
+  const rows = Array.isArray(data) ? data as any[] : [];
+  return { assets: rows.map(mapAssetRow), totalCount: Number(rows[0]?.total_count || 0) };
+}
 
-  const isHighLevel =
-    userId === 'org-admin-001' ||
-    userId.startsWith('org-se') ||
-    userId.startsWith('org-ee') ||
-    userId === 'org-se-000';
+export async function getLiveGridAssets(_userId: string): Promise<PowerGISAsset[]> {
+  const all: PowerGISAsset[] = [];
+  let cursor: { createdAt: string; id: string } | undefined;
+  const pageSize = 1000;
+  const maxAssets = 25000;
 
-  // Merge sample data for all layers, deduplicating strictly by normalized ID and assetNo
-  const matchingSampleAssets = SAMPLE_GIS_ASSETS.filter((sa) => {
-    const idKey = (sa.id || '').toLowerCase().trim();
-    const noKey = (sa.assetNo || '').toLowerCase().trim();
-    return (
-      !existingKeys.has(idKey) &&
-      !existingKeys.has(noKey) &&
-      filterNotDeleted(sa) &&
-      (isHighLevel || sa.shared || sa.owners.includes(userId))
-    );
-  });
-
-  // Return strictly Live Grid Assets (no local imported files)
-  return [...filteredDbAssets, ...matchingSampleAssets].map(applyOverrides);
+  for (;;) {
+    const page = await getVisibleAssetsPage(pageSize, cursor?.createdAt, cursor?.id);
+    all.push(...page.assets);
+    if (!page.nextCursor) break;
+    if (all.length >= maxAssets) {
+      throw new Error(`The authorised inventory exceeds the ${maxAssets.toLocaleString()}-asset browser safety limit. Use viewport-based GIS loading.`);
+    }
+    cursor = page.nextCursor;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return all;
 }
 
 export async function getVisibleAssets(userId: string): Promise<PowerGISAsset[]> {
-  const liveGrid = await getLiveGridAssets(userId);
-  const deletedIds = getDeletedAssetIds();
-  const filterNotDeleted = (a: PowerGISAsset) =>
-    !deletedIds.has(a.id) &&
-    !deletedIds.has(a.assetNo) &&
-    !deletedIds.has(String(a.id).trim()) &&
-    !deletedIds.has(String(a.assetNo).trim());
-
-  const localImported = getLocalImportedAssets().filter(filterNotDeleted);
-
-  // Strict deduplication map by normalized key (assetNo or id)
-  const dedupMap = new Map<string, PowerGISAsset>();
-  for (const a of liveGrid) {
-    const key = (a.assetNo || a.id).trim().toLowerCase();
-    dedupMap.set(key, a);
-  }
-  for (const a of localImported) {
-    const key = (a.assetNo || a.id).trim().toLowerCase();
-    if (!dedupMap.has(key)) {
-      dedupMap.set(key, a);
-    }
-  }
-
-  const overrides = getAssetOverrides();
-  const applyOverrides = (a: PowerGISAsset): PowerGISAsset => {
-    const o = overrides[a.id] || overrides[a.assetNo];
-    if (!o) return a;
-    return {
-      ...a,
-      ...o,
-      lat: o.latitude ?? o.lat ?? a.lat,
-      lng: o.longitude ?? o.lng ?? a.lng,
-      metadata: { ...(a.metadata || {}), ...(o.metadata || {}) },
-    };
-  };
-
-  return Array.from(dedupMap.values()).map(applyOverrides);
+  // Only the server-authorised inventory is operational data. Sample and
+  // browser-local imports are intentionally excluded from live GIS results.
+  return getLiveGridAssets(userId);
 }
 
-export async function getVisibleBoundaries(userId: string): Promise<PowerGISBoundary[]> {
+export async function getVisibleBoundaries(_userId: string): Promise<PowerGISBoundary[]> {
   const client = requireSupabase();
-  let data: any[] | null = null;
-  let error: any = null;
-
-  try {
-    const res = await client.rpc('visible_jurisdictions', { p_user_id: userId });
-    data = res.data;
-    error = res.error;
-  } catch (e) {
-    error = e;
-  }
-
-  // Fallback for SE - 1 cum HOD if DB not yet re-seeded
-  if ((!data || data.length === 0) && userId === 'org-se-000') {
-    const res = await client.rpc('visible_jurisdictions', { p_user_id: 'org-admin-001' });
-    data = res.data;
-    error = res.error;
-  }
-
-  if (error) throw error;
+  const { data, error } = await client.rpc('visible_jurisdictions', {
+    p_user_id: null,
+    p_session_token: sessionToken(),
+  });
+  if (error) throw new Error(error.message || 'Unable to load authorised boundaries.');
   return (data ?? []).map((row: any) => ({
     id: String(row.id),
     name: String(row.name),
@@ -781,4 +452,26 @@ export async function getVisibleBoundaries(userId: string): Promise<PowerGISBoun
     department: row.department ?? null,
     geometry: row.geometry,
   }));
+}
+
+
+export async function reviewAssetSubmission(
+  assetId: string,
+  expectedVersion: number,
+  decision: 'approve' | 'reject',
+  comment = '',
+): Promise<{ status: string; version: number }> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc('review_asset_submission', {
+    p_session_token: sessionToken(),
+    p_asset_id: assetId,
+    p_expected_version: expectedVersion,
+    p_decision: decision,
+    p_comment: comment,
+  });
+  if (error) throw new Error(error.message || 'Review action failed.');
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.status || row?.new_version == null) throw new Error('The server did not confirm the review transition.');
+  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
+  return { status: String(row.status), version: Number(row.new_version) };
 }

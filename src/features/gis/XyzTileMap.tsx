@@ -35,12 +35,19 @@ const yToLat = (y: number, z: number) => {
   return (180 / Math.PI) * Math.atan(Math.sinh(n));
 };
 
-const geometryPoints = (g: any): Point[] =>
-  g.type === 'Point'
+const geometryCache = new WeakMap<object, Point[]>();
+const geometryPoints = (g: any): Point[] => {
+  if (!g || typeof g !== 'object') return [];
+  const cached = geometryCache.get(g);
+  if (cached) return cached;
+  const points: Point[] = g.type === 'Point'
     ? [{ lng: g.coordinates[0], lat: g.coordinates[1] }]
     : g.type === 'LineString'
     ? g.coordinates.map((c: number[]) => ({ lng: c[0], lat: c[1] }))
-    : g.coordinates[0].map((c: number[]) => ({ lng: c[0], lat: c[1] }));
+    : (g.coordinates?.[0] || []).map((c: number[]) => ({ lng: c[0], lat: c[1] }));
+  geometryCache.set(g, points);
+  return points;
+};
 
 const pos = (p: Point, c: Point, z: number, w: number, h: number) => {
   const wx = lngToX(p.lng, z) * tileSize;
@@ -55,17 +62,21 @@ export function XyzTileMap({
   assets,
   boundaries,
   navigationTarget,
+  onViewportChange,
 }: {
   currentUser: PowerGISUser;
   assets: PowerGISAsset[];
   boundaries: PowerGISBoundary[];
   navigationTarget?: MapNavigationTarget | null;
+  onViewportChange?: (bounds: { west: number; south: number; east: number; north: number }) => void;
 }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [center, setCenter] = useState<Point>(MAP_DEFAULT.center);
   const [zoom, setZoom] = useState(10);
   const [bearing, setBearing] = useState(0);
   const [layer, setLayer] = useState<BaseLayer>('roadmap');
+  const [showMapTools, setShowMapTools] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [size, setSize] = useState({ width: 1000, height: 650 });
   const {
@@ -131,6 +142,7 @@ export function XyzTileMap({
       setNewLabel('');
       setAttachedFile(null);
       setShowAddBox(false);
+      setShowMapTools(false);
     } catch (err: any) {
       alert(`Import error: ${err?.message || 'Failed to import file'}`);
     } finally {
@@ -196,6 +208,25 @@ export function XyzTileMap({
   } | null>(null);
   const wheelAccRef = useRef(0);
   const lastWheelTimeRef = useRef(0);
+  const dragFrameRef = useRef<number | null>(null);
+  const pendingDragRef = useRef({ dx: 0, dy: 0 });
+
+  useEffect(() => {
+    const syncFullscreen = () => setIsFullscreen(document.fullscreenElement === mapRef.current);
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    const node = mapRef.current;
+    if (!node) return;
+    try {
+      if (document.fullscreenElement === node) await document.exitFullscreen();
+      else await node.requestFullscreen();
+    } catch (error) {
+      console.warn('Fullscreen is unavailable in this browser:', error);
+    }
+  };
 
   useEffect(() => {
     centerRef.current = center;
@@ -221,8 +252,32 @@ export function XyzTileMap({
     return () => {
       window.removeEventListener('pointerup', handleGlobalUp);
       window.removeEventListener('pointercancel', handleGlobalUp);
+      if (dragFrameRef.current !== null) cancelAnimationFrame(dragFrameRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!onViewportChange || size.width <= 0 || size.height <= 0) return;
+    const timer = window.setTimeout(() => {
+      const worldX = lngToX(center.lng, zoom);
+      const worldY = latToY(center.lat, zoom);
+      const angle = (bearing * Math.PI) / 180;
+      const cos = Math.abs(Math.cos(angle));
+      const sin = Math.abs(Math.sin(angle));
+      const halfWidth = (cos * size.width + sin * size.height) / (2 * tileSize);
+      const halfHeight = (sin * size.width + cos * size.height) / (2 * tileSize);
+      const normalizeLng = (value: number) => ((value + 180) % 360 + 360) % 360 - 180;
+      const north = yToLat(Math.max(0, worldY - halfHeight), zoom);
+      const south = yToLat(Math.min(2 ** zoom, worldY + halfHeight), zoom);
+      onViewportChange({
+        west: normalizeLng(xToLng(worldX - halfWidth, zoom)),
+        east: normalizeLng(xToLng(worldX + halfWidth, zoom)),
+        south: Math.max(-85, south),
+        north: Math.min(85, north),
+      });
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [center.lat, center.lng, zoom, bearing, size.width, size.height, onViewportChange]);
 
   useEffect(() => {
     const node = mapRef.current;
@@ -316,6 +371,7 @@ export function XyzTileMap({
         zoomAt(zoomRef.current - 1);
       } else if (e.key === 'Escape') {
         setSelectedAsset(null);
+        setShowMapTools(false);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -449,12 +505,23 @@ export function XyzTileMap({
         drag.lastX = e.clientX;
         drag.lastY = e.clientY;
 
-        if (drag.mode === 'rotate') {
-          const nextBearing = Math.round((bearingRef.current + dx * 0.4) % 360 + 360) % 360;
-          bearingRef.current = nextBearing;
-          setBearing(nextBearing);
-        } else {
-          panBy(dx, dy);
+        pendingDragRef.current.dx += dx;
+        pendingDragRef.current.dy += dy;
+        if (dragFrameRef.current === null) {
+          dragFrameRef.current = requestAnimationFrame(() => {
+            const delta = pendingDragRef.current;
+            pendingDragRef.current = { dx: 0, dy: 0 };
+            dragFrameRef.current = null;
+            const activeDrag = dragRef.current;
+            if (!activeDrag) return;
+            if (activeDrag.mode === 'rotate') {
+              const nextBearing = Math.round((bearingRef.current + delta.dx * 0.4) % 360 + 360) % 360;
+              bearingRef.current = nextBearing;
+              setBearing(nextBearing);
+            } else {
+              panBy(delta.dx, delta.dy);
+            }
+          });
         }
       }}
       onPointerUp={(e) => {
@@ -515,6 +582,8 @@ export function XyzTileMap({
               key={`${t.x}-${t.y}-${zoom}`}
               src={t.url}
               alt=""
+              loading="eager"
+              decoding="async"
               draggable={false}
               style={{ left: t.left, top: t.top }}
             />
@@ -591,44 +660,65 @@ export function XyzTileMap({
             }
 
             const MAX_VISIBLE_DOM_MARKERS = 1200;
-            let displayPoints = inViewPoints;
-            const isThinned = inViewPoints.length > MAX_VISIBLE_DOM_MARKERS;
+            const isClustered = inViewPoints.length > MAX_VISIBLE_DOM_MARKERS;
+            const displayPoints: { asset: PowerGISAsset; p: { left: number; top: number }; count: number }[] = [];
 
-            if (isThinned) {
-              const step = Math.ceil(inViewPoints.length / MAX_VISIBLE_DOM_MARKERS);
-              displayPoints = [];
-              for (let i = 0; i < inViewPoints.length; i += step) {
-                displayPoints.push(inViewPoints[i]);
+            if (isClustered) {
+              // Screen-space grid clustering keeps DOM work bounded while preserving density.
+              const cellSize = 54;
+              const buckets = new Map<string, { asset: PowerGISAsset; x: number; y: number; count: number }>();
+              for (const item of inViewPoints) {
+                const gx = Math.floor(item.p.left / cellSize);
+                const gy = Math.floor(item.p.top / cellSize);
+                const key = `${gx}:${gy}`;
+                const bucket = buckets.get(key);
+                if (bucket) bucket.count += 1;
+                else buckets.set(key, { asset: item.asset, x: item.p.left, y: item.p.top, count: 1 });
               }
-              // Always guarantee selectedAsset is rendered if within view
-              if (selectedAsset && inViewPoints.some((x) => x.asset.id === selectedAsset.id)) {
-                if (!displayPoints.some((x) => x.asset.id === selectedAsset.id)) {
-                  const sel = inViewPoints.find((x) => x.asset.id === selectedAsset.id);
-                  if (sel) displayPoints.push(sel);
-                }
+              for (const bucket of buckets.values()) {
+                displayPoints.push({ asset: bucket.asset, p: { left: bucket.x, top: bucket.y }, count: bucket.count });
               }
+            } else {
+              for (const item of inViewPoints) displayPoints.push({ ...item, count: 1 });
+            }
+
+            // Keep the selected feature available even while its neighbours are clustered.
+            if (selectedAsset && inViewPoints.some((x) => x.asset.id === selectedAsset.id) && !displayPoints.some((x) => x.asset.id === selectedAsset.id)) {
+              const selected = inViewPoints.find((x) => x.asset.id === selectedAsset.id);
+              if (selected) displayPoints.push({ ...selected, count: 1 });
             }
 
             return (
               <>
-                {displayPoints.map(({ asset: a, p }) => {
+                {displayPoints.map(({ asset: a, p, count }) => {
                   const layerIcon = layerIcons[a.assetType] || 'circle';
                   const layerColor = layerColors[a.assetType] || '#2563EB';
                   const markerDiameter = Math.round(18 * iconScale);
                   const glyphSize = Math.max(7, Math.round(11 * iconScale));
                   const radius = markerDiameter / 2;
+                  if (count > 1) {
+                    const diameter = Math.min(46, 25 + Math.log2(count) * 4);
+                    return (
+                      <button
+                        key={`cluster-${a.id}-${count}`}
+                        type="button"
+                        className="asset-cluster"
+                        aria-label={`${count} assets clustered; zoom in to inspect`}
+                        style={{ left: p.left - diameter / 2, top: p.top - diameter / 2, width: diameter, height: diameter }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = mapRef.current?.getBoundingClientRect();
+                          zoomAt(zoomRef.current + 2, (rect?.left || 0) + p.left, (rect?.top || 0) + p.top);
+                        }}
+                      >{count.toLocaleString()}</button>
+                    );
+                  }
                   return (
                     <button
                       key={a.id}
                       aria-label={a.assetNo}
                       className={`asset-marker ${a.assetType.toLowerCase()} ${selectedAsset?.id === a.id ? 'selected' : ''}`}
-                      style={{
-                        left: p.left - radius,
-                        top: p.top - radius,
-                        width: markerDiameter,
-                        height: markerDiameter,
-                        background: layerColor,
-                      }}
+                      style={{ left: p.left - radius, top: p.top - radius, width: markerDiameter, height: markerDiameter, background: layerColor }}
                       onMouseEnter={(e) => setHover({ asset: a, x: e.clientX, y: e.clientY })}
                       onMouseMove={(e) => setHover((h) => (h ? { ...h, x: e.clientX, y: e.clientY } : h))}
                       onMouseLeave={() => setHover(null)}
@@ -636,17 +726,14 @@ export function XyzTileMap({
                         e.stopPropagation();
                         setSelectedAsset(a);
                         setIsEditingAsset(false);
+                        setShowMapTools(false);
                       }}
                     >
                       <LayerIconGlyph icon={layerIcon} size={glyphSize} color="#ffffff" strokeWidth={2.5} />
                     </button>
                   );
                 })}
-                {isThinned && (
-                  <div className="map-density-pill">
-                    Displaying {displayPoints.length.toLocaleString()} of {inViewPoints.length.toLocaleString()} points in view (zoom in for full detail)
-                  </div>
-                )}
+                {isClustered && <div className="map-density-pill">{inViewPoints.length.toLocaleString()} assets in view · select a cluster to zoom in</div>}
               </>
             );
           })()}
@@ -662,6 +749,9 @@ export function XyzTileMap({
         <button title="Fit area" onClick={reset}>
           ⌂
         </button>
+        <button title={isFullscreen ? 'Exit full screen' : 'Full screen map'} onClick={() => void toggleFullscreen()}>
+          {isFullscreen ? '⤢' : '⛶'}
+        </button>
         <button
           title="Reset north"
           onClick={() => {
@@ -676,7 +766,7 @@ export function XyzTileMap({
         </span>
       </div>
       <div
-        className="xyz-map-left-panel"
+        className={`xyz-map-left-panel ${showMapTools ? 'is-open' : ''}`}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -684,6 +774,18 @@ export function XyzTileMap({
         onDoubleClick={(e) => e.stopPropagation()}
         onWheel={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          className="xyz-tools-toggle"
+          aria-expanded={showMapTools}
+          onClick={() => setShowMapTools(value => !value)}
+        >
+          <LayerIconGlyph icon="layers" size={15} color="#ffffff" />
+          <span>Map tools</span>
+          <span className="xyz-tools-count">{layers.length}</span>
+          <ChevronDown size={14} className="xyz-tools-chevron" />
+        </button>
+        {showMapTools && <div className="xyz-tools-content">
         <div
           className="xyz-layer"
           onPointerDown={(e) => e.stopPropagation()}
@@ -694,7 +796,7 @@ export function XyzTileMap({
             <select
               ref={baseMapSelectRef}
               value={layer}
-              onChange={(e) => setLayer(e.target.value as BaseLayer)}
+              onChange={(e) => { setLayer(e.target.value as BaseLayer); setShowMapTools(false); }}
             >
               <option value="roadmap">Roadmap (Google)</option>
               <option value="satellite">Satellite (Google)</option>
@@ -1208,6 +1310,7 @@ export function XyzTileMap({
             );
           }))}
         </div>
+        </div>}
       </div>
       {hover && (
         <div
@@ -1316,15 +1419,22 @@ export function XyzTileMap({
                   onClick={async () => {
                     const parsedLat = parseFloat(editLat);
                     const parsedLng = parseFloat(editLng);
-                    await updateAsset(selectedAsset.id, {
-                      assetNo: editAssetNo.trim(),
-                      assetType: editAssetType,
-                      status: editAssetStatus as any,
-                      lat: Number.isFinite(parsedLat) ? parsedLat : selectedAsset.lat,
-                      lng: Number.isFinite(parsedLng) ? parsedLng : selectedAsset.lng,
-                      latitude: Number.isFinite(parsedLat) ? parsedLat : selectedAsset.latitude,
-                      longitude: Number.isFinite(parsedLng) ? parsedLng : selectedAsset.longitude,
-                    });
+                    try {
+                      await updateAsset(selectedAsset.id, {
+                        version: selectedAsset.version,
+                        geometry: selectedAsset.geometry,
+                        assetNo: editAssetNo.trim(),
+                        assetType: editAssetType,
+                        status: editAssetStatus as any,
+                        lat: Number.isFinite(parsedLat) ? parsedLat : selectedAsset.lat,
+                        lng: Number.isFinite(parsedLng) ? parsedLng : selectedAsset.lng,
+                        latitude: Number.isFinite(parsedLat) ? parsedLat : selectedAsset.latitude,
+                        longitude: Number.isFinite(parsedLng) ? parsedLng : selectedAsset.longitude,
+                      });
+                    } catch (error: any) {
+                      window.alert(error?.message || 'Asset update was not saved.');
+                      return;
+                    }
                     setSelectedAsset((prev) =>
                       prev
                         ? {
@@ -1352,9 +1462,13 @@ export function XyzTileMap({
                   title="Delete asset from map and storage"
                   onClick={async () => {
                     if (window.confirm(`Delete asset "${selectedAsset.assetNo}"? This will remove it from the map.`)) {
-                      await deleteAssets([selectedAsset.id]);
-                      setSelectedAsset(null);
-                      setIsEditingAsset(false);
+                      try {
+                        await deleteAssets([selectedAsset.id]);
+                        setSelectedAsset(null);
+                        setIsEditingAsset(false);
+                      } catch (error: any) {
+                        window.alert(error?.message || 'Asset deletion was not saved.');
+                      }
                     }
                   }}
                 >

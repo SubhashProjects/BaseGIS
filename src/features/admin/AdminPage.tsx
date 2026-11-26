@@ -29,7 +29,7 @@ export function AdminPage({ currentUser }: { currentUser: PowerGISUser }) {
         </div>
         <div className="card accent-1">
           <div className="metric-label">{UI.admin.assets}</div>
-          <div className="metric">{vm.loading ? '—' : vm.assets.length}</div>
+          <div className="metric">{vm.loading ? '—' : (vm.stats?.totalCount ?? '—')}</div>
         </div>
         <div className="card accent-2">
           <div className="metric-label">{UI.admin.jurisdictions}</div>

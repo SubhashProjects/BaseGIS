@@ -60,7 +60,7 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
 
   const [stagedFiles, setStagedFiles] = useState<StagedFileMeta[]>([]);
   const [stagedFeatures, setStagedFeatures] = useState<StagedFeatureRow[]>([]);
-  const [duplicateStrategy, setDuplicateStrategy] = useState<DuplicateStrategy>('overwrite');
+  const [duplicateStrategy, setDuplicateStrategy] = useState<DuplicateStrategy>('skip');
   const [isParsingFiles, setIsParsingFiles] = useState<boolean>(false);
   const [format, setFormat] = useState<'geojson' | 'csv' | 'json'>('geojson');
 
@@ -355,25 +355,25 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
         }));
       });
 
-      // 4. Remove imported features from staging
-      const importedUids = new Set(toImport.map((r) => r.uid));
-      setStagedFeatures((prev) => prev.filter((r) => !importedUids.has(r.uid)));
-
-      // If all features of a file were imported, remove that file card too
-      setStagedFiles((prev) =>
-        prev.filter((f) => stagedFeatures.some((r) => !importedUids.has(r.uid) && r.fileId === f.id))
-      );
+      // Remove successfully handled rows from staging; keep rejected rows for correction/retry.
+      const hasBatchFailure = result.errors.some((entry) => /^Batch \d+:/.test(entry));
+      const failedAssetNos = new Set(result.errors.filter((entry) => !/^Batch \d+:/.test(entry)).map((entry) => entry.split(':')[0].trim().toLowerCase()));
+      const handledUids = new Set(hasBatchFailure ? [] : toImport.filter((r) => !failedAssetNos.has(r.assetNo.trim().toLowerCase())).map((r) => r.uid));
+      setStagedFeatures((prev) => prev.filter((r) => !handledUids.has(r.uid)));
+      setStagedFiles((prev) => prev.filter((f) => stagedFeatures.some((r) => !handledUids.has(r.uid) && r.fileId === f.id)));
 
       setImportProgress((prev) => ({
         ...prev,
-        stage: 'complete',
+        stage: result.errors.length ? 'error' : 'complete',
         percent: 100,
-        message: `Import complete! Added/Updated ${result.inserted.toLocaleString()} features (${result.skipped.toLocaleString()} skipped).`,
-        processedCount: result.inserted,
-        totalCount: result.inserted,
+        message: result.errors.length
+          ? `Import partially completed: ${result.inserted.toLocaleString()} inserted, ${result.skipped.toLocaleString()} skipped, ${result.errors.length.toLocaleString()} rejected. Rejected rows remain staged.`
+          : `Server import complete: ${result.inserted.toLocaleString()} inserted (${result.skipped.toLocaleString()} duplicates skipped).`,
+        processedCount: result.inserted + result.skipped,
+        totalCount: toImport.length,
         logs: [
           ...prev.logs,
-          `[${new Date().toLocaleTimeString()}] SUCCESS: ${result.inserted.toLocaleString()} features stored in local IndexedDB. Map updated.`,
+          `[${new Date().toLocaleTimeString()}] Server result: ${result.inserted.toLocaleString()} inserted, ${result.skipped.toLocaleString()} skipped, ${result.errors.length.toLocaleString()} errors.`,
         ],
       }));
     } catch (err: any) {
@@ -435,8 +435,12 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
   const handleDeleteSelectedActive = async () => {
     if (!selectedActiveIds.size) return;
     if (window.confirm(`Delete ${selectedActiveIds.size} selected imported asset(s)?`)) {
-      await deleteAssets(Array.from(selectedActiveIds));
-      setSelectedActiveIds(new Set());
+      try {
+        await deleteAssets(Array.from(selectedActiveIds));
+        setSelectedActiveIds(new Set());
+      } catch (error: any) {
+        alert(error?.message || 'Asset deletion was not saved.');
+      }
     }
   };
 
@@ -685,7 +689,7 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
               <DatabaseBackup size={15} />
               {UI.admin.data.backupButton}
             </button>
-            <div className="file-hint">{UI.admin.data.dailySchedule}</div>
+            <div className="file-hint">{UI.admin.data.dailySchedule} Backup, download and restore controls are available only to GIS Admin. Restore merges the snapshot and never deletes current records.</div>
           </div>
         </div>
 
@@ -740,9 +744,7 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
                     value={duplicateStrategy}
                     onChange={(e) => setDuplicateStrategy(e.target.value as DuplicateStrategy)}
                   >
-                    <option value="overwrite">Overwrite existing (Update)</option>
-                    <option value="rename">Keep both (Auto-rename duplicates)</option>
-                    <option value="skip">Skip duplicates (Ignore)</option>
+                    <option value="skip">Skip duplicates (safe server-side mode)</option>
                   </select>
                 </div>
               </div>
@@ -1050,7 +1052,10 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
                             type="button"
                             className="row-remove-btn"
                             title="Delete asset"
-                            onClick={() => deleteAssets([asset.id])}
+                            onClick={async () => {
+                              try { await deleteAssets([asset.id]); }
+                              catch (error: any) { alert(error?.message || 'Asset deletion was not saved.'); }
+                            }}
                           >
                             <Trash2 size={12} />
                           </button>
@@ -1123,11 +1128,15 @@ export function DataManagementPanel({ currentUser }: { currentUser: PowerGISUser
           </div>
           {vm.backups.length ? (
             <div className="backup-rows">
-              {vm.backups.slice(0, 8).map((b: any) => (
+              {vm.backups.slice(0, 12).map((b: any) => (
                 <div className="backup-row" key={b.backup_id}>
                   <span className="backup-id">{b.backup_id}</span>
                   <span className="backup-date">{new Date(b.created_at).toLocaleString()}</span>
-                  <span className="status active">{b.status}</span>
+                  <span className={`status ${b.status === 'COMPLETED' ? 'active' : b.status === 'FAILED' ? 'danger' : ''}`}>{b.status}</span>
+                  <span className="backup-actions">
+                    <button type="button" className="icon-btn" disabled={vm.busy || b.status !== 'COMPLETED'} onClick={() => vm.downloadBackup(b.backup_id)} title="Download backup" aria-label={`Download ${b.backup_id}`}><Download size={14} /></button>
+                    <button type="button" className="icon-btn" disabled={vm.busy || b.status !== 'COMPLETED'} onClick={() => { if (window.confirm(`Restore ${b.backup_id}? This merges the snapshot into the current database, updates matching records, preserves existing credentials and does not delete current records. Take a fresh backup first.`)) void vm.restoreBackup(b.backup_id); }} title="Restore backup" aria-label={`Restore ${b.backup_id}`}><DatabaseBackup size={14} /></button>
+                  </span>
                 </div>
               ))}
             </div>

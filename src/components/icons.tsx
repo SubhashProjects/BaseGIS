@@ -6,14 +6,35 @@ export interface IconProps extends SVGProps<SVGSVGElement> {
   color?: string;
   strokeWidth?: number | string;
   fill?: string;
+  /** Semantic colour override. Explicit `color` always takes precedence. */
+  tone?: IconTone;
 }
+
+export type IconTone = 'electric' | 'transmission' | 'transformer' | 'distribution' | 'meter' | 'gis' | 'data' | 'success' | 'warning' | 'danger' | 'neutral' | 'people' | 'admin';
+
+export const ICON_PALETTE: Record<IconTone, string> = {
+  electric: '#F59E0B',       // power / energy
+  transmission: '#2563EB',   // transmission network
+  transformer: '#8B5CF6',    // transformers / substations
+  distribution: '#0D9488',   // distribution assets
+  meter: '#0891B2',          // metering / telemetry
+  gis: '#16A34A',            // maps / spatial tools
+  data: '#64748B',           // data / storage
+  success: '#16A34A',
+  warning: '#D97706',
+  danger: '#DC2626',
+  neutral: '#64748B',
+  people: '#7C3AED',
+  admin: '#475569',
+};
 
 export type LucideIcon = FC<IconProps>;
 
-function baseProps(props: IconProps) {
+function baseProps(props: IconProps, defaultTone: IconTone = 'neutral') {
   const {
     size = 24,
-    color = 'currentColor',
+    color,
+    tone,
     strokeWidth = 2,
     fill = 'none',
     className = '',
@@ -26,7 +47,7 @@ function baseProps(props: IconProps) {
     height: size,
     viewBox: '0 0 24 24',
     fill,
-    stroke: color,
+    stroke: color ?? ICON_PALETTE[tone ?? defaultTone],
     strokeWidth,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
@@ -36,13 +57,13 @@ function baseProps(props: IconProps) {
 }
 
 export const Zap: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'electric')}>
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );
 
 export const LayoutDashboard: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <rect width="7" height="9" x="3" y="3" rx="1" />
     <rect width="7" height="5" x="14" y="3" rx="1" />
     <rect width="7" height="9" x="14" y="12" rx="1" />
@@ -51,7 +72,7 @@ export const LayoutDashboard: FC<IconProps> = (props) => (
 );
 
 export const Map: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
     <line x1="9" x2="9" y1="3" y2="18" />
     <line x1="15" x2="15" y1="6" y2="21" />
@@ -59,7 +80,7 @@ export const Map: FC<IconProps> = (props) => (
 );
 
 export const Database: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'data')}>
     <ellipse cx="12" cy="5" rx="9" ry="3" />
     <path d="M3 5V19A9 3 0 0 0 21 19V5" />
     <path d="M3 12A9 3 0 0 0 21 12" />
@@ -67,7 +88,7 @@ export const Database: FC<IconProps> = (props) => (
 );
 
 export const ClipboardCheck: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'success')}>
     <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
     <path d="m9 14 2 2 4-4" />
@@ -75,28 +96,28 @@ export const ClipboardCheck: FC<IconProps> = (props) => (
 );
 
 export const ShieldCheck: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'admin')}>
     <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
     <path d="m9 12 2 2 4-4" />
   </svg>
 );
 
 export const X: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'danger')}>
     <path d="M18 6 6 18" />
     <path d="m6 6 12 12" />
   </svg>
 );
 
 export const Bell: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'warning')}>
     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
   </svg>
 );
 
 export const UserCircle: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'people')}>
     <circle cx="12" cy="12" r="10" />
     <circle cx="12" cy="10" r="3" />
     <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
@@ -104,7 +125,7 @@ export const UserCircle: FC<IconProps> = (props) => (
 );
 
 export const Users: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'people')}>
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
     <circle cx="9" cy="7" r="4" />
     <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -113,7 +134,7 @@ export const Users: FC<IconProps> = (props) => (
 );
 
 export const LogOut: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
     <polyline points="16 17 21 12 16 7" />
     <line x1="21" x2="9" y1="12" y2="12" />
@@ -121,7 +142,7 @@ export const LogOut: FC<IconProps> = (props) => (
 );
 
 export const Menu: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <line x1="4" x2="20" y1="12" y2="12" />
     <line x1="4" x2="20" y1="6" y2="6" />
     <line x1="4" x2="20" y1="18" y2="18" />
@@ -129,21 +150,21 @@ export const Menu: FC<IconProps> = (props) => (
 );
 
 export const Search: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <circle cx="11" cy="11" r="8" />
     <path d="m21 21-4.3-4.3" />
   </svg>
 );
 
 export const Eye: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
 
 export const EyeOff: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" />
     <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
     <path d="M17.479 17.499A10.75 10.75 0 0 1 2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.25-5.08" />
@@ -152,13 +173,13 @@ export const EyeOff: FC<IconProps> = (props) => (
 );
 
 export const ChevronDown: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <path d="m6 9 6 6 6-6" />
   </svg>
 );
 
 export const DatabaseBackup: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'data')}>
     <ellipse cx="12" cy="5" rx="9" ry="3" />
     <path d="M3 12a9 3 0 0 0 5 2.69" />
     <path d="M21 9.3V5" />
@@ -169,7 +190,7 @@ export const DatabaseBackup: FC<IconProps> = (props) => (
 );
 
 export const Download: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'success')}>
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
     <polyline points="7 10 12 15 17 10" />
     <line x1="12" x2="12" y1="15" y2="3" />
@@ -177,7 +198,7 @@ export const Download: FC<IconProps> = (props) => (
 );
 
 export const FileUp: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'transmission')}>
     <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
     <path d="M14 2v4a2 2 0 0 0 2 2h4" />
     <path d="M12 12v6" />
@@ -186,7 +207,7 @@ export const FileUp: FC<IconProps> = (props) => (
 );
 
 export const RefreshCw: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
     <path d="M21 3v5h-5" />
     <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
@@ -195,21 +216,21 @@ export const RefreshCw: FC<IconProps> = (props) => (
 );
 
 export const ArrowDown: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <path d="M12 5v14" />
     <path d="m19 12-7 7-7-7" />
   </svg>
 );
 
 export const ArrowUp: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <path d="M12 19V5" />
     <path d="m5 12 7-7 7 7" />
   </svg>
 );
 
 export const ArrowUpDown: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <path d="m21 16-4 4-4-4" />
     <path d="M17 20V4" />
     <path d="m3 8 4-4 4 4" />
@@ -218,7 +239,7 @@ export const ArrowUpDown: FC<IconProps> = (props) => (
 );
 
 export const MapPinned: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <path d="M18 8c0 4.5-6 9-6 9s-6-4.5-6-9a6 6 0 0 1 12 0" />
     <circle cx="12" cy="8" r="2" />
     <path d="M8.835 14H5a1 1 0 0 0-.9.6l-2 4A1 1 0 0 0 3 20h18a1 1 0 0 0 .9-1.4l-2-4a1 1 0 0 0-.9-.6h-3.835" />
@@ -226,7 +247,7 @@ export const MapPinned: FC<IconProps> = (props) => (
 );
 
 export const LocateFixed: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <line x1="2" x2="5" y1="12" y2="12" />
     <line x1="19" x2="22" y1="12" y2="12" />
     <line x1="12" x2="12" y1="2" y2="5" />
@@ -237,21 +258,21 @@ export const LocateFixed: FC<IconProps> = (props) => (
 );
 
 export const Plus: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'success')}>
     <line x1="12" x2="12" y1="5" y2="19" />
     <line x1="5" x2="19" y1="12" y2="12" />
   </svg>
 );
 
 export const Pencil: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'warning')}>
     <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
     <path d="m15 5 4 4" />
   </svg>
 );
 
 export const Trash2: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'danger')}>
     <path d="M3 6h18" />
     <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
     <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
@@ -261,7 +282,7 @@ export const Trash2: FC<IconProps> = (props) => (
 );
 
 export const Save: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'success')}>
     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
     <polyline points="17 21 17 13 7 13 7 21" />
     <polyline points="7 3 7 8 15 8" />
@@ -269,44 +290,44 @@ export const Save: FC<IconProps> = (props) => (
 );
 
 export const Check: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'success')}>
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
 export const RotateCcw: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
     <path d="M3 3v5h5" />
   </svg>
 );
 
 export const Circle: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <circle cx="12" cy="12" r="10" />
   </svg>
 );
 
 export const Square: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'neutral')}>
     <rect width="18" height="18" x="3" y="3" rx="2" />
   </svg>
 );
 
 export const Triangle: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'warning')}>
     <path d="M13.73 4a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
   </svg>
 );
 
 export const Diamond: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'transformer')}>
     <path d="M12 2 2 12l10 10 10-10Z" />
   </svg>
 );
 
 export const Tower: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'transmission')}>
     <path d="M4 22h16" />
     <path d="m7 22 4-18h2l4 18" />
     <path d="M6 14h12" />
@@ -317,7 +338,7 @@ export const Tower: FC<IconProps> = (props) => (
 );
 
 export const Transformer: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'transformer')}>
     <circle cx="9" cy="12" r="6" />
     <circle cx="15" cy="12" r="6" />
     <path d="M3 12h0" />
@@ -326,7 +347,7 @@ export const Transformer: FC<IconProps> = (props) => (
 );
 
 export const Pole: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'distribution')}>
     <line x1="12" x2="12" y1="2" y2="22" />
     <line x1="5" x2="19" y1="6" y2="6" />
     <line x1="7" x2="17" y1="10" y2="10" />
@@ -336,14 +357,14 @@ export const Pole: FC<IconProps> = (props) => (
 );
 
 export const Gauge: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'meter')}>
     <path d="m12 14 4-4" />
     <path d="M3.34 19a10 10 0 1 1 17.32 0" />
   </svg>
 );
 
 export const Sun: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'electric')}>
     <circle cx="12" cy="12" r="4" />
     <path d="M12 2v2" />
     <path d="M12 20v2" />
@@ -357,7 +378,7 @@ export const Sun: FC<IconProps> = (props) => (
 );
 
 export const Layers: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
     <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" />
     <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" />
@@ -365,7 +386,7 @@ export const Layers: FC<IconProps> = (props) => (
 );
 
 export const MapPin: FC<IconProps> = (props) => (
-  <svg {...baseProps(props)}>
+  <svg {...baseProps(props, 'gis')}>
     <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
     <circle cx="12" cy="10" r="3" />
   </svg>
@@ -378,16 +399,27 @@ export const LayerIconGlyph: FC<{
   color?: string;
   fill?: string;
   strokeWidth?: number | string;
-}> = ({ icon, size = 14, className, color = 'currentColor', fill = 'none', strokeWidth = 2 }) => {
-  const p = { size, className, color, fill, strokeWidth };
-  switch (icon?.toLowerCase()) {
+}> = ({ icon, size = 16, className, color, fill = 'none', strokeWidth = 2 }) => {
+  const key = icon?.toLowerCase() ?? '';
+  const semanticTone: IconTone = ({
+    zap: 'electric', tower: 'transmission', 'ehv-line': 'transmission', 'hv-line': 'transmission',
+    transformer: 'transformer', substation: 'transformer', pole: 'distribution', 'lt-line': 'distribution',
+    meter: 'meter', gauge: 'meter', pin: 'gis', map: 'gis', layers: 'gis', sun: 'electric',
+  } as Record<string, IconTone>)[key] ?? 'neutral';
+  const semanticColor = color ?? ICON_PALETTE[semanticTone];
+  const p = { size, className, color: semanticColor, fill, strokeWidth };
+  switch (key) {
     case 'zap':
       return <Zap {...p} />;
     case 'tower':
+    case 'ehv-line':
+    case 'hv-line':
       return <Tower {...p} />;
     case 'transformer':
+    case 'substation':
       return <Transformer {...p} />;
     case 'pole':
+    case 'lt-line':
       return <Pole {...p} />;
     case 'meter':
     case 'gauge':

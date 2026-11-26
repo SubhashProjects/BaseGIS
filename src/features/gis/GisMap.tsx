@@ -7,11 +7,13 @@ export function GisMap({
   assets,
   boundaries,
   navigationTarget,
+  onViewportChange,
 }: {
   currentUser: PowerGISUser;
   assets: PowerGISAsset[];
   boundaries: PowerGISBoundary[];
   navigationTarget?: MapNavigationTarget | null;
+  onViewportChange?: (bounds: { west: number; south: number; east: number; north: number }) => void;
 }) {
   return (
     <div className="map-wrap">
@@ -20,6 +22,7 @@ export function GisMap({
         assets={assets}
         boundaries={boundaries}
         navigationTarget={navigationTarget}
+        onViewportChange={onViewportChange}
       />
     </div>
   );

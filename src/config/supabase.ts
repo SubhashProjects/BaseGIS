@@ -18,7 +18,7 @@ export interface NativeSupabaseClient {
   functions: {
     invoke<T = any>(
       functionName: string,
-      options?: { body?: BodyInit }
+      options?: { body?: BodyInit; headers?: Record<string, string> }
     ): Promise<{ data: T | null; error: any | null }>;
   };
 }
@@ -34,6 +34,7 @@ export const supabase: NativeSupabaseClient | null = hasSupabase
         try {
           const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${functionName}`, {
             method: 'POST',
+            signal: AbortSignal.timeout(20_000),
             headers: {
               apikey: supabaseAnonKey!,
               Authorization: `Bearer ${supabaseAnonKey}`,
@@ -69,6 +70,7 @@ export const supabase: NativeSupabaseClient | null = hasSupabase
                 if (limitQuery) params.set('limit', limitQuery);
 
                 const res = await fetch(`${supabaseUrl}/rest/v1/${table}?${params.toString()}`, {
+                  signal: AbortSignal.timeout(20_000),
                   headers: {
                     apikey: supabaseAnonKey!,
                     Authorization: `Bearer ${supabaseAnonKey}`,
@@ -107,7 +109,7 @@ export const supabase: NativeSupabaseClient | null = hasSupabase
       },
 
       functions: {
-        async invoke<T = any>(functionName: string, options?: { body?: BodyInit }) {
+        async invoke<T = any>(functionName: string, options?: { body?: BodyInit; headers?: Record<string, string> }) {
           try {
             const headers: Record<string, string> = {
               apikey: supabaseAnonKey!,
@@ -116,9 +118,11 @@ export const supabase: NativeSupabaseClient | null = hasSupabase
             if (options?.body && !(options.body instanceof FormData)) {
               headers['Content-Type'] = 'application/json';
             }
+            if (options?.headers) Object.assign(headers, options.headers);
 
             const res = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
               method: 'POST',
+              signal: AbortSignal.timeout(20_000),
               headers,
               body: options?.body,
             });

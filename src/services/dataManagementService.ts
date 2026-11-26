@@ -2,6 +2,7 @@ import { supabase } from '../config/supabase';
 import { DATA_IMPORT_FORMATS } from '../config/dataManagement.config';
 import { parseGeoPackageArrayBuffer } from './gpkgParser';
 import { filenameToLayerInfo } from './layerService';
+import { PERFORMANCE } from '../config/performance.config';
 import type { PowerGISAsset } from './powergisData';
 
 export type ImportFeature = {
@@ -33,7 +34,7 @@ export type ImportResult = { inserted: number; skipped: number; errors: string[]
 const IMPORTED_ASSETS_KEY = 'powergis_imported_assets';
 
 function token() {
-  const value = localStorage.getItem('powergis_session_token');
+  const value = sessionStorage.getItem('powergis_session_token');
   if (!value) throw new Error('Your session has expired. Please sign in again.');
   return value;
 }
@@ -709,146 +710,105 @@ export function clearAllImportedAssets(): void {
 
 export async function importAssets(
   features: ImportFeature[],
-  duplicateStrategy: DuplicateStrategy = 'overwrite',
+  duplicateStrategy: DuplicateStrategy = 'skip',
   onProgress?: ProgressCallback
 ): Promise<ImportResult> {
+  if (!supabase) throw new Error('GIS import requires a configured server connection. Offline-only imports are not published as operational assets.');
+  if (features.length > PERFORMANCE.importMaxDbSync) {
+    throw new Error(`This import contains ${features.length.toLocaleString()} features; the configured server limit is ${PERFORMANCE.importMaxDbSync.toLocaleString()}. Split the file into smaller batches.`);
+  }
+  if (duplicateStrategy !== 'skip') {
+    throw new Error('The current database import procedure only supports safe duplicate skipping. Overwrite and rename require a server-side conflict-resolution migration.');
+  }
+
   let inserted = 0;
   let skipped = 0;
   const errors: string[] = [];
+  const chunkSize = PERFORMANCE.importDbChunkSize;
+  onProgress?.({ percent: 5, stage: 'indexing', message: `Validating ${features.length.toLocaleString()} features before server import...` });
 
-  const existingLocal = getLocalImportedAssets();
-  const existingMap = new Map(existingLocal.map((a) => [a.assetNo, a]));
-
-  onProgress?.({
-    percent: 10,
-    stage: 'indexing',
-    message: `Indexing ${features.length.toLocaleString()} features against local GIS storage...`,
-    log: `[${new Date().toLocaleTimeString()}] Checking duplicates (${duplicateStrategy.toUpperCase()}) across ${features.length.toLocaleString()} items...`,
-  });
-
-  const preparedAssets: PowerGISAsset[] = [];
-  const CHUNK_SIZE = 5000;
-
-  for (let i = 0; i < features.length; i++) {
-    const f = features[i];
-    let assetNo = f.assetNo || `IMP-${i + 1}`;
-
-    if (existingMap.has(assetNo)) {
-      if (duplicateStrategy === 'skip') {
-        skipped++;
-        continue;
-      } else if (duplicateStrategy === 'rename') {
-        let counter = 1;
-        let candidate = `${assetNo}_${counter}`;
-        while (existingMap.has(candidate) || preparedAssets.some((p) => p.assetNo === candidate)) {
-          counter++;
-          candidate = `${assetNo}_${counter}`;
-        }
-        assetNo = candidate;
-      }
-    }
-
-    preparedAssets.push({
-      id: `imp-${Date.now()}-${i + 1}-${Math.random().toString(36).slice(2, 6)}`,
-      assetNo,
-      assetType: f.assetType || 'DT',
-      status: f.status || 'ACTIVE',
-      geometry: f.geometry,
-      latitude: f.latitude,
-      longitude: f.longitude,
-      lat: f.latitude,
-      lng: f.longitude,
-      jurisdictions: f.jurisdictionIds || ['PONDICHERRY'],
-      owners: f.ownerJeIds || [],
-      shared: f.sharedBoundary || false,
-      metadata: f.metadata,
-    });
-
-    if (i % CHUNK_SIZE === 0 && i > 0) {
-      const pct = Math.min(60, Math.round(10 + (i / features.length) * 50));
-      onProgress?.({
-        percent: pct,
-        stage: 'indexing',
-        message: `Prepared ${i.toLocaleString()} / ${features.length.toLocaleString()} assets...`,
-        processed: i,
-        total: features.length,
+  for (let offset = 0; offset < features.length; offset += chunkSize) {
+    const chunk = features.slice(offset, offset + chunkSize).map((feature) => ({
+      assetNo: String(feature.assetNo || '').trim(),
+      assetType: String(feature.assetType || 'DT').trim().toUpperCase(),
+      status: String(feature.status || 'ACTIVE').trim().toUpperCase(),
+      geometry: feature.geometry,
+      latitude: feature.latitude,
+      longitude: feature.longitude,
+      metadata: feature.metadata || {},
+    }));
+    try {
+      const { data, error } = await supabase.rpc('admin_import_assets', {
+        p_session_token: token(),
+        p_assets: chunk,
       });
-      await new Promise((r) => setTimeout(r, 0));
-    }
-  }
-
-  onProgress?.({
-    percent: 75,
-    stage: 'indexing',
-    message: 'Saving assets to high-capacity IndexedDB offline database...',
-    log: `[${new Date().toLocaleTimeString()}] Writing ${preparedAssets.length.toLocaleString()} assets to IndexedDB...`,
-  });
-
-  let finalLocal: PowerGISAsset[] = [];
-  if (duplicateStrategy === 'overwrite') {
-    const incomingNos = new Set(preparedAssets.map((a) => a.assetNo));
-    const retained = existingLocal.filter((a) => !incomingNos.has(a.assetNo));
-    finalLocal = [...retained, ...preparedAssets];
-  } else {
-    finalLocal = [...existingLocal, ...preparedAssets];
-  }
-
-  saveLocalImportedAssets(finalLocal);
-  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
-
-  onProgress?.({
-    percent: 90,
-    stage: 'indexing',
-    message: 'Syncing assets to map layers and local cache...',
-    log: `[${new Date().toLocaleTimeString()}] Local IndexedDB storage committed (${finalLocal.length.toLocaleString()} total active assets).`,
-  });
-
-  inserted = preparedAssets.length;
-
-  // Attempt database synchronization in chunks of 150 (if connected)
-  if (supabase) {
-    const DB_CHUNK_SIZE = 150;
-    const maxDbSync = Math.min(features.length, 1500); // sync up to 1500 to prevent network stalls
-    for (let c = 0; c < maxDbSync; c += DB_CHUNK_SIZE) {
-      const slice = features.slice(c, c + DB_CHUNK_SIZE);
-      try {
-        const { error } = await supabase.rpc('admin_import_assets', {
-          p_session_token: token(),
-          p_assets: slice,
-        });
-        if (error) {
-          errors.push(error.message || String(error));
-        }
-      } catch (err: any) {
-        errors.push(err.message || String(err));
+      if (error) {
+        errors.push(`Batch ${Math.floor(offset / chunkSize) + 1}: ${error.message || String(error)}`);
+      } else {
+        const result = Array.isArray(data) ? data[0] : data;
+        inserted += Number(result?.inserted || 0);
+        skipped += Number(result?.skipped || 0);
+        const rowErrors = Array.isArray(result?.errors) ? result.errors : [];
+        rowErrors.forEach((entry: any) => errors.push(`${entry.assetNo || 'Unknown asset'}: ${entry.error || 'Rejected by server validation'}`));
       }
+    } catch (err: any) {
+      errors.push(`Batch ${Math.floor(offset / chunkSize) + 1}: ${err?.message || String(err)}`);
     }
+    const processed = Math.min(offset + chunk.length, features.length);
+    onProgress?.({
+      percent: Math.round(10 + (processed / Math.max(features.length, 1)) * 85),
+      stage: errors.length ? 'error' : 'indexing',
+      message: `Server processed ${processed.toLocaleString()} / ${features.length.toLocaleString()} features`,
+      processed,
+      total: features.length,
+    });
+    // Yield between bounded batches to keep the browser responsive.
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
 
+  window.dispatchEvent(new CustomEvent('powergis:assets-changed'));
+  const failed = errors.length > 0;
   onProgress?.({
     percent: 100,
-    stage: 'complete',
-    message: `Import complete! Added/Updated ${inserted.toLocaleString()} features (${skipped} skipped).`,
-    log: `[${new Date().toLocaleTimeString()}] SUCCESS: ${inserted.toLocaleString()} features imported into active GIS system.`,
+    stage: failed ? 'error' : 'complete',
+    message: failed
+      ? `Import partially completed: ${inserted.toLocaleString()} inserted, ${skipped.toLocaleString()} skipped, ${errors.length.toLocaleString()} errors.`
+      : `Import complete: ${inserted.toLocaleString()} inserted, ${skipped.toLocaleString()} skipped.`,
+    processed: features.length,
+    total: features.length,
   });
-
   return { inserted, skipped, errors };
 }
 
 export async function exportVisibleAssets(format: 'geojson' | 'csv' | 'json'): Promise<Blob> {
-  const localAssets = getLocalImportedAssets();
-  let dbRows: any[] = [];
-
-  if (supabase) {
-    try {
-      const { data } = await supabase.rpc('export_assets', { p_session_token: token() });
-      if (data) dbRows = data;
-    } catch {
-      /* fallback to local assets */
+  if (!supabase) throw new Error('Export is unavailable because the server connection is not configured.');
+  const allAssets: any[] = [];
+  let afterCreatedAt: string | null = null;
+  let afterId: string | null = null;
+  const pageSize = 1000;
+  for (;;) {
+    const res: any = await supabase.rpc('visible_assets_page', {
+      p_session_token: token(),
+      p_limit: pageSize,
+      p_after_created_at: afterCreatedAt,
+      p_after_id: afterId,
+    });
+    const data: any[] | null = res?.data;
+    const error: any = res?.error;
+    if (error) throw new Error(error.message || 'Authorised export failed.');
+    if (!Array.isArray(data)) throw new Error('The server returned an invalid export page.');
+    const total = Number(data[0]?.total_count || 0);
+    if (total > PERFORMANCE.maxClientAssets) {
+      throw new Error(`This export contains ${total.toLocaleString()} records. The safe browser export ceiling is ${PERFORMANCE.maxClientAssets.toLocaleString()}; use a server-side export job for larger datasets.`);
     }
+    allAssets.push(...data);
+    if (data.length < pageSize) break;
+    const last: any = data[data.length - 1];
+    if (!last?.created_at || !last?.id) throw new Error('The export cursor is incomplete; export stopped to prevent duplicate or missing records.');
+    afterCreatedAt = String(last.created_at);
+    afterId = String(last.id);
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
-
-  const allAssets = [...dbRows, ...localAssets];
 
   if (format === 'geojson') {
     const fc = {
@@ -891,27 +851,44 @@ export async function exportVisibleAssets(format: 'geojson' | 'csv' | 'json'): P
 }
 
 export async function createDatabaseBackup() {
-  if (supabase) {
-    try {
-      const { data } = await supabase.rpc('create_backup_manifest', { p_session_token: token() });
-      return data?.[0] ?? { backup_id: `bck-${Date.now()}` };
-    } catch {
-      /* fallback */
-    }
-  }
-  return { backup_id: `local-bck-${Date.now()}` };
+  if (!supabase) throw new Error('Backup service is not configured.');
+  const { data, error } = await supabase.rpc('create_backup_manifest', { p_session_token: token() });
+  if (error) throw new Error(error.message || 'Backup request failed.');
+  if (!data?.[0]?.backup_id) throw new Error('The backup service did not confirm a backup run.');
+  return data[0];
 }
 
 export async function listBackupRuns() {
-  if (supabase) {
-    try {
-      const { data } = await supabase.rpc('list_backup_runs', { p_session_token: token() });
-      return data ?? [];
-    } catch {
-      /* fallback */
-    }
-  }
-  return [];
+  if (!supabase) throw new Error('Backup service is not configured.');
+  const { data, error } = await supabase.rpc('list_backup_runs', { p_session_token: token() });
+  if (error) throw new Error(error.message || 'Unable to retrieve backup history.');
+  return data ?? [];
+}
+
+async function invokeBackupRestore(action: 'download' | 'restore', backupId: string): Promise<any> {
+  if (!supabase) throw new Error('Backup service is not configured.');
+  const { data, error } = await supabase.functions.invoke('backup-restore', {
+    body: JSON.stringify({ action, backupId }),
+    headers: { 'x-powergis-session': token() },
+  });
+  if (error) throw new Error(error.message || 'Backup operation failed.');
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+export async function downloadDatabaseBackup(backupId: string): Promise<void> {
+  const result = await invokeBackupRestore('download', backupId);
+  if (typeof result?.signedUrl !== 'string') throw new Error('The backup download link was not returned.');
+  const response = await fetch(result.signedUrl, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Unable to download the selected backup.');
+  const blob = await response.blob();
+  downloadBlob(blob, `powergis-${backupId}.pgbk`);
+}
+
+export async function restoreDatabaseBackup(backupId: string): Promise<Record<string, number>> {
+  const result = await invokeBackupRestore('restore', backupId);
+  if (!result?.ok) throw new Error('The backup restore was not confirmed.');
+  return result.restored ?? {};
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

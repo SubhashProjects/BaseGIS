@@ -36,6 +36,7 @@ export function MapHierarchyNavigator({ currentUser, boundaries, onNavigate, onR
     je: currentUser.role === 'JE' ? (boundaries.find(b => b.id === currentUser.jurisdictions[0])?.name || '') : '',
   }), [currentUser, boundaries]);
   const [selection, setSelection] = useState<Record<LevelKey, string>>(initial);
+  const [expanded, setExpanded] = useState(false);
 
   const optionsFor = (level: LevelKey) => {
     const idx = LEVELS.findIndex(l => l.key === level);
@@ -50,7 +51,7 @@ export function MapHierarchyNavigator({ currentUser, boundaries, onNavigate, onR
     const idx = LEVELS.findIndex(l => l.key === level);
     LEVELS.slice(idx + 1).forEach(child => { next[child.key] = ''; });
     setSelection(next);
-    if (!value) return;
+    if (!value) { setExpanded(false); return; }
     const filtered = boundaries.filter(b => LEVELS.slice(0, idx + 1).every(l => {
       const selected = next[l.key];
       return !selected || String(l.key === 'je' ? b.name : b[l.key] ?? '') === selected;
@@ -61,21 +62,26 @@ export function MapHierarchyNavigator({ currentUser, boundaries, onNavigate, onR
       boundaryIds: filtered.map(b => b.id),
       key: `${level}:${value}`,
     });
+    setExpanded(false);
   };
 
   return (
-    <div className="map-hierarchy-nav panel">
+    <div className={`map-hierarchy-nav panel ${expanded ? 'is-expanded' : ''}`}>
       <div className="map-hierarchy-nav-head">
-        <div className="map-nav-title"><span className="map-nav-icon"><MapPinned size={15}/></span><div><b>{UI.gis.navigationTitle}</b></div></div>
-        <button className="map-nav-reset" type="button" onClick={() => { setSelection(initial); onReset(); }} title={UI.gis.myScope}><LocateFixed size={14}/><span>{UI.gis.myScope}</span></button>
+        <button className="map-nav-toggle" type="button" aria-expanded={expanded} onClick={() => setExpanded(v => !v)}>
+          <span className="map-nav-icon"><MapPinned size={15}/></span>
+          <span className="map-nav-toggle-copy"><b>{UI.gis.navigationTitle}</b><small>Choose region, division or JE</small></span>
+          <ChevronDown size={15} className="map-nav-chevron" />
+        </button>
+        <button className="map-nav-reset" type="button" onClick={() => { setSelection(initial); onReset(); setExpanded(false); }} title={UI.gis.myScope}><LocateFixed size={14}/><span>{UI.gis.myScope}</span></button>
       </div>
-      <div className="map-hierarchy-selects">
+      {expanded && <div className="map-hierarchy-selects">
         {LEVELS.map(level => {
           const options = optionsFor(level.key);
           const disabled = level.key !== 'region' && LEVELS.slice(0, LEVELS.findIndex(l => l.key === level.key)).some(parent => !selection[parent.key]);
           return <label key={level.key} className="map-hierarchy-field"><span>{level.label}</span><div className="map-select-wrap"><select value={selection[level.key]} disabled={disabled || options.length === 0} onChange={e => apply(level.key, e.target.value)}><option value="">{UI.gis.navigationAll}</option>{options.map(value => <option key={value} value={value}>{value}</option>)}</select><ChevronDown size={14}/></div></label>;
         })}
-      </div>
+      </div>}
     </div>
   );
 }

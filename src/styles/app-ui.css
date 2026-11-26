@@ -1,0 +1,217 @@
+/* PowerGIS application visual system
+   Keeps the existing feature styles intact while giving the shell a consistent,
+   compact, professional visual language. */
+:root {
+  --pg-brand: #1769aa;
+  --pg-brand-dark: #12588f;
+  --pg-brand-soft: #edf5fc;
+  --pg-ink: #172b43;
+  --pg-muted: #687d92;
+  --pg-line: #dbe5ef;
+  --pg-surface: #ffffff;
+  --pg-page: #f3f7fc;
+  --pg-shadow: 0 8px 26px rgba(27, 59, 92, 0.06);
+}
+
+body { background: var(--pg-page); color: var(--pg-ink); }
+.app { min-height: 100vh; background: var(--pg-page); }
+.shell { grid-template-columns: 252px minmax(0, 1fr); background: var(--pg-page); }
+.sidebar {
+  background: #fff;
+  border-right: 1px solid var(--pg-line);
+  padding: 16px 12px;
+  box-shadow: 3px 0 18px rgba(27, 59, 92, .025);
+}
+.sidebar .brand {
+  padding: 7px 10px 18px;
+  margin-bottom: 12px;
+  border-bottom-color: #eaf0f6;
+}
+.sidebar .brand-mark {
+  width: 38px; height: 38px; border-radius: 0;
+  background: #e7f2fb; color: var(--pg-brand);
+  border: 1px solid #cfe0ee;
+}
+.sidebar .brand-mark svg { color: #f59e0b; fill: #f59e0b; }
+.brand-title { color: #173e64; font-size: 16px; }
+.brand-sub { color: #70869b; }
+.nav { gap: 4px; }
+.nav button {
+  min-height: 42px; padding: 9px 11px; border-radius: 0;
+  color: #526a82; font-size: 12px; border: 1px solid transparent;
+}
+.nav button:hover { background: #f5f9fd; color: #173e64; }
+.nav button.active {
+  background: var(--pg-brand-soft); border-color: #cfe1ef;
+  color: var(--pg-brand); box-shadow: inset 3px 0 0 var(--pg-brand);
+}
+.nav button.active svg, .nav button:hover svg { color: var(--pg-brand); }
+.sidebar-footer { border-top-color: #e7eef5; color: #72879a; }
+.sidebar-footer:before { background: #16a34a; }
+
+.main { background: var(--pg-page); }
+.topbar {
+  height: 58px; padding: 0 20px; background: rgba(255,255,255,.96);
+  border-bottom-color: var(--pg-line); box-shadow: 0 1px 10px rgba(27,59,92,.025);
+}
+.topbar-left { min-width: 0; }
+.topbar-right { gap: 10px; }
+.topbar .mobile-brand { display: none; }
+.user-menu { padding: 6px 8px; border: 1px solid #e2eaf2; background: #fbfdff; }
+.user-menu small { color: #6c8094; }
+.icon-btn { border-radius: 0; width: 34px; height: 34px; padding: 7px; background: #fff; }
+.icon-btn:hover { border-color: #a8c3da; background: #f5f9fd; }
+
+.content { padding: 22px 24px 34px; max-width: 1900px; }
+.page-title h1, .dashboard-welcome h1 { color: var(--pg-ink); }
+.panel, .card { border-color: #e0e8f0; box-shadow: var(--pg-shadow); border-radius: 0; }
+.panel-head { background: #fff; border-bottom-color: #e9eff5; }
+.btn, .field-row select, .field-row .field-static-value { border-radius: 0; }
+.btn.primary { background: var(--pg-brand); border-color: var(--pg-brand); }
+.btn.primary:hover { background: var(--pg-brand-dark); border-color: var(--pg-brand-dark); }
+
+/* GIS workspace: make the map the visual focus without changing its behaviour. */
+.gis-workspace { gap: 12px; }
+.gis-side { gap: 10px; }
+.gis-side > *, .xyz-map-left-panel, .xyz-legend, .asset-detail {
+  border-radius: 0 !important;
+  border-color: #dbe5ef !important;
+  box-shadow: 0 8px 22px rgba(27,59,92,.07) !important;
+}
+.map-wrap { border: 1px solid #dbe5ef; box-shadow: var(--pg-shadow); }
+.map-help { border-radius: 0; }
+
+@media (max-width: 1100px) {
+  .shell { grid-template-columns: 76px minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .topbar { height: 54px; padding: 0 12px; }
+  .content { padding: 18px 14px 88px; }
+  .topbar .mobile-brand { display: flex; }
+  .user-menu span { display: none; }
+  .user-menu small { border-left: 0; padding-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+/* Final UI hardening: utility-first visual consistency without changing behaviour. */
+:root {
+  --pg-radius: 4px;
+  --pg-radius-sm: 3px;
+  --pg-control-h: 34px;
+  --pg-focus: rgba(30, 58, 138, .16);
+  --pg-line-soft: #e7edf4;
+}
+
+/* Keep the application compact and operational rather than decorative. */
+.content { width: 100%; }
+.panel, .card, .pg-panel, .pg-metric { border-radius: var(--pg-radius) !important; }
+.pg-dashboard .pg-metric { padding: 16px; }
+.pg-dashboard .pg-panel-head { padding: 15px 17px; }
+.pg-dashboard .pg-panel-body { padding: 16px 18px; }
+.pg-dashboard .pg-metric:hover { transform: none; box-shadow: var(--pg-shadow); }
+.pg-dashboard .pg-metric-icon { border-radius: var(--pg-radius-sm); }
+.pg-dashboard .pg-tag { border-radius: var(--pg-radius-sm); }
+.pg-dashboard .pg-layer-item { border-radius: var(--pg-radius); }
+.pg-dashboard .pg-layer-item:hover { border-color: #c8d5e2; background: #fff; }
+
+button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(420px, 42vw);
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #d2dce7;
+  background: #fbfdff;
+  color: #718398;
+}
+.topbar-search:focus-within {
+  border-color: #7ea6ca;
+  box-shadow: 0 0 0 3px rgba(23,105,170,.08);
+}
+.topbar-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #172b43;
+  font-size: 11px;
+}
+.topbar-search input::placeholder { color: #8b9bad; }
+
+.user-menu { min-height: 34px; }
+.user-menu small { text-transform: none; }
+
+/* Consistent compact controls across existing pages. */
+.btn, .field-row select, .field-row .field-static-value,
+.data-card .btn, .icon-btn, .mobile-menu-btn {
+  min-height: var(--pg-control-h);
+}
+.btn, .field-row select, .field-row .field-static-value, .icon-btn,
+.mobile-menu-btn, .data-card .btn { border-radius: var(--pg-radius) !important; }
+.btn.primary { box-shadow: none; }
+
+/* Tables: crisp, dense and easy to scan. */
+.table th { position: sticky; top: 0; z-index: 1; }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table td, .table th { vertical-align: middle; }
+
+/* Avoid accidental pill-shaped controls in the operational UI. */
+.status, .badge, .pill, .chip { border-radius: var(--pg-radius-sm) !important; }
+
+/* GIS remains the primary workspace. */
+.gis-workspace { min-height: 0; }
+.map-wrap { border-radius: var(--pg-radius) !important; overflow: hidden; }
+.xyz-legend, .asset-detail, .map-tooltip, .map-help { border-radius: var(--pg-radius) !important; }
+
+@media (max-width: 1100px) {
+  .shell { grid-template-columns: 76px minmax(0, 1fr); }
+  .topbar-search { width: min(320px, 38vw); }
+}
+
+@media (max-width: 760px) {
+  .content { padding: 16px 12px 88px; }
+  .topbar { height: 54px; padding: 0 12px; }
+  .topbar-search { display: none; }
+  .topbar-context { display: none; }
+  .topbar-right { gap: 7px; }
+  .user-menu { padding: 5px; }
+  .pg-dashboard .pg-heading { margin-bottom: 18px; }
+  .pg-dashboard .pg-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .pg-dashboard .pg-panels { grid-template-columns: 1fr; gap: 10px; }
+  .pg-dashboard .pg-layer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px; }
+}
+
+@media (max-width: 420px) {
+  .pg-dashboard .pg-metrics { grid-template-columns: 1fr 1fr; }
+  .pg-dashboard .pg-metric { padding: 13px; }
+  .pg-dashboard .pg-metric-value { font-size: 25px; }
+  .pg-dashboard .pg-layer-grid { grid-template-columns: 1fr; }
+}
+
+/* Rendering and loading safeguards for data-heavy workspaces. */
+.app-loading {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  color: #52677f;
+  font-size: 13px;
+  font-weight: 650;
+  background: #f8fbff;
+}
+.main { min-width: 0; }
+.content { contain: layout style; }
+.xyz-map { isolation: isolate; contain: layout paint; }
+.xyz-content { backface-visibility: hidden; }
+.xyz-tiles img { backface-visibility: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
