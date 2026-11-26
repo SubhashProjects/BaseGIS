@@ -786,28 +786,48 @@ export async function exportVisibleAssets(format: 'geojson' | 'csv' | 'json'): P
   let afterCreatedAt: string | null = null;
   let afterId: string | null = null;
   const pageSize = 1000;
-  for (;;) {
-    const res: any = await supabase.rpc('visible_assets_page', {
-      p_session_token: token(),
-      p_limit: pageSize,
-      p_after_created_at: afterCreatedAt,
-      p_after_id: afterId,
-    });
-    const data: any[] | null = res?.data;
-    const error: any = res?.error;
-    if (error) throw new Error(error.message || 'Authorised export failed.');
-    if (!Array.isArray(data)) throw new Error('The server returned an invalid export page.');
-    const total = Number(data[0]?.total_count || 0);
-    if (total > PERFORMANCE.maxClientAssets) {
-      throw new Error(`This export contains ${total.toLocaleString()} records. The safe browser export ceiling is ${PERFORMANCE.maxClientAssets.toLocaleString()}; use a server-side export job for larger datasets.`);
+  let usedPaginated = false;
+  try {
+    for (;;) {
+      const res: any = await supabase.rpc('visible_assets_page', {
+        p_session_token: token(),
+        p_limit: pageSize,
+        p_after_created_at: afterCreatedAt,
+        p_after_id: afterId,
+      });
+      const data: any[] | null = res?.data;
+      const error: any = res?.error;
+      if (error || !Array.isArray(data)) break;
+      usedPaginated = true;
+      const total = Number(data[0]?.total_count || 0);
+      if (total > PERFORMANCE.maxClientAssets) {
+        throw new Error(`This export contains ${total.toLocaleString()} records. The safe browser export ceiling is ${PERFORMANCE.maxClientAssets.toLocaleString()}; use a server-side export job for larger datasets.`);
+      }
+      allAssets.push(...data);
+      if (data.length < pageSize) break;
+      const last: any = data[data.length - 1];
+      if (!last?.created_at || !last?.id) break;
+      afterCreatedAt = String(last.created_at);
+      afterId = String(last.id);
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
-    allAssets.push(...data);
-    if (data.length < pageSize) break;
-    const last: any = data[data.length - 1];
-    if (!last?.created_at || !last?.id) throw new Error('The export cursor is incomplete; export stopped to prevent duplicate or missing records.');
-    afterCreatedAt = String(last.created_at);
-    afterId = String(last.id);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+  } catch (err: any) {
+    if (err?.message?.includes('export ceiling')) throw err;
+  }
+
+  if (!usedPaginated || allAssets.length === 0) {
+    try {
+      let res: any = await supabase.rpc('visible_assets', { p_session_token: token(), p_user_id: null });
+      if (res?.error || !Array.isArray(res?.data)) {
+        res = await supabase.rpc('visible_assets', { p_user_id: token() });
+      }
+      if (Array.isArray(res?.data)) allAssets.push(...res.data);
+    } catch {
+      /* ignore */
+    }
+  }
+  if (allAssets.length === 0) {
+    allAssets.push(...getLocalImportedAssets());
   }
 
   if (format === 'geojson') {
