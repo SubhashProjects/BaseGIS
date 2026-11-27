@@ -1,6 +1,8 @@
 -- GIS Admin-only backup retrieval and additive, transactional restore.
 -- Restores merge/upsert snapshot records; they never delete current records.
 
+drop function if exists public.admin_get_backup_path cascade;
+drop function if exists public.admin_get_backup_path(text, text) cascade;
 create or replace function public.admin_get_backup_path(
   p_session_token text,
   p_backup_id text
@@ -33,6 +35,8 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_restore_backup_payload cascade;
+drop function if exists public.admin_restore_backup_payload(text, text, jsonb) cascade;
 create or replace function public.admin_restore_backup_payload(
   p_session_token text,
   p_backup_id text,
@@ -179,6 +183,8 @@ grant execute on function public.admin_restore_backup_payload(text,text,jsonb) t
 
 -- Viewport-based authorised asset delivery: the GIS browser fetches only the
 -- current map extent rather than downloading the full organisation inventory.
+drop function if exists public.visible_assets_in_bbox cascade;
+drop function if exists public.visible_assets_in_bbox(text, double precision, double precision, double precision, double precision, integer) cascade;
 create or replace function public.visible_assets_in_bbox(
   p_session_token text,
   p_west double precision,
@@ -243,6 +249,8 @@ grant execute on function public.visible_assets_in_bbox(text,double precision,do
 
 -- Service-role-only snapshot paging with explicit GeoJSON conversion. This
 -- avoids backing up PostGIS's internal binary representation by accident.
+drop function if exists public.service_backup_page cascade;
+drop function if exists public.service_backup_page(text, integer, integer) cascade;
 create or replace function public.service_backup_page(
   p_entity text,p_offset integer default 0,p_limit integer default 1000
 )

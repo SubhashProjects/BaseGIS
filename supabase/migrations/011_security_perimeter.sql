@@ -38,14 +38,14 @@ alter table public.powergis_auth_throttle enable row level security;
 
 -- The old login_users RPC was an unauthenticated directory enumeration surface.
 -- It is no longer callable by anon/authenticated clients.
-revoke all on function public.login_users() from public;
-drop function if exists public.login_users();
+drop function if exists public.login_users() cascade;
 
 -- Session restoration returns only fields required by the application. Sensitive
 -- source-row provenance is deliberately excluded. Disabled users lose access even
 -- if an old session token has not yet expired.
-drop function if exists public.session_user(text);
-create function public.session_user(p_session_token text)
+drop function if exists public.session_user cascade;
+drop function if exists public.session_user(text) cascade;
+create or replace function public.session_user(p_session_token text)
 returns table(
   id text, username text, display_name text, role text, subdivision text, division text,
   circle text, department text, admin_name text, region text, scope_field text,
@@ -65,6 +65,8 @@ grant execute on function public.session_user(text) to anon, authenticated;
 
 -- Authenticated admin directory only. Sensitive credential material is never
 -- returned: no password, session token or source-row payload is exposed.
+drop function if exists public.admin_list_users cascade;
+drop function if exists public.admin_list_users(text) cascade;
 create or replace function public.admin_list_users(p_session_token text)
 returns table(
   id text, username text, display_name text, role text,
@@ -104,8 +106,9 @@ grant execute on function public.admin_list_users(text) to anon, authenticated;
 -- Replace the authentication RPC with a generic-failure, active-account,
 -- throttled implementation. Password hashes, source rows and session tokens
 -- are never returned except for the one opaque token needed to establish the session.
-drop function if exists public.authenticate_user(text,text);
-create function public.authenticate_user(p_username text, p_password text)
+drop function if exists public.authenticate_user cascade;
+drop function if exists public.authenticate_user(text, text) cascade;
+create or replace function public.authenticate_user(p_username text, p_password text)
 returns table(
   id text, username text, display_name text, role text,
   subdivision text, division text, circle text, department text,
@@ -181,8 +184,10 @@ revoke all on table public.powergis_auth_throttle from anon, authenticated;
 
 -- Ensure sensitive source-row provenance is never returned to unauthenticated
 -- callers through an obsolete function signature.
-revoke all on function public.visible_assets(text) from public;
-revoke all on function public.visible_jurisdictions(text) from public;
+drop function if exists public.visible_assets(text) cascade;
+drop function if exists public.visible_jurisdictions(text) cascade;
+drop function if exists public.visible_assets(text, text) cascade;
+drop function if exists public.visible_jurisdictions(text, text) cascade;
 
 comment on table public.organization_users is
   'Authoritative PowerGIS identity directory. Direct browser table access is prohibited; use server-side authenticated RPCs.';

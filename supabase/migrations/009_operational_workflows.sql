@@ -14,6 +14,8 @@ create index if not exists gis_assets_active_asset_no_ix
 -- Keep browser roles read-only; all mutation is performed through session-bound RPCs.
 revoke insert, update, delete on public.gis_assets from anon, authenticated;
 
+drop function if exists public.admin_update_asset cascade;
+drop function if exists public.admin_update_asset(text,text,integer,text,text,text,jsonb,jsonb,text[],boolean) cascade;
 create or replace function public.admin_update_asset(
   p_session_token text,
   p_asset_id text,
@@ -70,6 +72,8 @@ begin
   return query select a.id,a.version,now();
 end;$$;
 
+drop function if exists public.admin_archive_asset cascade;
+drop function if exists public.admin_archive_asset(text,text,integer,text) cascade;
 create or replace function public.admin_archive_asset(
   p_session_token text, p_asset_id text, p_expected_version integer, p_reason text
 )
@@ -89,6 +93,8 @@ begin
   return query select a.id,a.archived_at,a.version;
 end;$$;
 
+drop function if exists public.admin_restore_asset cascade;
+drop function if exists public.admin_restore_asset(text,text,integer) cascade;
 create or replace function public.admin_restore_asset(
   p_session_token text, p_asset_id text, p_expected_version integer
 )
@@ -110,6 +116,8 @@ begin
 end;$$;
 
 -- Controlled review state machine. No client can directly write status.
+drop function if exists public.review_asset_submission cascade;
+drop function if exists public.review_asset_submission(text,text,integer,text,text) cascade;
 create or replace function public.review_asset_submission(
   p_session_token text,
   p_asset_id text,
@@ -149,6 +157,8 @@ begin
   return query select a.id,a.status,a.version;
 end;$$;
 
+drop function if exists public.list_operational_audit cascade;
+drop function if exists public.list_operational_audit(text,integer) cascade;
 create or replace function public.list_operational_audit(p_session_token text,p_limit integer default 100)
 returns table(id bigint,actor_id text,action text,entity_type text,entity_id text,details jsonb,created_at timestamptz)
 language plpgsql stable security definer set search_path=public, extensions as $$
@@ -172,6 +182,8 @@ grant execute on function public.admin_restore_asset(text,text,integer) to anon,
 grant execute on function public.review_asset_submission(text,text,integer,text,text) to anon,authenticated;
 grant execute on function public.list_operational_audit(text,integer) to anon,authenticated;
 
+drop function if exists public.visible_assets_page cascade;
+drop function if exists public.visible_assets_page(text, integer, timestamptz, text) cascade;
 create or replace function public.visible_assets_page(
   p_session_token text,
   p_limit integer default 1000,
@@ -235,7 +247,8 @@ as $$
   from page cross join totals;
 $$;
 
-
+drop function if exists public.visible_assets_page_v2 cascade;
+drop function if exists public.visible_assets_page_v2(text, integer, timestamptz, text) cascade;
 create or replace function public.visible_assets_page_v2(
   p_session_token text, p_limit integer default 1000,
   p_after_created_at timestamptz default null, p_after_id text default null
@@ -255,7 +268,8 @@ $$;
 revoke all on function public.visible_assets_page_v2(text,integer,timestamptz,text) from public;
 grant execute on function public.visible_assets_page_v2(text,integer,timestamptz,text) to anon,authenticated;
 
-
+drop function if exists public.admin_asset_version cascade;
+drop function if exists public.admin_asset_version(text,text) cascade;
 create or replace function public.admin_asset_version(p_session_token text,p_asset_id text)
 returns integer language plpgsql stable security definer set search_path=public,extensions as $$
 declare u public.organization_users%rowtype; v integer;
@@ -270,6 +284,8 @@ end;$$;
 revoke all on function public.admin_asset_version(text,text) from public;
 grant execute on function public.admin_asset_version(text,text) to anon,authenticated;
 
+drop function if exists public.visible_asset_stats cascade;
+drop function if exists public.visible_asset_stats(text) cascade;
 create or replace function public.visible_asset_stats(p_session_token text)
 returns table(
   total_count bigint,
@@ -326,7 +342,8 @@ as $$
   from authorised;
 $$;
 
-
+drop function if exists public.export_assets cascade;
+drop function if exists public.export_assets(text) cascade;
 create or replace function public.export_assets(p_session_token text)
 returns table(id text,asset_no text,asset_type text,status text,latitude double precision,longitude double precision,geometry jsonb,jurisdiction_ids text[],owner_je_ids text[],shared_boundary boolean,metadata jsonb)
 language sql stable security definer set search_path=public, extensions as $$
@@ -346,6 +363,8 @@ $$;
 
 
 -- Atomic bulk archive: either every selected active record is archived or none is.
+drop function if exists public.admin_archive_assets cascade;
+drop function if exists public.admin_archive_assets(text,text[]) cascade;
 create or replace function public.admin_archive_assets(p_session_token text,p_asset_ids text[])
 returns integer language plpgsql security definer set search_path=public,extensions as $$
 declare u public.organization_users%rowtype; n integer:=0; ids text[];
@@ -369,6 +388,8 @@ revoke all on function public.admin_archive_assets(text,text[]) from public;
 grant execute on function public.admin_archive_assets(text,text[]) to anon,authenticated;
 
 -- Claim a single requested backup atomically so concurrent workers cannot process it twice.
+drop function if exists public.claim_next_backup_run cascade;
+drop function if exists public.claim_next_backup_run() cascade;
 create or replace function public.claim_next_backup_run()
 returns text language plpgsql security definer set search_path=public,extensions as $$
 declare claimed_id text;

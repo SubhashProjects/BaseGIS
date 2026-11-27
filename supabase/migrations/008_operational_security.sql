@@ -16,6 +16,8 @@ create index if not exists powergis_audit_events_actor_ix on public.powergis_aud
 revoke all on public.powergis_audit_events from anon, authenticated;
 alter table public.powergis_audit_events enable row level security;
 
+drop function if exists public.admin_import_assets cascade;
+drop function if exists public.admin_import_assets(text, jsonb) cascade;
 create or replace function public.admin_import_assets(p_session_token text, p_assets jsonb)
 returns table(inserted integer, skipped integer, errors jsonb)
 language plpgsql security definer set search_path=public, extensions as $$
@@ -79,6 +81,8 @@ begin
   return query select inserted_count, skipped_count, error_list;
 end;$$;
 
+drop function if exists public.export_assets cascade;
+drop function if exists public.export_assets(text) cascade;
 create or replace function public.export_assets(p_session_token text)
 returns table(id text,asset_no text,asset_type text,status text,latitude double precision,longitude double precision,geometry jsonb,jurisdiction_ids text[],owner_je_ids text[],shared_boundary boolean,metadata jsonb)
 language sql stable security definer set search_path=public, extensions as $$
@@ -96,6 +100,8 @@ with u as (
 select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata from public.gis_assets a,u where u.role='GIS_ADMIN' or a.shared_boundary = true or a.owner_je_ids && array(select id from allowed_je);
 $$;
 
+drop function if exists public.create_backup_manifest cascade;
+drop function if exists public.create_backup_manifest(text) cascade;
 create or replace function public.create_backup_manifest(p_session_token text)
 returns table(backup_id text,created_at timestamptz,status text,user_count integer,jurisdiction_count integer,asset_count integer)
 language plpgsql security definer set search_path=public, extensions as $$
@@ -113,6 +119,8 @@ begin
  return query select r.backup_id,r.created_at,r.status,r.user_count,r.jurisdiction_count,r.asset_count from public.powergis_backup_runs r where r.backup_id=b;
 end;$$;
 
+drop function if exists public.list_backup_runs cascade;
+drop function if exists public.list_backup_runs(text) cascade;
 create or replace function public.list_backup_runs(p_session_token text)
 returns table(backup_id text,created_at timestamptz,status text,storage_path text,user_count integer,jurisdiction_count integer,asset_count integer)
 language sql stable security definer set search_path=public, extensions as $$

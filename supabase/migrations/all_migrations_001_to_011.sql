@@ -1,6 +1,6 @@
--- ==================================================================
--- MIGRATION: 001_powergis_core.sql
--- ==================================================================
+-- ==========================================
+-- START OF 001_powergis_core.sql
+-- ==========================================
 
 create extension if not exists postgis;
 
@@ -191,10 +191,9 @@ create policy approvals_visible on public.approval_history for select using(publ
 drop policy if exists audit_admin_or_self on public.audit_logs;
 create policy audit_admin_or_self on public.audit_logs for select using(public.is_gis_admin() or actor_id=auth.uid());
 
-
--- ==================================================================
--- MIGRATION: 002_powergis_organisation_seed.sql
--- ==================================================================
+-- ==========================================
+-- START OF 002_powergis_organisation_seed.sql
+-- ==========================================
 
 -- PowerGIS test data migration: moves the previous local demo dataset into Supabase/PostGIS.
 -- Run after 001_powergis_core.sql in Supabase SQL Editor or as migration 002.
@@ -685,10 +684,9 @@ grant execute on function public.visible_assets(text) to anon, authenticated;
 grant execute on function public.visible_jurisdictions(text) to anon, authenticated;
 alter table public.organization_users enable row level security; alter table public.gis_jurisdictions enable row level security; alter table public.gis_assets enable row level security;
 
-
--- ==================================================================
--- MIGRATION: 003_production_table_names.sql
--- ==================================================================
+-- ==========================================
+-- START OF 003_production_table_names.sql
+-- ==========================================
 
 -- PowerGIS production-label migration for databases that previously ran the test-schema migration.
 -- Safe to run after 002. It removes the old demo_* table/function names without requiring Auth users.
@@ -797,10 +795,9 @@ update public.gis_assets set id=replace(replace(id,'demo-','org-'),'sim-','org-'
 update public.gis_assets set owner_je_ids=array(select replace(replace(x,'demo-','org-'),'sim-','org-') from unnest(owner_je_ids) x);
 update public.gis_assets set metadata=replace(replace(metadata::text,'demoSeed','seedData'),'simulatorOnly','seedData')::jsonb;
 
-
--- ==================================================================
--- MIGRATION: 004_secure_test_sessions.sql
--- ==================================================================
+-- ==========================================
+-- START OF 004_secure_test_sessions.sql
+-- ==========================================
 
 -- Session-bound test authentication without Supabase Auth.
 -- Credentials remain username = password for the temporary test phase.
@@ -1069,10 +1066,9 @@ grant execute on function public.logout_user(text) to anon,authenticated;
 grant execute on function public.visible_assets(text,text) to anon,authenticated;
 grant execute on function public.visible_jurisdictions(text,text) to anon,authenticated;
 
-
--- ==================================================================
--- MIGRATION: 005_data_import_export_backup.sql
--- ==================================================================
+-- ==========================================
+-- START OF 005_data_import_export_backup.sql
+-- ==========================================
 
 -- PowerGIS data management: controlled GIS imports, exports and daily backup manifests.
 -- Browser clients never receive direct table write access. All writes remain behind session-bound admin RPCs.
@@ -1227,10 +1223,9 @@ grant execute on function public.export_assets(text) to anon,authenticated;
 grant execute on function public.create_backup_manifest(text) to anon,authenticated;
 grant execute on function public.list_backup_runs(text) to anon,authenticated;
 
-
--- ==================================================================
--- MIGRATION: 006_authentication_hardening.sql
--- ==================================================================
+-- ==========================================
+-- START OF 006_authentication_hardening.sql
+-- ==========================================
 
 -- PowerGIS authentication hardening.
 -- Apply after 004_secure_test_sessions.sql. Existing test passwords are migrated
@@ -1246,6 +1241,8 @@ set password = crypt(password, gen_salt('bf', 12))
 where coalesce(password, '') <> ''
   and password !~ '^\$2[aby]\$';
 
+drop function if exists public.authenticate_user cascade;
+drop function if exists public.authenticate_user(text, text) cascade;
 create or replace function public.authenticate_user(p_username text, p_password text)
 returns table(
   id text, username text, display_name text, role text,
@@ -1372,10 +1369,9 @@ revoke all on function public.visible_jurisdictions(text, text) from public;
 grant execute on function public.visible_assets(text, text) to anon, authenticated;
 grant execute on function public.visible_jurisdictions(text, text) to anon, authenticated;
 
-
--- ==================================================================
--- MIGRATION: 007_scale_read_paths.sql
--- ==================================================================
+-- ==========================================
+-- START OF 007_scale_read_paths.sql
+-- ==========================================
 
 -- PowerGIS scalability layer.
 -- Keeps large authorised GIS reads paginated and moves dashboard aggregation to PostgreSQL.
@@ -1399,6 +1395,8 @@ create index if not exists powergis_sessions_expires_ix
 create index if not exists powergis_sessions_user_ix
   on public.powergis_sessions(user_id, expires_at);
 
+drop function if exists public.visible_assets_page cascade;
+drop function if exists public.visible_assets_page(text, integer, timestamptz, text) cascade;
 create or replace function public.visible_assets_page(
   p_session_token text,
   p_limit integer default 1000,
@@ -1521,10 +1519,9 @@ revoke all on function public.visible_asset_stats(text) from public;
 grant execute on function public.visible_assets_page(text, integer, timestamptz, text) to anon, authenticated;
 grant execute on function public.visible_asset_stats(text) to anon, authenticated;
 
-
--- ==================================================================
--- MIGRATION: 008_operational_security.sql
--- ==================================================================
+-- ==========================================
+-- START OF 008_operational_security.sql
+-- ==========================================
 
 -- Operational hardening: require a live opaque session token for every
 -- data-management RPC. Raw user IDs are never accepted as credentials.
@@ -1544,6 +1541,8 @@ create index if not exists powergis_audit_events_actor_ix on public.powergis_aud
 revoke all on public.powergis_audit_events from anon, authenticated;
 alter table public.powergis_audit_events enable row level security;
 
+drop function if exists public.admin_import_assets cascade;
+drop function if exists public.admin_import_assets(text, jsonb) cascade;
 create or replace function public.admin_import_assets(p_session_token text, p_assets jsonb)
 returns table(inserted integer, skipped integer, errors jsonb)
 language plpgsql security definer set search_path=public, extensions as $$
@@ -1607,6 +1606,8 @@ begin
   return query select inserted_count, skipped_count, error_list;
 end;$$;
 
+drop function if exists public.export_assets cascade;
+drop function if exists public.export_assets(text) cascade;
 create or replace function public.export_assets(p_session_token text)
 returns table(id text,asset_no text,asset_type text,status text,latitude double precision,longitude double precision,geometry jsonb,jurisdiction_ids text[],owner_je_ids text[],shared_boundary boolean,metadata jsonb)
 language sql stable security definer set search_path=public, extensions as $$
@@ -1624,6 +1625,8 @@ with u as (
 select a.id,a.asset_no,a.asset_type,a.status,a.latitude,a.longitude,ST_AsGeoJSON(a.geometry)::jsonb,a.jurisdiction_ids,a.owner_je_ids,a.shared_boundary,a.metadata from public.gis_assets a,u where u.role='GIS_ADMIN' or a.shared_boundary = true or a.owner_je_ids && array(select id from allowed_je);
 $$;
 
+drop function if exists public.create_backup_manifest cascade;
+drop function if exists public.create_backup_manifest(text) cascade;
 create or replace function public.create_backup_manifest(p_session_token text)
 returns table(backup_id text,created_at timestamptz,status text,user_count integer,jurisdiction_count integer,asset_count integer)
 language plpgsql security definer set search_path=public, extensions as $$
@@ -1641,6 +1644,8 @@ begin
  return query select r.backup_id,r.created_at,r.status,r.user_count,r.jurisdiction_count,r.asset_count from public.powergis_backup_runs r where r.backup_id=b;
 end;$$;
 
+drop function if exists public.list_backup_runs cascade;
+drop function if exists public.list_backup_runs(text) cascade;
 create or replace function public.list_backup_runs(p_session_token text)
 returns table(backup_id text,created_at timestamptz,status text,storage_path text,user_count integer,jurisdiction_count integer,asset_count integer)
 language sql stable security definer set search_path=public, extensions as $$
@@ -1666,10 +1671,9 @@ grant execute on function public.export_assets(text) to anon, authenticated;
 grant execute on function public.create_backup_manifest(text) to anon, authenticated;
 grant execute on function public.list_backup_runs(text) to anon, authenticated;
 
-
--- ==================================================================
--- MIGRATION: 009_operational_workflows.sql
--- ==================================================================
+-- ==========================================
+-- START OF 009_operational_workflows.sql
+-- ==========================================
 
 -- Operational workflows: optimistic concurrency, recoverable asset archive,
 -- role-checked review transitions, and auditable mutations.
@@ -1687,6 +1691,8 @@ create index if not exists gis_assets_active_asset_no_ix
 -- Keep browser roles read-only; all mutation is performed through session-bound RPCs.
 revoke insert, update, delete on public.gis_assets from anon, authenticated;
 
+drop function if exists public.admin_update_asset cascade;
+drop function if exists public.admin_update_asset(text,text,integer,text,text,text,jsonb,jsonb,text[],boolean) cascade;
 create or replace function public.admin_update_asset(
   p_session_token text,
   p_asset_id text,
@@ -1743,6 +1749,8 @@ begin
   return query select a.id,a.version,now();
 end;$$;
 
+drop function if exists public.admin_archive_asset cascade;
+drop function if exists public.admin_archive_asset(text,text,integer,text) cascade;
 create or replace function public.admin_archive_asset(
   p_session_token text, p_asset_id text, p_expected_version integer, p_reason text
 )
@@ -1762,6 +1770,8 @@ begin
   return query select a.id,a.archived_at,a.version;
 end;$$;
 
+drop function if exists public.admin_restore_asset cascade;
+drop function if exists public.admin_restore_asset(text,text,integer) cascade;
 create or replace function public.admin_restore_asset(
   p_session_token text, p_asset_id text, p_expected_version integer
 )
@@ -1783,6 +1793,8 @@ begin
 end;$$;
 
 -- Controlled review state machine. No client can directly write status.
+drop function if exists public.review_asset_submission cascade;
+drop function if exists public.review_asset_submission(text,text,integer,text,text) cascade;
 create or replace function public.review_asset_submission(
   p_session_token text,
   p_asset_id text,
@@ -1822,6 +1834,8 @@ begin
   return query select a.id,a.status,a.version;
 end;$$;
 
+drop function if exists public.list_operational_audit cascade;
+drop function if exists public.list_operational_audit(text,integer) cascade;
 create or replace function public.list_operational_audit(p_session_token text,p_limit integer default 100)
 returns table(id bigint,actor_id text,action text,entity_type text,entity_id text,details jsonb,created_at timestamptz)
 language plpgsql stable security definer set search_path=public, extensions as $$
@@ -1845,6 +1859,8 @@ grant execute on function public.admin_restore_asset(text,text,integer) to anon,
 grant execute on function public.review_asset_submission(text,text,integer,text,text) to anon,authenticated;
 grant execute on function public.list_operational_audit(text,integer) to anon,authenticated;
 
+drop function if exists public.visible_assets_page cascade;
+drop function if exists public.visible_assets_page(text, integer, timestamptz, text) cascade;
 create or replace function public.visible_assets_page(
   p_session_token text,
   p_limit integer default 1000,
@@ -1908,7 +1924,8 @@ as $$
   from page cross join totals;
 $$;
 
-
+drop function if exists public.visible_assets_page_v2 cascade;
+drop function if exists public.visible_assets_page_v2(text, integer, timestamptz, text) cascade;
 create or replace function public.visible_assets_page_v2(
   p_session_token text, p_limit integer default 1000,
   p_after_created_at timestamptz default null, p_after_id text default null
@@ -1928,7 +1945,8 @@ $$;
 revoke all on function public.visible_assets_page_v2(text,integer,timestamptz,text) from public;
 grant execute on function public.visible_assets_page_v2(text,integer,timestamptz,text) to anon,authenticated;
 
-
+drop function if exists public.admin_asset_version cascade;
+drop function if exists public.admin_asset_version(text,text) cascade;
 create or replace function public.admin_asset_version(p_session_token text,p_asset_id text)
 returns integer language plpgsql stable security definer set search_path=public,extensions as $$
 declare u public.organization_users%rowtype; v integer;
@@ -1943,6 +1961,8 @@ end;$$;
 revoke all on function public.admin_asset_version(text,text) from public;
 grant execute on function public.admin_asset_version(text,text) to anon,authenticated;
 
+drop function if exists public.visible_asset_stats cascade;
+drop function if exists public.visible_asset_stats(text) cascade;
 create or replace function public.visible_asset_stats(p_session_token text)
 returns table(
   total_count bigint,
@@ -1999,7 +2019,8 @@ as $$
   from authorised;
 $$;
 
-
+drop function if exists public.export_assets cascade;
+drop function if exists public.export_assets(text) cascade;
 create or replace function public.export_assets(p_session_token text)
 returns table(id text,asset_no text,asset_type text,status text,latitude double precision,longitude double precision,geometry jsonb,jurisdiction_ids text[],owner_je_ids text[],shared_boundary boolean,metadata jsonb)
 language sql stable security definer set search_path=public, extensions as $$
@@ -2019,6 +2040,8 @@ $$;
 
 
 -- Atomic bulk archive: either every selected active record is archived or none is.
+drop function if exists public.admin_archive_assets cascade;
+drop function if exists public.admin_archive_assets(text,text[]) cascade;
 create or replace function public.admin_archive_assets(p_session_token text,p_asset_ids text[])
 returns integer language plpgsql security definer set search_path=public,extensions as $$
 declare u public.organization_users%rowtype; n integer:=0; ids text[];
@@ -2042,6 +2065,8 @@ revoke all on function public.admin_archive_assets(text,text[]) from public;
 grant execute on function public.admin_archive_assets(text,text[]) to anon,authenticated;
 
 -- Claim a single requested backup atomically so concurrent workers cannot process it twice.
+drop function if exists public.claim_next_backup_run cascade;
+drop function if exists public.claim_next_backup_run() cascade;
 create or replace function public.claim_next_backup_run()
 returns text language plpgsql security definer set search_path=public,extensions as $$
 declare claimed_id text;
@@ -2060,14 +2085,15 @@ end;$$;
 revoke all on function public.claim_next_backup_run() from public,anon,authenticated;
 grant execute on function public.claim_next_backup_run() to service_role;
 
-
--- ==================================================================
--- MIGRATION: 010_admin_backup_restore.sql
--- ==================================================================
+-- ==========================================
+-- START OF 010_admin_backup_restore.sql
+-- ==========================================
 
 -- GIS Admin-only backup retrieval and additive, transactional restore.
 -- Restores merge/upsert snapshot records; they never delete current records.
 
+drop function if exists public.admin_get_backup_path cascade;
+drop function if exists public.admin_get_backup_path(text, text) cascade;
 create or replace function public.admin_get_backup_path(
   p_session_token text,
   p_backup_id text
@@ -2100,6 +2126,8 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_restore_backup_payload cascade;
+drop function if exists public.admin_restore_backup_payload(text, text, jsonb) cascade;
 create or replace function public.admin_restore_backup_payload(
   p_session_token text,
   p_backup_id text,
@@ -2246,6 +2274,8 @@ grant execute on function public.admin_restore_backup_payload(text,text,jsonb) t
 
 -- Viewport-based authorised asset delivery: the GIS browser fetches only the
 -- current map extent rather than downloading the full organisation inventory.
+drop function if exists public.visible_assets_in_bbox cascade;
+drop function if exists public.visible_assets_in_bbox(text, double precision, double precision, double precision, double precision, integer) cascade;
 create or replace function public.visible_assets_in_bbox(
   p_session_token text,
   p_west double precision,
@@ -2310,6 +2340,8 @@ grant execute on function public.visible_assets_in_bbox(text,double precision,do
 
 -- Service-role-only snapshot paging with explicit GeoJSON conversion. This
 -- avoids backing up PostGIS's internal binary representation by accident.
+drop function if exists public.service_backup_page cascade;
+drop function if exists public.service_backup_page(text, integer, integer) cascade;
 create or replace function public.service_backup_page(
   p_entity text,p_offset integer default 0,p_limit integer default 1000
 )
@@ -2359,10 +2391,9 @@ $$;
 revoke all on function public.service_backup_page(text,integer,integer) from public,anon,authenticated;
 grant execute on function public.service_backup_page(text,integer,integer) to service_role;
 
-
--- ==================================================================
--- MIGRATION: 011_security_perimeter.sql
--- ==================================================================
+-- ==========================================
+-- START OF 011_security_perimeter.sql
+-- ==========================================
 
 -- PowerGIS security perimeter hardening.
 -- Apply after 010_admin_backup_restore.sql.
@@ -2404,14 +2435,14 @@ alter table public.powergis_auth_throttle enable row level security;
 
 -- The old login_users RPC was an unauthenticated directory enumeration surface.
 -- It is no longer callable by anon/authenticated clients.
-revoke all on function public.login_users() from public;
-drop function if exists public.login_users();
+drop function if exists public.login_users() cascade;
 
 -- Session restoration returns only fields required by the application. Sensitive
 -- source-row provenance is deliberately excluded. Disabled users lose access even
 -- if an old session token has not yet expired.
-drop function if exists public.session_user(text);
-create function public.session_user(p_session_token text)
+drop function if exists public.session_user cascade;
+drop function if exists public.session_user(text) cascade;
+create or replace function public.session_user(p_session_token text)
 returns table(
   id text, username text, display_name text, role text, subdivision text, division text,
   circle text, department text, admin_name text, region text, scope_field text,
@@ -2431,6 +2462,8 @@ grant execute on function public.session_user(text) to anon, authenticated;
 
 -- Authenticated admin directory only. Sensitive credential material is never
 -- returned: no password, session token or source-row payload is exposed.
+drop function if exists public.admin_list_users cascade;
+drop function if exists public.admin_list_users(text) cascade;
 create or replace function public.admin_list_users(p_session_token text)
 returns table(
   id text, username text, display_name text, role text,
@@ -2470,8 +2503,9 @@ grant execute on function public.admin_list_users(text) to anon, authenticated;
 -- Replace the authentication RPC with a generic-failure, active-account,
 -- throttled implementation. Password hashes, source rows and session tokens
 -- are never returned except for the one opaque token needed to establish the session.
-drop function if exists public.authenticate_user(text,text);
-create function public.authenticate_user(p_username text, p_password text)
+drop function if exists public.authenticate_user cascade;
+drop function if exists public.authenticate_user(text, text) cascade;
+create or replace function public.authenticate_user(p_username text, p_password text)
 returns table(
   id text, username text, display_name text, role text,
   subdivision text, division text, circle text, department text,
@@ -2547,8 +2581,10 @@ revoke all on table public.powergis_auth_throttle from anon, authenticated;
 
 -- Ensure sensitive source-row provenance is never returned to unauthenticated
 -- callers through an obsolete function signature.
-revoke all on function public.visible_assets(text) from public;
-revoke all on function public.visible_jurisdictions(text) from public;
+drop function if exists public.visible_assets(text) cascade;
+drop function if exists public.visible_jurisdictions(text) cascade;
+drop function if exists public.visible_assets(text, text) cascade;
+drop function if exists public.visible_jurisdictions(text, text) cascade;
 
 comment on table public.organization_users is
   'Authoritative PowerGIS identity directory. Direct browser table access is prohibited; use server-side authenticated RPCs.';
@@ -2597,3 +2633,4 @@ begin
 end;
 $$;
 revoke all on function public.bootstrap_set_admin(text,text,text,text) from public;
+

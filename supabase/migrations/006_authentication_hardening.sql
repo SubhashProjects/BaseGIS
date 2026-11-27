@@ -12,6 +12,8 @@ set password = crypt(password, gen_salt('bf', 12))
 where coalesce(password, '') <> ''
   and password !~ '^\$2[aby]\$';
 
+drop function if exists public.authenticate_user cascade;
+drop function if exists public.authenticate_user(text, text) cascade;
 create or replace function public.authenticate_user(p_username text, p_password text)
 returns table(
   id text, username text, display_name text, role text,

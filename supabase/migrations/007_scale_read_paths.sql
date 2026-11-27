@@ -20,6 +20,8 @@ create index if not exists powergis_sessions_expires_ix
 create index if not exists powergis_sessions_user_ix
   on public.powergis_sessions(user_id, expires_at);
 
+drop function if exists public.visible_assets_page cascade;
+drop function if exists public.visible_assets_page(text, integer, timestamptz, text) cascade;
 create or replace function public.visible_assets_page(
   p_session_token text,
   p_limit integer default 1000,
